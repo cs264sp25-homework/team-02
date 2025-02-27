@@ -57,3 +57,73 @@ To align with the technology stack used in the Practical Gen AI course, we'll us
 ## Project Roadmap
 
 Later, after approval, we will create a detailed project roadmap.
+
+Sprint 1: March 10 - April 4
+Week 8 (March 10-14): Project Setup & Authentication
+
+### Week 8 (March 10-14): Project Setup & Authentication
+
+**Tasks:**
+
+1. Set up project repository with React, Vite, TailwindCSS, and Shadcn UI
+
+   - Create project structure and configure build tools
+   - Set up code linting and formatting tools
+   - Configure deployment pipeline
+
+2. Implement user authentication system (Primary Feature #1)
+
+   - Integrate GitHub OAuth with Convex
+   - Create user profile data structure
+   - Implement sign-in/sign-out functionality
+   - Set up protected routes
+
+3. Design and implement database schema
+
+   - Design schema for users, flashcards, and decks
+   - Set up Convex database configuration
+   - Create data models and relationships
+
+4. Develop UI component library
+   - Build reusable UI components (buttons, cards, inputs, etc.)
+   - Create layout components and page templates
+   - Implement responsive design
+
+**Deliverables:**
+
+- Functioning GitHub authentication system
+- Project repository with CI/CD setup
+- Basic UI component library
+- Database schema documentation
+
+### Week 10 (March 24-28): Primary Features
+
+- Organize your resumes based on custom categories (industry/companies)
+- Upload PDF resume (can upload multiple resumes if applying to different job categories)
+- Organize answers to common behavioral questions in job applications
+- Make user profiles from user-inputted data
+- Add work history, skills, and projects to user profile
+
+### Week 11 (March 31-April 4): AI Feature: CoverAI/Resume Generation
+
+- Generates a tailored resume based on uploaded resume and copy-pasted job description
+- Generates a cover letter based on job description and user built profile
+- Import personal info and work history for profile from Linkedin
+
+## Sprint 2: April 7 - April 28
+
+### Week 12 (April 7-11): Personalized Response and AI Insights
+
+- Personal AI Insights – strengths and weaknesses of your skills based on applied job
+  - Basically if i am trying to apply to marketing manager job and have only SWE internships then AI will tell me that i need more experience in marketing and suggest me some activities i can do to gain experience (based on resume)
+- AI can also suggest activities or skills to gain based on your career goals
+
+### Week 13 (April 14-18): Additional Features
+
+- Allow users to add profile picture
+- Personalized resume review checklist
+- Add notes to job application info (stuff i want to keep in mind about this company like memorize Amazon leadership principles for Amazon related jobs)
+
+### Week 14 (April 21-25): Final Touches & Buffer Week
+
+- Buffer week, bug fixes, and final touches
