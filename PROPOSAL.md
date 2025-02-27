@@ -4,7 +4,9 @@ We are building a personal profile and resume management platform that allows us
 
 ## Functional Requirements
 
-### General Features
+### Primary Features (Must Have)
+
+As a user, I want to
 
 - Create an account and sign in
 - Organize your resumes based on custom categories (industry/companies)
@@ -12,33 +14,27 @@ We are building a personal profile and resume management platform that allows us
 - Organize answers to common behavioral questions in job applications
 - Make user profiles from user-inputted data
 - Add work history, skills, and projects to user profile
-
-The following features could be implemented, if time permits:
-
-- Import personal info and work history for profile from Linkedin
-- Upload profile picture
-- personalized resume review checklist
-- we can add notes to job application info (stuff i want to keep in mind about this company like memorize Amazon leadership principles for Amazon related jobs)
-
-The following features would be nice to have but won't be implemented:
-
-- create an extension to autofill any job application with AI
-- job tracker with deadlines
-
-### AI Features
-
 - Generates a tailored resume based on uploaded resume and copy-pasted job description
 - Can come up with a personalized response to interview question inputted by user
 - Personal AI Insights – strengths and weaknesses of your skills based on applied job
   - Basically if i am trying to apply to marketing manager job and have only SWE internships then AI will tell me that i need more experience in marketing and suggest me some activities i can do to gain experience (based on resume)
 
-The following features could be implemented, if time permits:
+### Secondary Features (Should Have)
 
+- Import personal info and work history for profile from Linkedin
+- Upload profile picture
+- personalized resume review checklist
+- we can add notes to job application info (stuff i want to keep in mind about this company like memorize Amazon leadership principles for Amazon related jobs)
 - generate a cover letter based on job description and user built profile
 - AI can also suggest activities or skills to gain based on your career goals
+- Allow users to add profile picture
+- Personalized resume review checklist
+- Add notes to job application info (stuff i want to keep in mind about this company like memorize Amazon leadership principles for Amazon related jobs)
 
-The following features would be nice to have but won't be implemented:
+### Tertiary Features (Nice to Have)
 
+- create an extension to autofill any job application with AI
+- job tracker with deadlines
 - conduct mock interview with you
 - generate Mock technical questions based on job description
 
@@ -58,8 +54,7 @@ To align with the technology stack used in the Practical Gen AI course, we'll us
 
 Later, after approval, we will create a detailed project roadmap.
 
-Sprint 1: March 10 - April 4
-Week 8 (March 10-14): Project Setup & Authentication
+## Sprint 1: March 10 - April 4
 
 ### Week 8 (March 10-14): Project Setup & Authentication
 
@@ -73,14 +68,14 @@ Week 8 (March 10-14): Project Setup & Authentication
 
 2. Implement user authentication system (Primary Feature #1)
 
-   - Integrate GitHub OAuth with Convex
+   - Integrate Google OAuth with Convex
    - Create user profile data structure
    - Implement sign-in/sign-out functionality
    - Set up protected routes
 
 3. Design and implement database schema
 
-   - Design schema for users, flashcards, and decks
+   - Design schema for users, resumes, folders, and cover letters
    - Set up Convex database configuration
    - Create data models and relationships
 
@@ -104,7 +99,7 @@ Week 8 (March 10-14): Project Setup & Authentication
 - Make user profiles from user-inputted data
 - Add work history, skills, and projects to user profile
 
-### Week 11 (March 31-April 4): AI Feature: CoverAI/Resume Generation
+### Week 11 (March 31-April 4): AI Features: Cover Letter/Resume Generation and Import from LinkedIn
 
 - Generates a tailored resume based on uploaded resume and copy-pasted job description
 - Generates a cover letter based on job description and user built profile
@@ -112,7 +107,7 @@ Week 8 (March 10-14): Project Setup & Authentication
 
 ## Sprint 2: April 7 - April 28
 
-### Week 12 (April 7-11): Personalized Response and AI Insights
+### Week 12 (April 7-11): Personalized Interview Response Generation and AI Insights
 
 - Personal AI Insights – strengths and weaknesses of your skills based on applied job
   - Basically if i am trying to apply to marketing manager job and have only SWE internships then AI will tell me that i need more experience in marketing and suggest me some activities i can do to gain experience (based on resume)
@@ -126,4 +121,32 @@ Week 8 (March 10-14): Project Setup & Authentication
 
 ### Week 14 (April 21-25): Final Touches & Buffer Week
 
-- Buffer week, bug fixes, and final touches
+1. Implement highest-priority tertiary features (selectively based on progress)
+
+- generate Mock technical questions based on job description
+
+2. Conduct comprehensive testing and quality assurance
+
+   - Perform usability testing with representative users
+   - Identify and fix bugs and issues
+   - Optimize performance and responsiveness
+   - Ensure accessibility compliance
+
+3. Final deployment and project wrap-up
+   - Deploy final application version
+   - Verify all features are working in production
+   - Create presentation materials
+   - Prepare for project demonstration
+
+**Deliverables:**
+
+- Polished, production-ready application
+- Presentation materials for project demonstration
+
+1. **March 14**: Project infrastructure complete with authentication system
+2. **March 28**: Core job preparation system functional
+3. **April 4**: Sprint 1 completion with all primary features implemented
+4. **April 11**: AI resume and cover letter generation features functional
+5. **April 18**: AI personalized interview responses generation and personal insights complete
+6. **April 25**: Application finalized with tertiary features and comprehensive testing
+7. **April 28**: Final project submission and demonstration
