@@ -1,42 +1,47 @@
 # Project Proposal
 
-We are building a personal profile and resume management platform that allows users to store multiple versions of their resumes and store answers for common open-ended job application questions. It will also include AI features such as creating tailored resumes and cover letters based on user uploaded resumes and inputted job description.
+We are building an AI-powered job application builder app designed to streamline the process of filling out job applications and crafting resumes for specific positions through smart resume generation and intelligent AI-assisted answers for common questions in job applications. Our app will enable users to create perfect resumes tailored to inputted job descriptions and leverage AI to efficiently generate impactful responses to questions about user's background and abilities in job applications.
 
 ## Functional Requirements
 
 ### Primary Features (Must Have)
 
-As a user, I want to
+As a user, I want to:
 
-- Create an account and sign in
-- Organize your resumes based on custom categories (industry/companies)
-- Upload PDF resume (can upload multiple resumes if applying to different job categories)
-- Organize answers to common behavioral questions in job applications
-- Make user profiles from user-inputted data
-- Add work history, skills, and projects to user profile
-- Generates a tailored resume based on uploaded resume and copy-pasted job description
-- Can come up with a personalized response to interview question inputted by user
-- Personal AI Insights – strengths and weaknesses of your skills based on applied job
-  - Basically if i am trying to apply to marketing manager job and have only SWE internships then AI will tell me that i need more experience in marketing and suggest me some activities i can do to gain experience (based on resume)
+1. Create an account and sign in through Google so I can securely access my job application materials and personal responses
+2. Create a profile with work history, skills, and education
+3. Upload resume in PDF format
+4. Input answers to common job application questions about my background and capability
+5. Organize answers to common interview questions by tags (appears in job applications, background, technical, etc.)
+6. Generate tailored resume based on uploaded resume and copy-pasted job description
+7. Generate AI-improved versions of my responses to common job application questions
+8. Perform semantic search across stored responses and user profile to find related content quickly
 
 ### Secondary Features (Should Have)
 
-- Import personal info and work history for profile from Linkedin
-- Upload profile picture
-- personalized resume review checklist
-- we can add notes to job application info (stuff i want to keep in mind about this company like memorize Amazon leadership principles for Amazon related jobs)
-- generate a cover letter based on job description and user built profile
-- AI can also suggest activities or skills to gain based on your career goals
-- Allow users to add profile picture
-- Personalized resume review checklist
-- Add notes to job application info (stuff i want to keep in mind about this company like memorize Amazon leadership principles for Amazon related jobs)
+As a user, I want to:
+
+1. Import personal information, work history, and skills into profile from existing LinkedIn profile.
+2. Get AI feedback on whether the job that I am considering applying for is a goof fit for my current experience and skills (essentially, you put a link to the job posting and we will perform web scraping and then give you feedback on whether you should apply or not)
+3. Generate personal insights from AI on what experience/skills I am lacking to become a competitive candidate for the job
+4. Get recommendations from AI on activities I can do to fill in those gaps in my resume (e.g. if I want to apply to a Marketing Coordinator position but I have only SWE internships on my profile and resume, then AI will tell me that I need to gain more experience in marketing and suggest me some activities I can do to become a more competitive candidate)
+5. Import job application and get AI to generate personalized answers for web-scraped questions about my background and capability based on profile information and uploaded resume.
+6. Generate a message introducing oneself and expressing interest in open position that can be sent to hiring manager or recruiter who posted the job posting on LinkedIn.
 
 ### Tertiary Features (Nice to Have)
 
-- create an extension to autofill any job application with AI
-- job tracker with deadlines
-- conduct mock interview with you
-- generate Mock technical questions based on job description
+As a user, I want to:
+
+1. Autofill repetitive job application questions with browser extension
+2. Bookmark jobs and track my search with a tailored job tracker
+3. Generate potential technical and non-technical interview questions based on job description
+4. Get notifications for when to submit the job application and for when to follow up on messages sent to recruiter
+
+### Won't Have Features
+
+As a user, I want to:
+
+1. Practice for my interviews with AI as my mock interviewer asking generated expected interview questions
 
 ### Tech Stack
 
@@ -49,10 +54,16 @@ To align with the technology stack used in the Practical Gen AI course, we'll us
 5. Convex BaaS for backend services, including authentication and database
 6. Use Vercel's AI SDK as a thin abstraction layer for AI features.
    - Ideally, we will not use more complex abstraction (like LangChain or LlamaIndex) to orchestrate AI features, unless necessary.
+7. Netlify for deployment
 
 ## Project Roadmap
 
-Later, after approval, we will create a detailed project roadmap.
+This roadmap maps out the development of our AI-powered Flashcards App across two sprints, aligned with the course schedule:
+
+- **Sprint 1**: Weeks 8, 10, 11 (March 10 - April 4)
+  - _Note: Week 9 is Spring Break (no development scheduled)_
+- **Sprint 2**: Weeks 12, 13, 14 (April 7 - April 25)
+  - _Final deliverable due Monday, April 28_
 
 ## Sprint 1: March 10 - April 4
 
@@ -75,7 +86,7 @@ Later, after approval, we will create a detailed project roadmap.
 
 3. Design and implement database schema
 
-   - Design schema for users, resumes, folders, and cover letters
+   - Design schema for users, profiles, resumes, and job posting
    - Set up Convex database configuration
    - Create data models and relationships
 
@@ -86,44 +97,140 @@ Later, after approval, we will create a detailed project roadmap.
 
 **Deliverables:**
 
-- Functioning GitHub authentication system
+- Functioning Google OAuth authentication system
 - Project repository with CI/CD setup
 - Basic UI component library
 - Database schema documentation
 
-### Week 10 (March 24-28): Primary Features
+### Week 10 (March 24-28): User Profile and Resume Upload
 
-- Organize your resumes based on custom categories (industry/companies)
-- Upload PDF resume (can upload multiple resumes if applying to different job categories)
-- Organize answers to common behavioral questions in job applications
-- Make user profiles from user-inputted data
-- Add work history, skills, and projects to user profile
+**Tasks:**
+
+1. Implement user profile (Primary Features #2, #3)
+
+   - Implement CRUD operations for profile and resume
+   - Add upload feature for resumes in pdf
+   - Create user profile interface with work history, skills, and education
+
+2. Develop organization for answers to common job application questions (Primary Features #4, #5)
+
+   - Create interface for users to input their answers to common job application questions
+   - Implement CRUD operations for those answers
+   - Add tag system to categorize those responses for easy search later (technical, non-technical, etc.)
+
+3. Begin implementing basic AI integration
+   - Set up Vercel AI SDK
+   - Configure API connections to language models
+   - Create service layer for AI interactions
+   - Implement error handling for AI services
+
+**Deliverables:**
+
+- Complete user profile set up system
+- Functional resume upload
+- Implement storage for job application question responses
+- Initial AI service integration
+- Interactive user interfaces for core features
 
 ### Week 11 (March 31-April 4): AI Features: Cover Letter/Resume Generation and Import from LinkedIn
 
-- Generates a tailored resume based on uploaded resume and copy-pasted job description
-- Generates a cover letter based on job description and user built profile
-- Import personal info and work history for profile from Linkedin
+**Tasks:**
+
+1. Implement AI-powered tailored resume generation (Primary Feature #6)
+
+   - Develop interface for inputting job posting description
+   - Figure out best resume template for AI to format information to
+   - Implement resume generation logic
+   - Add ability to fix generated resume
+   - Add ability to download final resume copy
+
+2. Implement AI-improved versions of my responses to common job application questions (Primary Feature #7)
+
+   - Add user control to either accept or reject AI improved content
+   - Allow user to describe how they want to imrpove their responses to the questions (make it more formal, am i addressing the prompt, I have this to start with but I am not sure how to finish off the response, can you help me)
+   - Use information from semantic search to help improve answers to common job application questions and make them more impactful and compelling
+
+3. Implement semantic search functionality (Primary Feature #8)
+
+   - Set up embedding model integration
+   - Create vector storage for user profile information and uploaded resume
+   - Implement similarity search algorithm
+
+4. Spring 1 wrap-up
+   - Conduct thorough testing of all implemented features
+   - Fix critical bugs and issues
+   - Deploy Sprint 1 milestone for demonstration
+
+**Deliverables**
+
+- AI-powered tailored resume gneration
+- AI assistant for improving responses to job application questions
+- Semantic search functionality
+- Spring 1 progress report and working demo
+- Presentation of Spring 1 accomplishments
 
 ## Sprint 2: April 7 - April 28
 
 ### Week 12 (April 7-11): Personalized Interview Response Generation and AI Insights
 
-- Personal AI Insights – strengths and weaknesses of your skills based on applied job
-  - Basically if i am trying to apply to marketing manager job and have only SWE internships then AI will tell me that i need more experience in marketing and suggest me some activities i can do to gain experience (based on resume)
-- AI can also suggest activities or skills to gain based on your career goals
+**Tasks:**
+
+1. Implement import from LinkedIn (Secondary Feature #1)
+
+   - Add the input box for LinkedIn profile URL
+   - Implement necessary web scraping to collect data from LinkedIn profile page and fill in the user profile
+   - Allow user to add any missing info or correct any wrong info
+
+2. AI feedback on job fit (Secondary Feature #2)
+
+   - Add input box for job posting URL
+   - Add web scraping for AI to get necessary job posting information
+   - Implement AI being able to determine if the person's resume and work history and user profile is a good fit for the job or not
+   - Implement user interface for AI's feedback
+
+3. AI personal insights (Secondary Feature #3)
+
+   - Add button to generate personal insights
+   - Implement personal insights from AI
+   - Implement user interface for AI's personal insights
+
+**Deliverables:**
+
+- More efficient user profile creation with import from existing LinkedIn profile option
+- AI personal insights
+- AI assistant for job posting fit
 
 ### Week 13 (April 14-18): Additional Features
 
-- Allow users to add profile picture
-- Personalized resume review checklist
-- Add notes to job application info (stuff i want to keep in mind about this company like memorize Amazon leadership principles for Amazon related jobs)
+**Tasks:**
+
+1. Implement AI recommendations (Secondary Feature #4)
+
+   - Implement logic for AI to give recommendations
+   - Implement user interface for those recommendations
+
+2. Import job application and get AI-generated answers (Secondary Feature #5)
+
+   - Implement user-interface for AI-generated answers
+   - Generate personalized answers for web-scraped questions in the job application
+
+3. Implement AI generated message (Secondary Feature #6)
+
+   - Implement user interface for adding a job posting or company that the user is interested in
+   - Add feature to ask AI for a good message that effectively introduces oneself and expresses interest in the company and job opening
+
+**Deliverables:**
+
+- Complete AI assistant that gives feedback and recommendations
+- Allow for generation of messages to hiring managers and personalized answers to questions in job application
 
 ### Week 14 (April 21-25): Final Touches & Buffer Week
 
+**Tasks:**
+
 1. Implement highest-priority tertiary features (selectively based on progress)
 
-- generate Mock technical questions based on job description
+- Generate potential technical and non-technical interview questions based on job description
 
 2. Conduct comprehensive testing and quality assurance
 
@@ -144,9 +251,9 @@ Later, after approval, we will create a detailed project roadmap.
 - Presentation materials for project demonstration
 
 1. **March 14**: Project infrastructure complete with authentication system
-2. **March 28**: Core job preparation system functional
+2. **March 28**: Core job application builder and organization system functional
 3. **April 4**: Sprint 1 completion with all primary features implemented
-4. **April 11**: AI resume and cover letter generation features functional
+4. **April 11**: AI resume generation and AI assistant for job application responses functional
 5. **April 18**: AI personalized interview responses generation and personal insights complete
 6. **April 25**: Application finalized with tertiary features and comprehensive testing
 7. **April 28**: Final project submission and demonstration
