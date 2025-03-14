@@ -1,5 +1,5 @@
 import { useQuery } from "convex/react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/core/components/button";
 import { api } from "../convex/_generated/api";
 import { useState } from "react";
 
