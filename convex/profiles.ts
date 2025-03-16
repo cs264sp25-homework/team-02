@@ -1,5 +1,6 @@
 import { Infer, v } from "convex/values";
 import { defineTable } from "convex/server";
+import { mutation, query } from "./_generated/server";
 
 /******************************************************************************
  * SCHEMA
@@ -157,3 +158,134 @@ export type ProfileType = Infer<typeof profileSchemaObject>;
 export const profileTables = {
   profiles: defineTable(profileSchema).index("by_userId", ["userId"]),
 };
+
+/**
+ * Create a new profile
+ * @param profile The profile data to create
+ * @returns The ID of the newly created profile
+ */
+export const createProfile = mutation({
+  args: profileInSchemaObject,
+  handler: async (ctx, profile) => {
+    const identity = await ctx.auth.getUserIdentity();
+    let userId: string;
+    if (!identity) {
+      userId = "anonymous";
+    } else {
+      userId = identity.subject;
+    }
+    const profileData = { ...profile, userId };
+
+    // Check if profile already exists for this user
+    const existing = await ctx.db
+      .query("profiles")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .first();
+
+    if (existing) {
+      throw new Error("Profile already exists for this user");
+    }
+
+    return await ctx.db.insert("profiles", profileData);
+  },
+});
+
+/**
+ * Get a profile by user ID
+ * @param userId The ID of the user whose profile to fetch
+ * @returns The profile data or null if not found
+ */
+export const getProfileByUserId = query({
+  args: { userId: v.string() },
+  handler: async (ctx, { userId }) => {
+    return await ctx.db
+      .query("profiles")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .first();
+  },
+});
+
+/**
+ * Get the current user's profile
+ * @returns The profile data or null if not found
+ */
+export const getCurrentUserProfile = query({
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    let userId: string;
+    if (!identity) {
+      userId = "anonymous";
+    } else {
+      userId = identity.subject;
+    }
+
+    return await ctx.db
+      .query("profiles")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .first();
+  },
+});
+
+/**
+ * Update a profile
+ * @param update The profile data to update
+ * @returns The ID of the updated profile
+ */
+export const updateProfile = mutation({
+  args: {
+    ...profileUpdateSchema,
+    profileId: v.id("profiles"),
+  },
+  handler: async (ctx, { profileId, ...update }) => {
+    const identity = await ctx.auth.getUserIdentity();
+    let userId: string;
+    if (!identity) {
+      userId = "anonymous";
+    } else {
+      userId = identity.subject;
+    }
+
+    const existingProfile = await ctx.db.get(profileId);
+    if (!existingProfile) {
+      throw new Error("Profile not found");
+    }
+
+    // Ensure user can only update their own profile
+    if (existingProfile.userId !== userId) {
+      throw new Error("Not authorized to update this profile");
+    }
+
+    return await ctx.db.patch(profileId, update);
+  },
+});
+
+/**
+ * Delete a profile
+ * @param profileId The ID of the profile to delete
+ * @returns true if successful
+ */
+export const deleteProfile = mutation({
+  args: { profileId: v.id("profiles") },
+  handler: async (ctx, { profileId }) => {
+    const identity = await ctx.auth.getUserIdentity();
+    let userId: string;
+    if (!identity) {
+      userId = "anonymous";
+    } else {
+      userId = identity.subject;
+    }
+
+    const existingProfile = await ctx.db.get(profileId);
+    if (!existingProfile) {
+      throw new Error("Profile not found");
+    }
+
+    // Ensure user can only delete their own profile
+    if (existingProfile.userId !== userId) {
+      throw new Error("Not authorized to delete this profile");
+    }
+
+    await ctx.db.delete(profileId);
+    return true;
+  },
+});
