@@ -14,6 +14,7 @@ import type {
   FunctionReference,
 } from "convex/server";
 import type * as hello from "../hello.js";
+import type * as profiles from "../profiles.js";
 
 /**
  * A utility for referencing Convex functions in your app's API.
@@ -25,6 +26,7 @@ import type * as hello from "../hello.js";
  */
 declare const fullApi: ApiFromModules<{
   hello: typeof hello;
+  profiles: typeof profiles;
 }>;
 export declare const api: FilterApi<
   typeof fullApi,
