@@ -21,52 +21,30 @@ import { Skeleton } from "@/core/components/skeleton";
 import { toast } from "sonner";
 import { Doc } from "convex/_generated/dataModel";
 import { PlusCircle, Pencil, X } from "lucide-react";
-
-interface Education {
-  institution: string;
-  degree: string;
-  field: string;
-  startDate: string;
-  endDate?: string;
-  gpa?: number;
-  description?: string;
-  location?: string;
-}
-
-interface WorkExperience {
-  company: string;
-  position: string;
-  location?: string;
-  startDate: string;
-  endDate?: string;
-  current: boolean;
-  description: string[];
-  technologies?: string[];
-}
-
-interface Project {
-  name: string;
-  description: string[];
-  startDate?: string;
-  endDate?: string;
-  technologies: string[];
-  link?: string;
-  githubUrl?: string;
-  highlights?: string[];
-}
+import {
+  EducationType,
+  WorkExperienceType,
+  ProjectsType,
+} from "convex/profiles";
 
 interface EducationFormProps {
-  education?: Education;
+  education?: EducationType;
   onCancel: () => void;
 }
 
 interface ExperienceFormProps {
-  experience?: WorkExperience;
+  experience?: WorkExperienceType;
   onCancel: () => void;
 }
 
 interface ProjectFormProps {
-  project?: Project;
+  project?: ProjectsType;
+  onCancel: () => void;
+}
+
+interface SkillFormProps {
+  category?: string;
+  skills?: string[];
   onCancel: () => void;
 }
 
@@ -81,6 +59,10 @@ const ProfilePage = () => {
   const [showExperienceForm, setShowExperienceForm] = useState(false);
   const [editingProject, setEditingProject] = useState<number | null>(null);
   const [showProjectForm, setShowProjectForm] = useState(false);
+  const [editingSkillCategory, setEditingSkillCategory] = useState<
+    string | null
+  >(null);
+  const [showSkillForm, setShowSkillForm] = useState(false);
   const mutation = useMutationProfile((profile as Doc<"profiles">)?._id);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -108,7 +90,7 @@ const ProfilePage = () => {
     if (!profile) return;
 
     const formData = new FormData(e.currentTarget);
-    const newEducation: Education = {
+    const newEducation: EducationType = {
       institution: formData.get("institution") as string,
       degree: formData.get("degree") as string,
       field: formData.get("field") as string,
@@ -155,7 +137,7 @@ const ProfilePage = () => {
     if (!profile) return;
 
     const formData = new FormData(e.currentTarget);
-    const newExperience: WorkExperience = {
+    const newExperience: WorkExperienceType = {
       company: formData.get("company") as string,
       position: formData.get("position") as string,
       location: (formData.get("location") as string) || undefined,
@@ -205,7 +187,7 @@ const ProfilePage = () => {
     if (!profile) return;
 
     const formData = new FormData(e.currentTarget);
-    const newProject: Project = {
+    const newProject: ProjectsType = {
       name: formData.get("name") as string,
       description: (formData.get("description") as string)
         .split("\n")
@@ -249,6 +231,53 @@ const ProfilePage = () => {
     const success = await mutation.edit({ projects: updatedProjects });
     if (success) {
       toast.success("Project removed");
+    }
+  };
+
+  const handleSkillSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!profile) return;
+
+    const formData = new FormData(e.currentTarget);
+    const skills = (formData.get("skills") as string)
+      .split(",")
+      .map((skill) => skill.trim())
+      .filter(Boolean);
+
+    const updatedSkills = { ...profile.skills };
+
+    if (editingSkillCategory) {
+      // Update existing category
+      updatedSkills[editingSkillCategory] = skills;
+    } else {
+      // Add new category
+      const category = formData.get("category") as string;
+      if (!category) {
+        toast.error("Category name is required");
+        return;
+      }
+      updatedSkills[category] = skills;
+    }
+
+    const success = await mutation.edit({ skills: updatedSkills });
+    if (success) {
+      setShowSkillForm(false);
+      setEditingSkillCategory(null);
+      toast.success(
+        editingSkillCategory
+          ? "Skills category updated successfully"
+          : "Skills category added successfully",
+      );
+    }
+  };
+
+  const handleDeleteSkillCategory = async (category: string) => {
+    if (!profile) return;
+    const updatedSkills = { ...profile.skills };
+    delete updatedSkills[category];
+    const success = await mutation.edit({ skills: updatedSkills });
+    if (success) {
+      toast.success("Skills category removed");
     }
   };
 
@@ -549,6 +578,46 @@ const ProfilePage = () => {
           Cancel
         </Button>
         <Button type="submit">{project ? "Update" : "Add"} Project</Button>
+      </div>
+    </form>
+  );
+
+  const SkillForm = ({ category, skills, onCancel }: SkillFormProps) => (
+    <form
+      onSubmit={handleSkillSubmit}
+      className="space-y-4 mt-4 p-4 border rounded-lg"
+    >
+      <div className="grid gap-4">
+        <div className="grid gap-2">
+          <Label htmlFor="category">Skill Category</Label>
+          <Input
+            id="category"
+            name="category"
+            defaultValue={category}
+            required
+            disabled={!!category}
+            placeholder="e.g., Programming Languages, Frameworks, Tools"
+          />
+        </div>
+
+        <div className="grid gap-2">
+          <Label htmlFor="skills">Skills (comma-separated)</Label>
+          <textarea
+            id="skills"
+            name="skills"
+            className="min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            defaultValue={skills?.join(", ")}
+            required
+            placeholder="e.g., JavaScript, React, Node.js"
+          />
+        </div>
+      </div>
+
+      <div className="flex justify-end gap-2">
+        <Button type="button" variant="outline" onClick={onCancel}>
+          Cancel
+        </Button>
+        <Button type="submit">{category ? "Update" : "Add"} Skills</Button>
       </div>
     </form>
   );
@@ -986,15 +1055,86 @@ const ProfilePage = () => {
         <TabsContent value="skills">
           <Card>
             <CardHeader>
-              <CardTitle>Skills</CardTitle>
-              <CardDescription>
-                Your technical and professional skills
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Skills</CardTitle>
+                  <CardDescription>
+                    Your technical and professional skills
+                  </CardDescription>
+                </div>
+                {!showSkillForm && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowSkillForm(true)}
+                  >
+                    <PlusCircle className="w-4 h-4 mr-2" />
+                    Add Skill Category
+                  </Button>
+                )}
+              </div>
             </CardHeader>
             <CardContent>
-              {/* Skills form fields will be added here */}
-              <div className="text-center text-muted-foreground">
-                Skills section coming soon
+              {showSkillForm && (
+                <SkillForm
+                  category={editingSkillCategory || undefined}
+                  skills={
+                    editingSkillCategory
+                      ? profile?.skills[editingSkillCategory]
+                      : undefined
+                  }
+                  onCancel={() => {
+                    setShowSkillForm(false);
+                    setEditingSkillCategory(null);
+                  }}
+                />
+              )}
+
+              <div className="space-y-6 mt-4">
+                {Object.entries(profile?.skills || {}).map(
+                  ([category, skills]) => (
+                    <div
+                      key={category}
+                      className="p-4 border rounded-lg hover:bg-muted/50 relative group"
+                    >
+                      <div className="absolute right-4 top-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0 mr-2"
+                          onClick={() => {
+                            setEditingSkillCategory(category);
+                            setShowSkillForm(true);
+                          }}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0 text-destructive"
+                          onClick={() => handleDeleteSkillCategory(category)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+
+                      <div className="space-y-2">
+                        <h4 className="text-lg font-semibold">{category}</h4>
+                        <div className="flex flex-wrap gap-2">
+                          {skills.map((skill, i) => (
+                            <span
+                              key={i}
+                              className="px-2 py-1 bg-muted rounded-full text-xs"
+                            >
+                              {skill}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  ),
+                )}
               </div>
             </CardContent>
           </Card>

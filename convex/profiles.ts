@@ -151,6 +151,10 @@ export const profileSchema = {
 // eslint-disable-next-line
 const profileSchemaObject = v.object(profileSchema);
 export type ProfileType = Infer<typeof profileSchemaObject>;
+export type EducationType = ProfileType["education"][number];
+export type WorkExperienceType = ProfileType["workExperience"][number];
+export type ProjectsType = ProfileType["projects"][number];
+export type SkillsType = ProfileType["skills"];
 
 /**
  * Profile table schema definition
