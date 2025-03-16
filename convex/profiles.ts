@@ -227,6 +227,49 @@ export const getCurrentUserProfile = query({
 });
 
 /**
+ * Get or create a profile for the current user
+ * If a profile doesn't exist, creates one with default values
+ * @returns The existing or newly created profile
+ */
+export const getOrCreateProfile = mutation({
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    let userId: string;
+    if (!identity) {
+      userId = "anonymous";
+    } else {
+      userId = identity.subject;
+    }
+
+    // Try to find existing profile
+    const existing = await ctx.db
+      .query("profiles")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .first();
+
+    if (existing) {
+      return existing;
+    }
+
+    // Create default profile if none exists
+    const defaultProfile: ProfileInType = {
+      name: identity?.name ?? "Anonymous User",
+      email: identity?.email ?? "anonymous@example.com",
+      education: [],
+      workExperience: [],
+      projects: [],
+      skills: {},
+    };
+
+    const profileId = await ctx.db.insert("profiles", {
+      ...defaultProfile,
+      userId,
+    });
+    return await ctx.db.get(profileId);
+  },
+});
+
+/**
  * Update a profile
  * @param update The profile data to update
  * @returns The ID of the updated profile
