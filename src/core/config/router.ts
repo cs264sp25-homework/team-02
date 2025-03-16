@@ -1,0 +1,24 @@
+import { BASE_URL } from "@/core/config/env";
+import { logger } from "@nanostores/logger";
+import { createRouter } from "@nanostores/router";
+
+const DEBUG = false;
+
+const baseUrl = BASE_URL === "" ? "" : `/${BASE_URL}`;
+
+const pages = {
+  home: `${baseUrl}/`, // Home page
+  demo: `${baseUrl}/demo`, // Demo page
+};
+
+console.log(pages);
+
+export type Page = keyof typeof pages;
+
+export type Params = Record<string, string>;
+
+export const $router = createRouter(pages);
+
+if (DEBUG) {
+  logger({ $router });
+}

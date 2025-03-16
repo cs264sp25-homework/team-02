@@ -1,28 +1,31 @@
-import { useQuery } from "convex/react";
-import { Button } from "@/core/components/button";
-import { api } from "../convex/_generated/api";
-import { useState } from "react";
+import { useRouter } from "@/core/hooks/use-router";
+import NotFoundPage from "./core/pages/not-found-page";
+import Demo from "./core/pages/demo";
+import Empty from "./core/pages/empty";
 
 function App() {
-  const [showMessage, setShowMessage] = useState(false);
-  const message = useQuery(api.hello.greet, {
-    name: " world",
-  });
+  const { currentRoute } = useRouter();
+
+  if (!currentRoute) {
+    return <NotFoundPage />;
+  }
+
+  const renderContent = () => {
+    switch (currentRoute) {
+      case "home":
+        return <Empty message="Please see modify routes in App.tsx" />;
+      case "demo":
+        return <Demo />;
+      default:
+        return <NotFoundPage />;
+    }
+  };
+
+  const content = renderContent();
 
   return (
     <div className="flex flex-col items-center justify-center min-h-svh">
-      <Button
-        variant={showMessage ? "outline" : "default"}
-        onClick={() => setShowMessage(!showMessage)}
-      >
-        {`Click to ${showMessage ? "hide" : "show"} a message from the backend`}
-      </Button>
-      {showMessage && (
-        <div className="m-2">
-          Backend says:{" "}
-          <code className="border px-2 py-1 rounded-md text-sm">{message}</code>
-        </div>
-      )}
+      {content}
     </div>
   );
 }

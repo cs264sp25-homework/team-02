@@ -11,6 +11,9 @@
     "prettier": "prettier --write \"src/**/*.{js,ts,jsx,tsx}\" --config \".prettierrc.json\""
   },
   "dependencies": {
+    "@nanostores/logger": "^0.4.0",
+    "@nanostores/react": "^0.8.4",
+    "@nanostores/router": "^0.16.1",
     "@radix-ui/react-slot": "^1.1.2",
     "@tailwindcss/vite": "^4.0.12",
     "class-variance-authority": "^0.7.1",
