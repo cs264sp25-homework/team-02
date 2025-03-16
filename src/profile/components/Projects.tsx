@@ -169,25 +169,24 @@ export const Projects = ({ profile, onUpdate }: ProjectsProps) => {
 
   return (
     <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle>Projects</CardTitle>
-            <CardDescription>
-              Your personal and professional projects
-            </CardDescription>
-          </div>
-          {!showProjectForm && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowProjectForm(true)}
-            >
-              <PlusCircle className="w-4 h-4 mr-2" />
-              Add Project
-            </Button>
-          )}
+      <CardHeader className="relative text-center pb-8">
+        <div>
+          <CardTitle className="text-xl font-bold">Projects</CardTitle>
+          <CardDescription className="mt-2">
+            Your personal and professional projects
+          </CardDescription>
         </div>
+        {!showProjectForm && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowProjectForm(true)}
+            className="absolute right-6 top-6"
+          >
+            <PlusCircle className="w-4 h-4 mr-2" />
+            Add Project
+          </Button>
+        )}
       </CardHeader>
       <CardContent>
         {showProjectForm && (
@@ -234,8 +233,10 @@ export const Projects = ({ profile, onUpdate }: ProjectsProps) => {
               </div>
 
               <div className="grid gap-1">
-                <div className="flex items-center gap-2">
-                  <h4 className="text-lg font-semibold">{project.name}</h4>
+                <div className="flex gap-2">
+                  <h4 className="text-lg font-semibold m-auto">
+                    {project.name}
+                  </h4>
                   <div className="flex gap-2">
                     {project.link && (
                       <a

@@ -193,25 +193,24 @@ export const Experience = ({ profile, onUpdate }: ExperienceProps) => {
 
   return (
     <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle>Work Experience</CardTitle>
-            <CardDescription>
-              Your professional experience and roles
-            </CardDescription>
-          </div>
-          {!showExperienceForm && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowExperienceForm(true)}
-            >
-              <PlusCircle className="w-4 h-4 mr-2" />
-              Add Experience
-            </Button>
-          )}
+      <CardHeader className="relative text-center pb-8">
+        <div>
+          <CardTitle className="text-xl font-bold">Work Experience</CardTitle>
+          <CardDescription className="mt-2">
+            Your professional experience and roles
+          </CardDescription>
         </div>
+        {!showExperienceForm && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowExperienceForm(true)}
+            className="absolute right-6 top-6"
+          >
+            <PlusCircle className="w-4 h-4 mr-2" />
+            Add Experience
+          </Button>
+        )}
       </CardHeader>
       <CardContent>
         {showExperienceForm && (

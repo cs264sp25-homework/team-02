@@ -45,7 +45,7 @@ const EducationForm = ({
       };
       onSubmit(newEducation);
     }}
-    className="space-y-4 mt-4 p-4 border rounded-lg"
+    className="space-y-4 mt-4 p-4 border rounded-lg bg-muted/30"
   >
     <div className="grid gap-4 md:grid-cols-2">
       <div className="grid gap-2">
@@ -55,6 +55,7 @@ const EducationForm = ({
           name="institution"
           defaultValue={education?.institution}
           required
+          placeholder="e.g., Stanford University"
         />
       </div>
 
@@ -65,6 +66,7 @@ const EducationForm = ({
           name="degree"
           defaultValue={education?.degree}
           required
+          placeholder="e.g., Bachelor of Science"
         />
       </div>
 
@@ -75,6 +77,7 @@ const EducationForm = ({
           name="field"
           defaultValue={education?.field}
           required
+          placeholder="e.g., Computer Science"
         />
       </div>
 
@@ -84,6 +87,7 @@ const EducationForm = ({
           id="location"
           name="location"
           defaultValue={education?.location}
+          placeholder="e.g., Stanford, CA"
         />
       </div>
 
@@ -118,6 +122,7 @@ const EducationForm = ({
           min="0"
           max="4"
           defaultValue={education?.gpa}
+          placeholder="e.g., 3.75"
         />
       </div>
 
@@ -127,6 +132,7 @@ const EducationForm = ({
           id="description"
           name="description"
           defaultValue={education?.description}
+          placeholder="e.g., Relevant coursework, achievements"
         />
       </div>
     </div>
@@ -173,27 +179,34 @@ export const Education = ({ profile, onUpdate }: EducationProps) => {
     }
   };
 
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      year: "numeric",
+    });
+  };
+
   return (
     <Card>
-      <CardHeader>
-        <div className="flex justify-between">
-          <div>
-            <CardTitle>Education</CardTitle>
-            <CardDescription>
-              Your academic background and achievements
-            </CardDescription>
-          </div>
-          {!showEducationForm && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowEducationForm(true)}
-            >
-              <PlusCircle className="w-4 h-4 mr-2" />
-              Add Education
-            </Button>
-          )}
+      <CardHeader className="relative text-center pb-8">
+        <div>
+          <CardTitle className="text-xl font-bold">Education</CardTitle>
+          <CardDescription className="mt-2">
+            Your academic background and achievements
+          </CardDescription>
         </div>
+        {!showEducationForm && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowEducationForm(true)}
+            className="absolute right-6 top-6"
+          >
+            <PlusCircle className="w-4 h-4 mr-2" />
+            Add Education
+          </Button>
+        )}
       </CardHeader>
       <CardContent>
         {showEducationForm && (
@@ -211,11 +224,11 @@ export const Education = ({ profile, onUpdate }: EducationProps) => {
           />
         )}
 
-        <div className="space-y-4 mt-4">
+        <div className="space-y-6 mt-4">
           {profile?.education.map((edu, index) => (
             <div
               key={index}
-              className="p-4 border rounded-lg hover:bg-muted/50 relative group"
+              className="p-4 border rounded-lg hover:bg-muted/50 relative group text-center"
             >
               <div className="absolute right-4 top-4 opacity-0 group-hover:opacity-100 transition-opacity">
                 <Button
@@ -239,18 +252,29 @@ export const Education = ({ profile, onUpdate }: EducationProps) => {
                 </Button>
               </div>
 
-              <div className="grid gap-1">
-                <h4 className="text-lg font-semibold">{edu.institution}</h4>
-                <p className="text-muted-foreground">
-                  {edu.degree} in {edu.field}
-                </p>
+              <div className="space-y-1">
+                <h4 className="text-base font-semibold text-primary mx-auto text-center max-w-fit">
+                  {edu.institution}
+                </h4>
                 <p className="text-sm text-muted-foreground">
-                  {edu.startDate} - {edu.endDate || "Present"}
-                  {edu.location && ` • ${edu.location}`}
-                  {edu.gpa && ` • GPA: ${edu.gpa}`}
+                  {edu.degree} in {edu.field}
+                  {edu.gpa && (
+                    <span className="ml-2">• GPA: {edu.gpa.toFixed(2)}</span>
+                  )}
                 </p>
+                <div className="text-sm text-muted-foreground">
+                  {formatDate(edu.startDate)} -{" "}
+                  {edu.endDate ? formatDate(edu.endDate) : "Present"}
+                </div>
+                {edu.location && (
+                  <div className="text-sm text-muted-foreground">
+                    {edu.location}
+                  </div>
+                )}
                 {edu.description && (
-                  <p className="text-sm mt-2">{edu.description}</p>
+                  <p className="text-sm mt-2 text-muted-foreground">
+                    {edu.description}
+                  </p>
                 )}
               </div>
             </div>

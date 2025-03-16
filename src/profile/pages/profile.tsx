@@ -8,12 +8,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/core/components/card";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/core/components/tabs";
 import { Skeleton } from "@/core/components/skeleton";
 import { useGetOrCreateProfile } from "../hooks/use-get-or-create-profile";
 import { useMutationProfile } from "../hooks/use-mutation-profile";
@@ -66,7 +60,7 @@ const ProfilePage = () => {
 
   if (isLoading) {
     return (
-      <div className="space-y-4">
+      <div className="container mx-auto max-w-5xl px-4 py-8 space-y-4">
         <Skeleton className="h-8 w-[200px]" />
         <Skeleton className="h-32 w-full" />
       </div>
@@ -79,129 +73,113 @@ const ProfilePage = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Profile</CardTitle>
-          <CardDescription>
-            Manage your personal information and preferences
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="grid gap-2">
-                <Label htmlFor="name">Name</Label>
-                <Input
-                  id="name"
-                  name="name"
-                  defaultValue={profile?.name}
-                  required
-                />
-              </div>
-
-              <div className="grid gap-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  defaultValue={profile?.email}
-                  required
-                />
-              </div>
-
-              <div className="grid gap-2">
-                <Label htmlFor="phone">Phone</Label>
-                <Input
-                  id="phone"
-                  name="phone"
-                  type="tel"
-                  defaultValue={profile?.phone}
-                />
-              </div>
-
-              <div className="grid gap-2">
-                <Label htmlFor="location">Location</Label>
-                <Input
-                  id="location"
-                  name="location"
-                  defaultValue={profile?.location}
-                />
-              </div>
-
-              <div className="grid gap-2">
-                <Label htmlFor="website">Website</Label>
-                <Input
-                  id="website"
-                  name="website"
-                  type="url"
-                  defaultValue={getProfileLink("website")}
-                />
-              </div>
-
-              <div className="grid gap-2">
-                <Label htmlFor="github">GitHub</Label>
-                <Input
-                  id="github"
-                  name="github"
-                  type="url"
-                  defaultValue={getProfileLink("github")}
-                />
-              </div>
-
-              <div className="grid gap-2">
-                <Label htmlFor="linkedin">LinkedIn</Label>
-                <Input
-                  id="linkedin"
-                  name="linkedin"
-                  type="url"
-                  defaultValue={getProfileLink("linkedin")}
-                />
-              </div>
-
-              <div className="grid gap-2">
-                <Label htmlFor="twitter">Twitter</Label>
-                <Input
-                  id="twitter"
-                  name="twitter"
-                  type="url"
-                  defaultValue={getProfileLink("twitter")}
-                />
-              </div>
+    <div className="container mx-auto max-w-5xl px-4 py-8">
+      <div className="space-y-8">
+        <Card>
+          <CardHeader className="relative text-center pb-8">
+            <div>
+              <CardTitle className="text-xl font-bold">Personal Info</CardTitle>
+              <CardDescription className="mt-2">
+                Your personal information
+              </CardDescription>
             </div>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="grid gap-2">
+                  <Label htmlFor="name">Name</Label>
+                  <Input
+                    id="name"
+                    name="name"
+                    defaultValue={profile?.name}
+                    required
+                  />
+                </div>
 
-            <div className="flex justify-end">
-              <Button type="submit">Save Changes</Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+                <div className="grid gap-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    defaultValue={profile?.email}
+                    required
+                  />
+                </div>
 
-      <Tabs defaultValue="education">
-        <TabsList>
-          <TabsTrigger value="education">Education</TabsTrigger>
-          <TabsTrigger value="experience">Experience</TabsTrigger>
-          <TabsTrigger value="projects">Projects</TabsTrigger>
-          <TabsTrigger value="skills">Skills</TabsTrigger>
-        </TabsList>
+                <div className="grid gap-2">
+                  <Label htmlFor="phone">Phone</Label>
+                  <Input
+                    id="phone"
+                    name="phone"
+                    type="tel"
+                    defaultValue={profile?.phone}
+                  />
+                </div>
 
-        <TabsContent value="education" className="mt-4">
-          {profile && <Education profile={profile} onUpdate={mutation.edit} />}
-        </TabsContent>
+                <div className="grid gap-2">
+                  <Label htmlFor="location">Location</Label>
+                  <Input
+                    id="location"
+                    name="location"
+                    defaultValue={profile?.location}
+                  />
+                </div>
 
-        <TabsContent value="experience" className="mt-4">
-          {profile && <Experience profile={profile} onUpdate={mutation.edit} />}
-        </TabsContent>
+                <div className="grid gap-2">
+                  <Label htmlFor="website">Website</Label>
+                  <Input
+                    id="website"
+                    name="website"
+                    type="url"
+                    defaultValue={getProfileLink("website")}
+                  />
+                </div>
 
-        <TabsContent value="projects" className="mt-4">
-          {profile && <Projects profile={profile} onUpdate={mutation.edit} />}
-        </TabsContent>
+                <div className="grid gap-2">
+                  <Label htmlFor="github">GitHub</Label>
+                  <Input
+                    id="github"
+                    name="github"
+                    type="url"
+                    defaultValue={getProfileLink("github")}
+                  />
+                </div>
 
-        <TabsContent value="skills" className="mt-4">
-          {profile && <Skills profile={profile} onUpdate={mutation.edit} />}
-        </TabsContent>
-      </Tabs>
+                <div className="grid gap-2">
+                  <Label htmlFor="linkedin">LinkedIn</Label>
+                  <Input
+                    id="linkedin"
+                    name="linkedin"
+                    type="url"
+                    defaultValue={getProfileLink("linkedin")}
+                  />
+                </div>
+
+                <div className="grid gap-2">
+                  <Label htmlFor="twitter">Twitter</Label>
+                  <Input
+                    id="twitter"
+                    name="twitter"
+                    type="url"
+                    defaultValue={getProfileLink("twitter")}
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end">
+                <Button type="submit">Save Changes</Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+
+        {profile && <Education profile={profile} onUpdate={mutation.edit} />}
+        {profile && <Experience profile={profile} onUpdate={mutation.edit} />}
+        {profile && <Projects profile={profile} onUpdate={mutation.edit} />}
+        {profile && <Skills profile={profile} onUpdate={mutation.edit} />}
+      </div>
     </div>
   );
 };

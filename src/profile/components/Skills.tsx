@@ -116,25 +116,24 @@ export const Skills = ({ profile, onUpdate }: SkillsProps) => {
 
   return (
     <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle>Skills</CardTitle>
-            <CardDescription>
-              Your technical and professional skills
-            </CardDescription>
-          </div>
-          {!showSkillForm && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowSkillForm(true)}
-            >
-              <PlusCircle className="w-4 h-4 mr-2" />
-              Add Skills
-            </Button>
-          )}
+      <CardHeader className="relative text-center pb-8">
+        <div>
+          <CardTitle className="text-xl font-bold">Skills</CardTitle>
+          <CardDescription className="mt-2">
+            Your technical and professional skills
+          </CardDescription>
         </div>
+        {!showSkillForm && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowSkillForm(true)}
+            className="absolute right-6 top-6"
+          >
+            <PlusCircle className="w-4 h-4 mr-2" />
+            Add Skills
+          </Button>
+        )}
       </CardHeader>
       <CardContent>
         {showSkillForm && (
