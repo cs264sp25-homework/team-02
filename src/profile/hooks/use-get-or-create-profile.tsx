@@ -1,6 +1,5 @@
 import { api } from "../../../convex/_generated/api";
 import { useMutation, useQuery } from "convex/react";
-import { ProfileType } from "convex/profiles";
 import { useEffect } from "react";
 
 export function useGetOrCreateProfile() {
@@ -15,7 +14,7 @@ export function useGetOrCreateProfile() {
   }, [profile, getOrCreate]);
 
   return {
-    data: profile as ProfileType,
+    data: profile,
     loading: profile === undefined,
     error: false, // We never return error since we auto-create the profile
   };
