@@ -1,4 +1,4 @@
-import { api } from "convex/_generated/api";
+import { api } from "../../../convex/_generated/api";
 import { useMutation, useQuery } from "convex/react";
 import { ProfileType } from "convex/profiles";
 import { useEffect } from "react";
