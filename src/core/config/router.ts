@@ -9,7 +9,8 @@ const baseUrl = BASE_URL === "" ? "" : `/${BASE_URL}`;
 const pages = {
   home: `${baseUrl}/`, // Home page
   demo: `${baseUrl}/demo`, // Demo page
-  login: `${baseUrl}/login` // Log-in page
+  login: `${baseUrl}/login`, // Log-in page
+  profile: `${baseUrl}/profile`, // Profile page
 };
 
 console.log(pages);

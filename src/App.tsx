@@ -3,6 +3,7 @@ import NotFoundPage from "./core/pages/not-found-page";
 import Demo from "./core/pages/demo";
 import Empty from "./core/pages/empty";
 import LoginPage from "./core/pages/log-in";
+import ProfilePage from "./profile/pages/profile";
 
 function App() {
   const { currentRoute } = useRouter();
@@ -18,7 +19,9 @@ function App() {
       case "demo":
         return <Demo />;
       case "login":
-        return <LoginPage/>
+        return <LoginPage />;
+      case "profile":
+        return <ProfilePage />;
       default:
         return <NotFoundPage />;
     }
