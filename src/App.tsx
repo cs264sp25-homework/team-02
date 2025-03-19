@@ -4,6 +4,7 @@ import Demo from "./core/pages/demo";
 import Empty from "./core/pages/empty";
 import LoginPage from "./core/pages/log-in";
 import ProfilePage from "./profile/pages/profile";
+import AddFile from "./file_upload/add_file";
 
 function App() {
   const { currentRoute } = useRouter();
@@ -22,6 +23,8 @@ function App() {
         return <LoginPage />;
       case "profile":
         return <ProfilePage />;
+      case "add_file":
+        return <AddFile />;
       default:
         return <NotFoundPage />;
     }
