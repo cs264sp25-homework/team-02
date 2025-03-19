@@ -8,6 +8,22 @@ import { Label } from "@/core/components/label";
 
 const MAX_FILE_SIZE = 5;
 
+const ALLOWED_FILE_TYPES = {
+  // PDF
+  "application/pdf": ".pdf",
+  // Word documents
+  "application/msword": ".doc",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+    ".docx",
+  // RTF
+  "application/rtf": ".rtf",
+  "text/rtf": ".rtf",
+  // HTML
+  "text/html": ".html",
+  // ODT
+  "application/vnd.oasis.opendocument.text": ".odt",
+};
+
 export default function AddFile() {
   const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -18,25 +34,23 @@ export default function AddFile() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
-      setFileSize(selectedFile.size / 1024 / 1024);
+      const fileSizeMB = selectedFile.size / 1024 / 1024;
 
       // Check file size
-      if (fileSize > MAX_FILE_SIZE) {
+      if (fileSizeMB > MAX_FILE_SIZE) {
         toast.error("File size must be less than 5MB");
         e.target.value = "";
         return;
       }
 
+      setFileSize(fileSizeMB);
+
       // Check file type
       const fileType = selectedFile.type;
-      if (
-        fileType === "application/pdf" ||
-        fileType ===
-          "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-      ) {
+      if (fileType in ALLOWED_FILE_TYPES) {
         setFile(selectedFile);
       } else {
-        toast.error("Only PDF or DOCX files are supported!");
+        toast.error("Supported formats: PDF, DOC, DOCX, RTF, HTML, ODT");
         e.target.value = "";
       }
     }
@@ -93,11 +107,13 @@ export default function AddFile() {
   return (
     <div className="w-full max-w-md mx-auto p-6 space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="file">Upload Resume (PDF or DOCX)</Label>
+        <Label htmlFor="file">
+          Upload Resume (PDF, DOC, DOCX, RTF, HTML, ODT)
+        </Label>
         <Input
           id="file"
           type="file"
-          accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+          accept=".pdf,.doc,.docx,.rtf,.html,.odt,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/rtf,text/rtf,text/html,application/vnd.oasis.opendocument.text"
           onChange={handleFileChange}
           className="cursor-pointer"
           disabled={isUploading}
