@@ -3,26 +3,11 @@ import { useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { toast } from "sonner";
 import { Button } from "@/core/components/button";
-import { Input } from "@/core/components/input";
 import { Label } from "@/core/components/label";
+import { useDropzone } from "react-dropzone";
+import { cn } from "@/core/lib/utils";
 
 const MAX_FILE_SIZE = 5;
-
-const ALLOWED_FILE_TYPES = {
-  // PDF
-  "application/pdf": ".pdf",
-  // Word documents
-  "application/msword": ".doc",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
-    ".docx",
-  // RTF
-  "application/rtf": ".rtf",
-  "text/rtf": ".rtf",
-  // HTML
-  "text/html": ".html",
-  // ODT
-  "application/vnd.oasis.opendocument.text": ".odt",
-};
 
 export default function AddFile() {
   const [file, setFile] = useState<File | null>(null);
@@ -31,30 +16,34 @@ export default function AddFile() {
   const saveFile = useMutation(api.files.saveFile);
   const [fileSize, setFileSize] = useState(0);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0];
+  const onDrop = (acceptedFiles: File[]) => {
+    const selectedFile = acceptedFiles[0];
     if (selectedFile) {
       const fileSizeMB = selectedFile.size / 1024 / 1024;
-
-      // Check file size
       if (fileSizeMB > MAX_FILE_SIZE) {
         toast.error("File size must be less than 5MB");
-        e.target.value = "";
         return;
       }
-
       setFileSize(fileSizeMB);
-
-      // Check file type
-      const fileType = selectedFile.type;
-      if (fileType in ALLOWED_FILE_TYPES) {
-        setFile(selectedFile);
-      } else {
-        toast.error("Supported formats: PDF, DOC, DOCX, RTF, HTML, ODT");
-        e.target.value = "";
-      }
+      setFile(selectedFile);
     }
   };
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: {
+      "application/pdf": [".pdf"],
+      "application/msword": [".doc"],
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+        [".docx"],
+      "application/rtf": [".rtf"],
+      "text/rtf": [".rtf"],
+      "text/html": [".html"],
+      "application/vnd.oasis.opendocument.text": [".odt"],
+    },
+    maxFiles: 1,
+    multiple: false,
+  });
 
   const handleUpload = async () => {
     if (!file) return;
@@ -90,12 +79,7 @@ export default function AddFile() {
 
       toast.success("File uploaded successfully!");
       setFile(null);
-
-      // Reset the file input
-      const fileInput = document.querySelector(
-        'input[type="file"]',
-      ) as HTMLInputElement;
-      if (fileInput) fileInput.value = "";
+      setFileSize(0);
     } catch (error) {
       console.error("Upload error:", error);
       toast.error("Failed to upload file. Please try again.");
@@ -106,18 +90,25 @@ export default function AddFile() {
 
   return (
     <div className="w-full max-w-md mx-auto p-6 space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="file">
-          Upload Resume (PDF, DOC, DOCX, RTF, HTML, ODT)
-        </Label>
-        <Input
-          id="file"
-          type="file"
-          accept=".pdf,.doc,.docx,.rtf,.html,.odt,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/rtf,text/rtf,text/html,application/vnd.oasis.opendocument.text"
-          onChange={handleFileChange}
-          className="cursor-pointer"
-          disabled={isUploading}
-        />
+      <div
+        {...getRootProps()}
+        className={cn(
+          "space-y-2 p-6 border-2 border-dashed rounded-lg transition-colors cursor-pointer",
+          isDragActive
+            ? "border-primary bg-primary/5"
+            : "border-muted-foreground/25",
+          isUploading && "opacity-50 cursor-not-allowed",
+        )}
+      >
+        <input {...getInputProps()} disabled={isUploading} />
+        <Label>Upload Resume (PDF, DOC, DOCX, RTF, HTML, ODT)</Label>
+        <div className="text-sm text-muted-foreground text-center">
+          {isDragActive ? (
+            <p>Drop the file here</p>
+          ) : (
+            <p>Drag and drop a file here, or click to select</p>
+          )}
+        </div>
       </div>
 
       {file && (
