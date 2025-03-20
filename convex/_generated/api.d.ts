@@ -15,6 +15,7 @@ import type {
 } from "convex/server";
 import type * as files from "../files.js";
 import type * as hello from "../hello.js";
+import type * as jobs from "../jobs.js";
 import type * as profiles from "../profiles.js";
 
 /**
@@ -28,6 +29,7 @@ import type * as profiles from "../profiles.js";
 declare const fullApi: ApiFromModules<{
   files: typeof files;
   hello: typeof hello;
+  jobs: typeof jobs;
   profiles: typeof profiles;
 }>;
 export declare const api: FilterApi<
