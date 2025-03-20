@@ -11,6 +11,7 @@ const pages = {
   demo: `${baseUrl}/demo`, // Demo page
   login: `${baseUrl}/login`, // Log-in page
   profile: `${baseUrl}/profile`, // Profile page
+  add_file: `${baseUrl}/add-file`, // File upload page
 };
 
 console.log(pages);
