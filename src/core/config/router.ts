@@ -12,9 +12,8 @@ const pages = {
   login: `${baseUrl}/login`, // Log-in page
   profile: `${baseUrl}/profile`, // Profile page
   add_file: `${baseUrl}/add-file`, // File upload page
+  auth_callback: `${baseUrl}/auth/callback`, // LinkedIn OAuth callback
 };
-
-console.log(pages);
 
 export type Page = keyof typeof pages;
 

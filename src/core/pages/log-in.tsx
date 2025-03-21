@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useRouter } from "../hooks/use-router";
 import { Button } from "../components/button";
 import { cn } from "@/lib/utils";
+import { LinkedInLoginButton } from "@/core/components/LinkedInLoginButton";
 
 const LoginPage: React.FC = () => {
   const { navigate } = useRouter();
@@ -14,7 +15,7 @@ const LoginPage: React.FC = () => {
     setIsLoading(true);
 
     // Simulating authentication
-    // TODO replace with authenticaiton logic
+    // TODO replace with authentication logic
     try {
       await new Promise((resolve) => setTimeout(resolve, 1000));
       console.log("Login attempted with:", { email, password });
@@ -34,6 +35,21 @@ const LoginPage: React.FC = () => {
         <p className="text-muted-foreground">
           Enter your credentials to sign in to your account
         </p>
+      </div>
+
+      <div className="w-full">
+        <LinkedInLoginButton className="w-full" />
+      </div>
+
+      <div className="relative w-full">
+        <div className="absolute inset-0 flex items-center">
+          <span className="w-full border-t"></span>
+        </div>
+        <div className="relative flex justify-center text-xs uppercase">
+          <span className="bg-background px-2 text-muted-foreground">
+            Or continue with
+          </span>
+        </div>
       </div>
 
       <form onSubmit={handleSubmit} className="w-full space-y-6">
