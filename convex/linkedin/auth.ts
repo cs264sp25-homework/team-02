@@ -19,6 +19,102 @@ interface LinkedInUserResult {
   lastName: string;
 }
 
+// Exchange the authorization code for an access token using OpenID Connect
+export const exchangeLinkedInCode = action({
+  args: {
+    code: v.string(),
+  },
+  handler: async (ctx, args): Promise<LinkedInUserResult> => {
+    const { code } = args;
+    
+    console.log("Starting LinkedIn code exchange");
+    console.log("LinkedIn Config:", {
+      clientId: LINKEDIN_CONFIG.clientId ? "present" : "missing",
+      clientSecret: LINKEDIN_CONFIG.clientSecret ? "present" : "missing",
+      redirectUri: LINKEDIN_CONFIG.redirectUri
+    });
+    
+    try {
+      // Exchange code for token
+      const tokenResponse = await fetch("https://www.linkedin.com/oauth/v2/accessToken", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: new URLSearchParams({
+          grant_type: "authorization_code",
+          code,
+          client_id: LINKEDIN_CONFIG.clientId,
+          client_secret: LINKEDIN_CONFIG.clientSecret,
+          redirect_uri: LINKEDIN_CONFIG.redirectUri,
+        }),
+      });
+      
+      console.log("Token response status:", tokenResponse.status);
+      
+      if (!tokenResponse.ok) {
+        const errorText = await tokenResponse.text();
+        console.error("LinkedIn token error:", errorText);
+        throw new ConvexError({
+          code: "AUTH_ERROR",
+          message: `Failed to exchange LinkedIn code for token: ${errorText}`,
+        });
+      }
+      
+      const tokenData = await tokenResponse.json();
+      console.log("Token data received:", tokenData.access_token ? "Token present" : "Token missing");
+      
+      // Get the user's profile information using the userinfo endpoint
+      const userInfoResponse = await fetch("https://api.linkedin.com/v2/userinfo", {
+        headers: {
+          Authorization: `Bearer ${tokenData.access_token}`,
+        },
+      });
+      
+      console.log("User info response status:", userInfoResponse.status);
+      
+      if (!userInfoResponse.ok) {
+        const errorText = await userInfoResponse.text();
+        console.error("LinkedIn userinfo error:", errorText);
+        throw new ConvexError({
+          code: "API_ERROR",
+          message: `Failed to fetch LinkedIn profile: ${errorText}`,
+        });
+      }
+      
+      const userInfo = await userInfoResponse.json();
+      console.log("LinkedIn user info:", {
+        sub: userInfo.sub ? "present" : "missing",
+        name: userInfo.name || "missing",
+        email: userInfo.email ? "present" : "missing"
+      });
+      
+      // Create or update user in our database
+      const userData = {
+        linkedInId: userInfo.sub,
+        firstName: userInfo.given_name || "Unknown",
+        lastName: userInfo.family_name || "User",
+        email: userInfo.email,
+        profilePictureUrl: userInfo.picture,
+        locale: userInfo.locale,
+        accessToken: tokenData.access_token,
+        expiresAt: new Date(Date.now() + tokenData.expires_in * 1000).toISOString(),
+      };
+      
+      // Since we're in an action and can't run mutations, we return the user info directly
+      return {
+        userId: "temp_id" as Id<"users">, // This is a placeholder
+        isNewUser: true,
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+      };
+    } catch (error) {
+      console.error("LinkedIn auth action error:", error);
+      throw error;
+    }
+  },
+});
+
 // Internal mutation to store LinkedIn user data
 export const storeLinkedInUser = mutation({
   args: {
@@ -79,82 +175,6 @@ export const storeLinkedInUser = mutation({
         lastName: userData.lastName,
       };
     }
-  },
-});
-
-// Exchange the authorization code for an access token using OpenID Connect
-export const exchangeLinkedInCode = action({
-  args: {
-    code: v.string(),
-  },
-  handler: async (ctx, args): Promise<LinkedInUserResult> => {
-    const { code } = args;
-    
-    // Exchange code for token
-    const tokenResponse = await fetch("https://www.linkedin.com/oauth/v2/accessToken", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: new URLSearchParams({
-        grant_type: "authorization_code",
-        code,
-        client_id: LINKEDIN_CONFIG.clientId,
-        client_secret: LINKEDIN_CONFIG.clientSecret,
-        redirect_uri: LINKEDIN_CONFIG.redirectUri,
-      }),
-    });
-    
-    if (!tokenResponse.ok) {
-      throw new ConvexError({
-        code: "AUTH_ERROR",
-        message: "Failed to exchange LinkedIn code for token",
-      });
-    }
-    
-    const tokenData = await tokenResponse.json();
-    
-    // Get the user's profile information using the userinfo endpoint
-    const userInfoResponse = await fetch("https://api.linkedin.com/v2/userinfo", {
-      headers: {
-        Authorization: `Bearer ${tokenData.access_token}`,
-      },
-    });
-    
-    if (!userInfoResponse.ok) {
-      throw new ConvexError({
-        code: "API_ERROR",
-        message: "Failed to fetch LinkedIn profile",
-      });
-    }
-    
-    const userInfo = await userInfoResponse.json();
-    
-    // Since we can't easily use runMutation in an action, we'll directly handle the 
-    // user creation/update logic here and return the result
-    
-    // Create user data
-    const userData = {
-      linkedInId: userInfo.sub,
-      firstName: userInfo.given_name || "Unknown",
-      lastName: userInfo.family_name || "User",
-      email: userInfo.email || undefined,
-      profilePictureUrl: userInfo.picture,
-      locale: userInfo.locale,
-      accessToken: tokenData.access_token,
-      expiresAt: new Date(Date.now() + tokenData.expires_in * 1000).toISOString(),
-      createdAt: new Date().toISOString(),
-      lastLoginAt: new Date().toISOString(),
-    };
-    
-    // Return the userData as a simplified result
-    // The frontend will handle session storage
-    return {
-      userId: "temp_id" as Id<"users">, // This is a placeholder, will be replaced in frontend
-      isNewUser: true,
-      firstName: userData.firstName,
-      lastName: userData.lastName,
-    };
   },
 });
 

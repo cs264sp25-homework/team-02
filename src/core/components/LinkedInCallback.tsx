@@ -1,60 +1,82 @@
 import { useEffect, useState } from "react";
-import { useAction, useMutation } from "convex/react";
+import { useAction } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { useRouter } from "@/core/hooks/use-router";
 import { Spinner } from "@/core/components/spinner";
 import { Alert, AlertTitle, AlertDescription } from "@/core/components/alert";
+import { Button } from "@/core/components/button";
 
 export default function LinkedInCallback() {
   const { navigate } = useRouter();
   const [error, setError] = useState<string | null>(null);
+  const [stateError, setStateError] = useState<boolean>(false);
+  const [receivedState, setReceivedState] = useState<string | null>(null);
+  const [savedState, setSavedState] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   
-  // Get both the action and mutation
+  // Get the action
   const exchangeCode = useAction(api.linkedin.auth.exchangeLinkedInCode);
-  const storeLinkedInUser = useMutation(api.linkedin.auth.storeLinkedInUser);
   
   useEffect(() => {
     const processCallback = async () => {
-      // Get URL parameters
-      const urlParams = new URLSearchParams(window.location.search);
-      const code = urlParams.get("code");
-      const state = urlParams.get("state");
-      const errorParam = urlParams.get("error");
-      const errorDescription = urlParams.get("error_description");
-      
-      // Check for error from LinkedIn
-      if (errorParam) {
-        setError(`LinkedIn login failed: ${errorDescription || errorParam}`);
-        return;
-      }
-      
-      // Validate state to prevent CSRF attacks
-      const savedState = localStorage.getItem("linkedInAuthState");
-      if (!state || state !== savedState) {
-        setError("Invalid state parameter. Login attempt may have been tampered with.");
-        return;
-      }
-      
-      // Clear the saved state
-      localStorage.removeItem("linkedInAuthState");
-      
-      if (!code) {
-        setError("Authorization code not found in the callback URL.");
-        return;
-      }
-      
       try {
+        // Get URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get("code");
+        const state = urlParams.get("state");
+        const errorParam = urlParams.get("error");
+        const errorDescription = urlParams.get("error_description");
+        
+        console.log("Received callback parameters:", { 
+          code: code ? "present" : "missing", 
+          state, 
+          error: errorParam 
+        });
+        
+        // Check for error from LinkedIn
+        if (errorParam) {
+          setError(`LinkedIn login failed: ${errorDescription || errorParam}`);
+          return;
+        }
+        
+        // Try to get the state from both localStorage and sessionStorage
+        const stateFromLocalStorage = localStorage.getItem("linkedInAuthState");
+        const stateFromSessionStorage = sessionStorage.getItem("linkedInAuthState");
+        
+        const storedState = stateFromLocalStorage || stateFromSessionStorage;
+        
+        console.log("Retrieved states:", { 
+          fromLocalStorage: stateFromLocalStorage,
+          fromSessionStorage: stateFromSessionStorage,
+          received: state
+        });
+        
+        // Save state values for debugging
+        setReceivedState(state);
+        setSavedState(storedState);
+        
+        // Validate state to prevent CSRF attacks
+        if (!state || state !== storedState) {
+          console.error("State mismatch", { received: state, stored: storedState });
+          setStateError(true);
+          setError("Invalid state parameter. Login attempt may have been tampered with.");
+          return;
+        }
+        
+        // Clear the saved state
+        localStorage.removeItem("linkedInAuthState");
+        sessionStorage.removeItem("linkedInAuthState");
+        
+        if (!code) {
+          setError("Authorization code not found in the callback URL.");
+          return;
+        }
+        
         console.log("Exchanging code for token...");
         
-        // Exchange the code for a token and user info using the action
-        const userInfo = await exchangeCode({ code });
-        console.log("Token exchange result:", userInfo);
-        
-        // Now, use the mutation to store the user data in the database
-        // This is a simplified version since the full data is returned from the action
-        // In a production app, you'd likely get more complete user data from the action
-        // and then store it using the mutation
+        // Exchange the code for a token and user info
+        const result = await exchangeCode({ code });
+        console.log("Token exchange result:", result);
         
         setSuccess(true);
         
@@ -69,7 +91,12 @@ export default function LinkedInCallback() {
     };
     
     processCallback();
-  }, [exchangeCode, storeLinkedInUser, navigate]);
+  }, [exchangeCode, navigate]);
+  
+  const handleRetry = () => {
+    // Navigate back to login page
+    navigate("login");
+  };
   
   return (
     <div className="flex flex-col items-center justify-center h-full p-4">
@@ -83,7 +110,21 @@ export default function LinkedInCallback() {
       {error && (
         <Alert variant="destructive" className="max-w-md">
           <AlertTitle>Error</AlertTitle>
-          <AlertDescription>{error}</AlertDescription>
+          <AlertDescription>
+            {error}
+            {stateError && (
+              <div className="mt-2">
+                <p className="text-sm mt-2">Debug info:</p>
+                <p className="text-xs">Received state: {receivedState || "none"}</p>
+                <p className="text-xs">Saved state: {savedState || "none"}</p>
+              </div>
+            )}
+            <div className="mt-4">
+              <Button onClick={handleRetry}>
+                Try Again
+              </Button>
+            </div>
+          </AlertDescription>
         </Alert>
       )}
       
