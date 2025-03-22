@@ -1,6 +1,7 @@
 import { Infer, v } from "convex/values";
 import { defineTable } from "convex/server";
 import { mutation, query } from "./_generated/server";
+import { Id } from "./_generated/dataModel";
 
 /******************************************************************************
  * SCHEMA
@@ -19,8 +20,15 @@ export const jobInSchema = {
   // Basic Information
   title: v.string(),
   description: v.string(),
+
   // Application Questions
   questions: v.array(v.string()),
+
+  // Urls
+  postingUrl: v.string(),
+  applicationUrl: v.string(),
+
+  // Timestamps
   createdAt: v.string(),
   updatedAt: v.string(),
 };
@@ -37,6 +45,8 @@ export const jobUpdateSchema = {
   title: v.optional(v.string()),
   description: v.optional(v.string()),
   questions: v.optional(v.array(v.string())),
+  postingUrl: v.optional(v.string()),
+  applicationUrl: v.optional(v.string()),
 };
 
 // eslint-disable-next-line
@@ -48,7 +58,6 @@ export type JobUpdateType = Infer<typeof jobUpdateSchemaObject>;
  */
 export const jobSchema = {
   ...jobInSchema,
-  userId: v.string(),
 };
 
 // eslint-disable-next-line
@@ -60,29 +69,37 @@ export type QuestionType = JobType["questions"][number];
  * Job table schema definition
  */
 export const jobTables = {
-  jobs: defineTable(jobSchema).index("by_userId", ["userId"]),
+  jobs: defineTable(jobSchema),
 };
 
 /**
- * Create a new job listing
- * @param job The job data to create
- * @returns The ID of the newly created job
+ * Add a job to the database
+ * @param job The job data to add
+ * @returns The ID of the newly added job
  */
-export const createJob = mutation({
-  args: jobInSchemaObject,
-  handler: async (ctx, job) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new Error("Not authenticated");
-    }
+export const addJob = mutation({
+  args: {
+    title: v.string(),
+    description: v.string(),
+    questions: v.array(v.string()),
+    postingUrl: v.string(),
+    applicationUrl: v.string(),
+  },
+  handler: async (ctx, args): Promise<Id<"jobs">> => {
+    const { title, description, questions, postingUrl, applicationUrl } = args;
 
-    const jobData = {
-      ...job,
+    // Create the job data
+    const jobId = await ctx.db.insert("jobs", {
+      title: title,
+      description: description,
+      questions: questions,
+      postingUrl: postingUrl,
+      applicationUrl: applicationUrl,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-    };
+    });
 
-    return await ctx.db.insert("jobs", jobData);
+    return jobId;
   },
 });
 
