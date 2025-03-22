@@ -2,10 +2,11 @@ import { useEffect, useState } from "react";
 import { useAction } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { useRouter } from "@/core/hooks/use-router";
-import { Spinner } from "@/core/components/spinner";
-import { Alert, AlertTitle, AlertDescription } from "@/core/components/alert";
+import { Spinner } from "@/linkedin/components/spinner";
+import { Alert, AlertTitle, AlertDescription } from "@/linkedin/components/alert";
 import { Button } from "@/core/components/button";
 import { useMutation } from "convex/react";
+import { logger } from "@/lib/logger";
 
 export default function LinkedInCallback() {
   const { navigate } = useRouter();
@@ -19,6 +20,7 @@ export default function LinkedInCallback() {
   // Get the action
   const exchangeCode = useAction(api.linkedin.auth.exchangeLinkedInCode);
   const storeUser = useMutation(api.linkedin.auth.storeLinkedInUser);
+  
   useEffect(() => {
     const processCallback = async () => {
       // Skip if we've already processed this callback
@@ -33,26 +35,24 @@ export default function LinkedInCallback() {
         const errorParam = urlParams.get("error");
         const errorDescription = urlParams.get("error_description");
 
-        console.log("Received callback parameters:", {
-          code: code ? "present" : "missing",
-          state,
-          error: errorParam,
-        });
-
         // Check for error from LinkedIn
         if (errorParam) {
+          // Use error level for authentication failures from the provider
+          logger.error("LinkedIn auth error from provider", { 
+            error: errorParam, 
+            description: errorDescription 
+          });
           setError(`LinkedIn login failed: ${errorDescription || errorParam}`);
           return;
         }
 
         // Try to get the state from both localStorage and sessionStorage
         const stateFromLocalStorage = localStorage.getItem("linkedInAuthState");
-        const stateFromSessionStorage =
-          sessionStorage.getItem("linkedInAuthState");
-
+        const stateFromSessionStorage = sessionStorage.getItem("linkedInAuthState");
         const storedState = stateFromLocalStorage || stateFromSessionStorage;
 
-        console.log("Retrieved states:", {
+        // Use debug level for detailed troubleshooting info (only needed during development)
+        logger.debug("Retrieved state values", {
           fromLocalStorage: stateFromLocalStorage,
           fromSessionStorage: stateFromSessionStorage,
           received: state,
@@ -62,16 +62,16 @@ export default function LinkedInCallback() {
         setReceivedState(state);
         setSavedState(storedState);
 
-        // For development, let's make this more forgiving - only validate state if it exists
-        if (storedState && state !== storedState) {
-          console.error("State mismatch", {
-            received: state,
-            stored: storedState,
+        // Validate state parameter to prevent CSRF attacks
+        if (!state || !storedState || state !== storedState) {
+          // Use warn level for security concerns - these might be important in production too
+          logger.warn("OAuth state parameter validation failed", {
+            receivedState: state ? "present" : "missing",
+            storedState: storedState ? "present" : "missing",
+            match: state === storedState ? "yes" : "no"
           });
           setStateError(true);
-          setError(
-            "Invalid state parameter. Login attempt may have been tampered with.",
-          );
+          setError("Authentication failed: Security validation error.");
           return;
         }
 
@@ -80,15 +80,23 @@ export default function LinkedInCallback() {
         sessionStorage.removeItem("linkedInAuthState");
 
         if (!code) {
+          // Use error level for missing required parameters
+          logger.error("Missing authorization code");
           setError("Authorization code not found in the callback URL.");
           return;
         }
 
-        console.log("Exchanging code for token...");
+        // Use info level for tracking progress through important steps
+        logger.info("Exchanging authorization code for token");
 
         // Exchange the code for a token and user info
         const result = await exchangeCode({ code });
-        console.log("Token exchange result:", result);
+        
+        // Use debug for detailed response data (which could contain sensitive info)
+        logger.debug("Token exchange completed", {
+          success: !!result,
+          hasUserData: result && result.firstName ? true : false
+        });
 
         // Store the user data
         if (result) {
@@ -103,25 +111,35 @@ export default function LinkedInCallback() {
               accessToken: result.accessToken,
               expiresAt: result.expiresAt,
             });
-            console.log("User stored in Convex:", storeResult);
+            
+            // Use info for successful operations
+            logger.info("User successfully stored in database", { userId: storeResult?.userId });
           } catch (storeError) {
-            console.error("Failed to store user:", storeError);
+            // Use error for operation failures
+            logger.error("Failed to store user data", { error: storeError });
             // Continue anyway so the user isn't stuck
           }
         }
 
         setSuccess(true);
 
+        // Use info for user navigation events
+        logger.info("Authentication successful, redirecting to profile");
+
         // Redirect to profile page after successful login
         setTimeout(() => {
           navigate("profile");
         }, 1500);
       } catch (err) {
-        console.error("LinkedIn auth error:", err);
+        // Use error for unexpected exceptions
+        logger.error("Unhandled exception during LinkedIn authentication", { 
+          error: err instanceof Error ? err.message : String(err)
+        });
+        
         setError(
           err instanceof Error
             ? err.message
-            : "An unknown error occurred during LinkedIn login.",
+            : "An unknown error occurred during LinkedIn login."
         );
       }
     };
@@ -130,10 +148,12 @@ export default function LinkedInCallback() {
   }, [exchangeCode, navigate, processed, storeUser]);
 
   const handleRetry = () => {
-    // Navigate back to login page
+    // Use info for user actions
+    logger.info("User initiated login retry");
     navigate("login");
   };
 
+  // JSX return - no changes needed here
   return (
     <div className="flex flex-col items-center justify-center h-full p-4">
       {!error && !success && (
@@ -148,7 +168,7 @@ export default function LinkedInCallback() {
           <AlertTitle>Error</AlertTitle>
           <AlertDescription>
             {error}
-            {stateError && (
+            {stateError && import.meta.env.MODE === 'development' && (
               <div className="mt-2">
                 <p className="text-sm mt-2">Debug info:</p>
                 <p className="text-xs">

@@ -1,4 +1,4 @@
-import { LinkedInLoginButton } from "@/core/components/LinkedInLoginButton";
+import { LinkedInLoginButton } from "@/linkedin/components/LinkedInLoginButton";
 
 const LoginPage: React.FC = () => {
 

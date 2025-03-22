@@ -2,10 +2,10 @@ import { useRouter } from "@/core/hooks/use-router";
 import NotFoundPage from "./core/pages/not-found-page";
 import Demo from "./core/pages/demo";
 import Empty from "./core/pages/empty";
-import LoginPage from "./core/pages/log-in";
+import LoginPage from "./linkedin/pages/log-in";
 import ProfilePage from "./profile/pages/profile";
 import AddFile from "./file_upload/add_file";
-import LinkedInCallback from "./core/components/LinkedInCallback";
+import LinkedInCallback from "./linkedin/components/LinkedInCallback";
 
 function App() {
   const { currentRoute } = useRouter();
