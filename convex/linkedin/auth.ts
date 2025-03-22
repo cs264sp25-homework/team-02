@@ -17,7 +17,7 @@ export const exchangeLinkedInCode = action({
   args: {
     code: v.string(),
   },
-  handler: async (ctx, args): Promise<LinkedInUserResult> => {
+  handler: async (_ctx, args): Promise<LinkedInUserResult> => {
     const { code } = args;
     
     try {
