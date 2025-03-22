@@ -12,9 +12,8 @@ const pages = {
   login: `${baseUrl}/login`, // Log-in page
   profile: `${baseUrl}/profile`, // Profile page
   add_file: `${baseUrl}/add-file`, // File upload page
+  import_job: `${baseUrl}/import-job`, // Job import page
 };
-
-console.log(pages);
 
 export type Page = keyof typeof pages;
 
