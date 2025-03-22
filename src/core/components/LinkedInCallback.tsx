@@ -5,6 +5,7 @@ import { useRouter } from "@/core/hooks/use-router";
 import { Spinner } from "@/core/components/spinner";
 import { Alert, AlertTitle, AlertDescription } from "@/core/components/alert";
 import { Button } from "@/core/components/button";
+import { useMutation } from "convex/react"; 
 
 export default function LinkedInCallback() {
   const { navigate } = useRouter();
@@ -16,7 +17,7 @@ export default function LinkedInCallback() {
   
   // Get the action
   const exchangeCode = useAction(api.linkedin.auth.exchangeLinkedInCode);
-  
+  const storeUser = useMutation(api.linkedin.auth.storeLinkedInUser);
   useEffect(() => {
     const processCallback = async () => {
       try {
@@ -77,6 +78,24 @@ export default function LinkedInCallback() {
         // Exchange the code for a token and user info
         const result = await exchangeCode({ code });
         console.log("Token exchange result:", result);
+        if (result) {
+          try {
+            const storeResult = await storeUser({
+              linkedInId: result.linkedInId,
+              firstName: result.firstName,
+              lastName: result.lastName,
+              email: result.email,
+              profilePictureUrl: result.profilePictureUrl,
+              locale: result.locale,
+              accessToken: result.accessToken,
+              expiresAt: result.expiresAt
+            });
+            console.log("User stored in Convex:", storeResult);
+          } catch (storeError) {
+            console.error("Failed to store user:", storeError);
+          }
+        }
+        
         
         setSuccess(true);
         

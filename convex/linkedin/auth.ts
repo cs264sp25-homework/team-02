@@ -3,6 +3,7 @@ import { action, mutation, query } from "../_generated/server";
 import { ConvexError } from "convex/values";
 import { Id } from "../_generated/dataModel";
 
+
 // LinkedIn OAuth Configuration with OpenID Connect
 export const LINKEDIN_CONFIG = {
   clientId: process.env.LINKEDIN_CLIENT_ID || "",
@@ -17,6 +18,12 @@ interface LinkedInUserResult {
   isNewUser: boolean;
   firstName: string;
   lastName: string;
+  linkedInId: string;
+  email?: string;
+  profilePictureUrl?: string;
+  locale?: string;
+  accessToken: string;
+  expiresAt: string;
 }
 
 // Exchange the authorization code for an access token using OpenID Connect
@@ -89,8 +96,12 @@ export const exchangeLinkedInCode = action({
         email: userInfo.email ? "present" : "missing"
       });
       
-      // Create or update user in our database
-      const userData = {
+      
+      
+      // Since we're in an action and can't run mutations, we return the user info directly
+      return {
+        userId: "temp_id" as Id<"users">,  // This is a placeholder
+        isNewUser: true,
         linkedInId: userInfo.sub,
         firstName: userInfo.given_name || "Unknown",
         lastName: userInfo.family_name || "User",
@@ -98,15 +109,7 @@ export const exchangeLinkedInCode = action({
         profilePictureUrl: userInfo.picture,
         locale: userInfo.locale,
         accessToken: tokenData.access_token,
-        expiresAt: new Date(Date.now() + tokenData.expires_in * 1000).toISOString(),
-      };
-      
-      // Since we're in an action and can't run mutations, we return the user info directly
-      return {
-        userId: "temp_id" as Id<"users">, // This is a placeholder
-        isNewUser: true,
-        firstName: userData.firstName,
-        lastName: userData.lastName,
+        expiresAt: new Date(Date.now() + tokenData.expires_in * 1000).toISOString()
       };
     } catch (error) {
       console.error("LinkedIn auth action error:", error);
@@ -115,7 +118,6 @@ export const exchangeLinkedInCode = action({
   },
 });
 
-// Internal mutation to store LinkedIn user data
 export const storeLinkedInUser = mutation({
   args: {
     linkedInId: v.string(),
@@ -123,11 +125,21 @@ export const storeLinkedInUser = mutation({
     lastName: v.string(),
     email: v.optional(v.string()),
     profilePictureUrl: v.optional(v.string()),
-    locale: v.optional(v.string()),
+    locale: v.optional(v.union(v.string(), v.object({
+      country: v.string(),
+      language: v.string()
+    }))),
     accessToken: v.string(),
     expiresAt: v.string(),
   },
   handler: async (ctx, userData): Promise<LinkedInUserResult> => {
+    // Convert locale to string if it's an object
+    const localeString = typeof userData.locale === 'string' 
+      ? userData.locale 
+      : userData.locale 
+        ? `${userData.locale.language}_${userData.locale.country}`
+        : undefined;
+    
     // Find existing user with this LinkedIn ID
     const existingUser = await ctx.db
       .query("users")
@@ -141,7 +153,7 @@ export const storeLinkedInUser = mutation({
         lastName: userData.lastName,
         email: userData.email,
         profilePictureUrl: userData.profilePictureUrl,
-        locale: userData.locale,
+        locale: localeString,
         accessToken: userData.accessToken,
         expiresAt: userData.expiresAt,
         lastLoginAt: new Date().toISOString(),
@@ -152,6 +164,12 @@ export const storeLinkedInUser = mutation({
         isNewUser: false,
         firstName: userData.firstName,
         lastName: userData.lastName,
+        linkedInId: userData.linkedInId,
+        email: userData.email,
+        profilePictureUrl: userData.profilePictureUrl,
+        locale: localeString,
+        accessToken: userData.accessToken,
+        expiresAt: userData.expiresAt
       };
     } else {
       // Create new user
@@ -161,7 +179,7 @@ export const storeLinkedInUser = mutation({
         lastName: userData.lastName,
         email: userData.email,
         profilePictureUrl: userData.profilePictureUrl,
-        locale: userData.locale,
+        locale: localeString,
         accessToken: userData.accessToken,
         expiresAt: userData.expiresAt,
         createdAt: new Date().toISOString(),
@@ -173,6 +191,12 @@ export const storeLinkedInUser = mutation({
         isNewUser: true,
         firstName: userData.firstName,
         lastName: userData.lastName,
+        linkedInId: userData.linkedInId,
+        email: userData.email,
+        profilePictureUrl: userData.profilePictureUrl,
+        locale: localeString,
+        accessToken: userData.accessToken,
+        expiresAt: userData.expiresAt
       };
     }
   },

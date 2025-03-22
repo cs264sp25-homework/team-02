@@ -20,7 +20,7 @@ const schema = defineSchema({
     email: v.optional(v.string()),           
     profilePictureUrl: v.optional(v.string()), 
     locale: v.optional(v.string()),          
-    accessToken: v.string(),
+    accessToken: v.optional(v.string()),
     expiresAt: v.string(),
     createdAt: v.string(),
     lastLoginAt: v.string(),
