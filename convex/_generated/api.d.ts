@@ -17,6 +17,7 @@ import type * as files from "../files.js";
 import type * as hello from "../hello.js";
 import type * as linkedin_auth from "../linkedin/auth.js";
 import type * as profiles from "../profiles.js";
+import type * as types_linkedInUserResult from "../types/linkedInUserResult.js";
 
 /**
  * A utility for referencing Convex functions in your app's API.
@@ -31,6 +32,7 @@ declare const fullApi: ApiFromModules<{
   hello: typeof hello;
   "linkedin/auth": typeof linkedin_auth;
   profiles: typeof profiles;
+  "types/linkedInUserResult": typeof types_linkedInUserResult;
 }>;
 export declare const api: FilterApi<
   typeof fullApi,

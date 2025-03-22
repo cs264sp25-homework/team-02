@@ -2,7 +2,7 @@ import { v } from "convex/values";
 import { action, mutation, query } from "../_generated/server";
 import { ConvexError } from "convex/values";
 import { Id } from "../_generated/dataModel";
-
+import { LinkedInUserResult } from "../types/linkedInUserResult";
 
 // LinkedIn OAuth Configuration with OpenID Connect
 export const LINKEDIN_CONFIG = {
@@ -12,20 +12,6 @@ export const LINKEDIN_CONFIG = {
   scopes: ["openid", "profile", "email"],
 };
 
-// Define the return type for the LinkedIn user data
-interface LinkedInUserResult {
-  userId: Id<"users">;
-  isNewUser: boolean;
-  firstName: string;
-  lastName: string;
-  linkedInId: string;
-  email?: string;
-  profilePictureUrl?: string;
-  locale?: string;
-  accessToken: string;
-  expiresAt: string;
-}
-
 // Exchange the authorization code for an access token using OpenID Connect
 export const exchangeLinkedInCode = action({
   args: {
@@ -33,13 +19,6 @@ export const exchangeLinkedInCode = action({
   },
   handler: async (ctx, args): Promise<LinkedInUserResult> => {
     const { code } = args;
-    
-    console.log("Starting LinkedIn code exchange");
-    console.log("LinkedIn Config:", {
-      clientId: LINKEDIN_CONFIG.clientId ? "present" : "missing",
-      clientSecret: LINKEDIN_CONFIG.clientSecret ? "present" : "missing",
-      redirectUri: LINKEDIN_CONFIG.redirectUri
-    });
     
     try {
       // Exchange code for token
@@ -57,8 +36,6 @@ export const exchangeLinkedInCode = action({
         }),
       });
       
-      console.log("Token response status:", tokenResponse.status);
-      
       if (!tokenResponse.ok) {
         const errorText = await tokenResponse.text();
         console.error("LinkedIn token error:", errorText);
@@ -68,9 +45,7 @@ export const exchangeLinkedInCode = action({
         });
       }
       
-      const tokenData = await tokenResponse.json();
-      console.log("Token data received:", tokenData.access_token ? "Token present" : "Token missing");
-      
+      const tokenData = await tokenResponse.json();      
       // Get the user's profile information using the userinfo endpoint
       const userInfoResponse = await fetch("https://api.linkedin.com/v2/userinfo", {
         headers: {
@@ -78,7 +53,6 @@ export const exchangeLinkedInCode = action({
         },
       });
       
-      console.log("User info response status:", userInfoResponse.status);
       
       if (!userInfoResponse.ok) {
         const errorText = await userInfoResponse.text();
@@ -90,13 +64,7 @@ export const exchangeLinkedInCode = action({
       }
       
       const userInfo = await userInfoResponse.json();
-      console.log("LinkedIn user info:", {
-        sub: userInfo.sub ? "present" : "missing",
-        name: userInfo.name || "missing",
-        email: userInfo.email ? "present" : "missing"
-      });
-      
-      
+    
       
       // Since we're in an action and can't run mutations, we return the user info directly
       return {
