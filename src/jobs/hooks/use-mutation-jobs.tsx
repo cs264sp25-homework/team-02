@@ -1,6 +1,5 @@
 import { toast } from "sonner";
 import { api } from "../../../convex/_generated/api";
-import { Id } from "convex/_generated/dataModel";
 import { useMutation, useAction } from "convex/react";
 
 export interface JobData {
@@ -11,7 +10,7 @@ export interface JobData {
   applicationUrl: string;
 }
 
-export function useMutationJobs(postingUrl: string, applicationUrl: string) {
+export function useMutationJobs() {
   const addJobMutation = useMutation(api.jobs.addJob);
   const scrapeJobAction = useAction(api.scrape.scrapeJob);
 

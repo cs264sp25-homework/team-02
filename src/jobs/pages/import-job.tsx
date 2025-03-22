@@ -1,6 +1,4 @@
 import { useState } from "react";
-import { useMutation, useAction } from "convex/react";
-import { api } from "../../../convex/_generated/api";
 import { Button } from "@/core/components/button";
 import { Input } from "@/core/components/input";
 import {
@@ -16,13 +14,13 @@ const ImportJobPage = () => {
   const [applicationUrl, setApplicationUrl] = useState("");
   const [postingUrl, setPostingUrl] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const { add: addJob } = useMutationJobs(postingUrl, applicationUrl);
+  const { add: addJob } = useMutationJobs();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     try {
-      const jobId = await addJob(postingUrl, applicationUrl);
+      await addJob(postingUrl, applicationUrl);
       toast.success("Job added successfully");
     } catch (error) {
       console.error("Error importing job posting:", error);

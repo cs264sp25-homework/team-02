@@ -7,7 +7,7 @@ export const scrapeJob = action({
     postingUrl: v.string(),
     applicationUrl: v.string(),
   },
-  handler: async (ctx, args) => {
+  handler: async (_ctx, args) => {
     const scrapedJobPosting = await scrapeJobPosting(args.postingUrl);
     const scrapedJobApplication = await scrapeJobApplication(
       args.applicationUrl,
