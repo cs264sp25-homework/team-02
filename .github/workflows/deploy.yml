@@ -36,12 +36,20 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-      - name: Build React App
+      - name: Generate Convex API types
+        run: npx convex codegen
+        env:
+          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
+
+      - name: Deploy Convex backend and build React App
         run: npx convex deploy --cmd 'pnpm run build'
         env:
           CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
           VITE_BASE_URL: ${{ secrets.VITE_BASE_URL }}
-          
+          VITE_CONVEX_URL: ${{ secrets.VITE_CONVEX_URL }}
+          VITE_LINKEDIN_CLIENT_ID: ${{ secrets.VITE_LINKEDIN_CLIENT_ID }}
+          VITE_LINKEDIN_REDIRECT_URI: ${{ secrets.VITE_LINKEDIN_REDIRECT_URI }}
+
       - name: Upload build artifact
         if: github.event_name == 'push' && github.ref == 'refs/heads/master'
         uses: actions/upload-artifact@v4
