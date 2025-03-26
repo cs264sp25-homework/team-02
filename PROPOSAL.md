@@ -97,7 +97,7 @@ This roadmap maps out the development of our AI-powered Flashcards App across tw
 
 **Deliverables:**
 
-- Functioning Google OAuth authentication system
+- Functioning Linkedin OAuth authentication system
 - Project repository with CI/CD setup
 - Basic UI component library
 - Database schema documentation
