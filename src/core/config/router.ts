@@ -13,6 +13,7 @@ const pages = {
   profile: `${baseUrl}/profile`, // Profile page
   add_file: `${baseUrl}/add-file`, // File upload page
   import_job: `${baseUrl}/import-job`, // Job import page
+  job_details: `${baseUrl}/job-details/:jobId`, // Job details page with job ID parameter
 };
 
 export type Page = keyof typeof pages;

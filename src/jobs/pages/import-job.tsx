@@ -10,18 +10,25 @@ import {
 import { Loader2 } from "lucide-react";
 import { useMutationJobs } from "../hooks/use-mutation-jobs";
 import { toast } from "sonner";
+import { useRouter } from "@/core/hooks/use-router";
+
 const ImportJobPage = () => {
   const [applicationUrl, setApplicationUrl] = useState("");
   const [postingUrl, setPostingUrl] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { add: addJob } = useMutationJobs();
+  const { navigate } = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     try {
-      await addJob(postingUrl, applicationUrl);
-      toast.success("Job added successfully");
+      const jobId = await addJob(postingUrl, applicationUrl);
+      console.log("jobId", jobId);
+      if (jobId) {
+        toast.success("Job added successfully");
+        navigate("job_details", { jobId });
+      }
     } catch (error) {
       console.error("Error importing job posting:", error);
       toast.error("Error importing job posting");

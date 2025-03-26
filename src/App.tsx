@@ -6,6 +6,8 @@ import LoginPage from "./core/pages/log-in";
 import ProfilePage from "./profile/pages/profile";
 import AddFile from "./file_upload/add_file";
 import ImportJobPage from "./jobs/pages/import-job";
+import JobDetailsPage from "./jobs/pages/job-details";
+
 function App() {
   const { currentRoute } = useRouter();
 
@@ -27,6 +29,8 @@ function App() {
         return <AddFile />;
       case "import_job":
         return <ImportJobPage />;
+      case "job_details":
+        return <JobDetailsPage />;
       default:
         return <NotFoundPage />;
     }
