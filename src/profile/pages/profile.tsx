@@ -17,10 +17,19 @@ import { Experience } from "../components/Experience";
 import { Projects } from "../components/Projects";
 import { Skills } from "../components/Skills";
 import { ProfileUpdateType } from "convex/profiles";
+import { useRouter } from "@/core/hooks/use-router";
+import { useAuth } from "@/linkedin/hooks/useAuth";
 
 const ProfilePage = () => {
-  const { data: profile, loading: isLoading } = useGetOrCreateProfile();
-  const mutation = useMutationProfile(profile?._id);
+  const { isAuthenticated, user } = useAuth();
+  const { redirect } = useRouter();
+
+  if (!isAuthenticated) {
+    redirect("login");
+  }
+
+  const { data: profile, loading: isLoading } = useGetOrCreateProfile(user!.id);
+  const mutation = useMutationProfile(profile?._id, user!.id);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();

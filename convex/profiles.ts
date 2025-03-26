@@ -1,6 +1,7 @@
 import { Infer, v } from "convex/values";
 import { defineTable } from "convex/server";
 import { mutation, query } from "./_generated/server";
+import { Id } from "./_generated/dataModel";
 
 /******************************************************************************
  * SCHEMA
@@ -214,15 +215,8 @@ export const getProfileByUserId = query({
  * @returns The profile data or null if not found
  */
 export const getCurrentUserProfile = query({
-  handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    let userId: string;
-    if (!identity) {
-      userId = "anonymous";
-    } else {
-      userId = identity.subject;
-    }
-
+  args: { userId: v.string() },
+  handler: async (ctx, { userId }) => {
     return await ctx.db
       .query("profiles")
       .withIndex("by_userId", (q) => q.eq("userId", userId))
@@ -236,15 +230,8 @@ export const getCurrentUserProfile = query({
  * @returns The existing or newly created profile
  */
 export const getOrCreateProfile = mutation({
-  handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    let userId: string;
-    if (!identity) {
-      userId = "anonymous";
-    } else {
-      userId = identity.subject;
-    }
-
+  args: { userId: v.string() },
+  handler: async (ctx, { userId }) => {
     // Try to find existing profile
     const existing = await ctx.db
       .query("profiles")
@@ -255,10 +242,16 @@ export const getOrCreateProfile = mutation({
       return existing;
     }
 
+    // get user from auth
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_id", (q) => q.eq("_id", userId as Id<"users">))
+      .first();
+
     // Create default profile if none exists
     const defaultProfile: ProfileInType = {
-      name: identity?.name ?? "Anonymous User",
-      email: identity?.email ?? "anonymous@example.com",
+      name: user?.firstName ?? "Anonymous User",
+      email: user?.email ?? "anonymous@example.com",
       education: [],
       workExperience: [],
       projects: [],
@@ -282,16 +275,9 @@ export const updateProfile = mutation({
   args: {
     ...profileUpdateSchema,
     profileId: v.id("profiles"),
+    userId: v.string(),
   },
-  handler: async (ctx, { profileId, ...update }) => {
-    const identity = await ctx.auth.getUserIdentity();
-    let userId: string;
-    if (!identity) {
-      userId = "anonymous";
-    } else {
-      userId = identity.subject;
-    }
-
+  handler: async (ctx, { profileId, userId, ...update }) => {
     const existingProfile = await ctx.db.get(profileId);
     if (!existingProfile) {
       throw new Error("Profile not found");
@@ -312,16 +298,8 @@ export const updateProfile = mutation({
  * @returns true if successful
  */
 export const deleteProfile = mutation({
-  args: { profileId: v.id("profiles") },
-  handler: async (ctx, { profileId }) => {
-    const identity = await ctx.auth.getUserIdentity();
-    let userId: string;
-    if (!identity) {
-      userId = "anonymous";
-    } else {
-      userId = identity.subject;
-    }
-
+  args: { profileId: v.id("profiles"), userId: v.string() },
+  handler: async (ctx, { profileId, userId }) => {
     const existingProfile = await ctx.db.get(profileId);
     if (!existingProfile) {
       throw new Error("Profile not found");

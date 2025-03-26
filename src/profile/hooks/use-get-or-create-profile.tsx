@@ -2,16 +2,16 @@ import { api } from "../../../convex/_generated/api";
 import { useMutation, useQuery } from "convex/react";
 import { useEffect } from "react";
 
-export function useGetOrCreateProfile() {
+export function useGetOrCreateProfile(userId: string) {
   const getOrCreate = useMutation(api.profiles.getOrCreateProfile);
-  const profile = useQuery(api.profiles.getCurrentUserProfile);
+  const profile = useQuery(api.profiles.getCurrentUserProfile, { userId });
 
   useEffect(() => {
     if (profile === null) {
       // Profile doesn't exist, create it
-      getOrCreate();
+      getOrCreate({ userId });
     }
-  }, [profile, getOrCreate]);
+  }, [profile, getOrCreate, userId]);
 
   return {
     data: profile,
