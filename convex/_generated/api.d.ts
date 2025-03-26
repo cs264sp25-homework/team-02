@@ -16,8 +16,10 @@ import type {
 import type * as files from "../files.js";
 import type * as hello from "../hello.js";
 import type * as jobs from "../jobs.js";
+import type * as linkedin_auth from "../linkedin/auth.js";
 import type * as profiles from "../profiles.js";
 import type * as scrape from "../scrape.js";
+import type * as types_linkedInUserResult from "../types/linkedInUserResult.js";
 
 /**
  * A utility for referencing Convex functions in your app's API.
@@ -30,7 +32,6 @@ import type * as scrape from "../scrape.js";
 declare const fullApi: ApiFromModules<{
   files: typeof files;
   hello: typeof hello;
-  jobs: typeof jobs;
   profiles: typeof profiles;
   scrape: typeof scrape;
 }>;

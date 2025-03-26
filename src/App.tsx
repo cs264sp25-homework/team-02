@@ -2,10 +2,12 @@ import { useRouter } from "@/core/hooks/use-router";
 import NotFoundPage from "./core/pages/not-found-page";
 import Demo from "./core/pages/demo";
 import Empty from "./core/pages/empty";
-import LoginPage from "./core/pages/log-in";
+import LoginPage from "./linkedin/pages/log-in";
 import ProfilePage from "./profile/pages/profile";
 import AddFile from "./file_upload/add_file";
 import ImportJobPage from "./jobs/pages/import-job";
+import LinkedInCallback from "./linkedin/components/LinkedInCallback";
+
 function App() {
   const { currentRoute } = useRouter();
 
@@ -25,6 +27,8 @@ function App() {
         return <ProfilePage />;
       case "add_file":
         return <AddFile />;
+      case "auth_callback":
+        return <LinkedInCallback />;
       case "import_job":
         return <ImportJobPage />;
       default:
