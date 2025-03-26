@@ -5,6 +5,7 @@ import Empty from "./core/pages/empty";
 import LoginPage from "./linkedin/pages/log-in";
 import ProfilePage from "./profile/pages/profile";
 import AddFile from "./file_upload/add_file";
+import ImportJobPage from "./jobs/pages/import-job";
 import LinkedInCallback from "./linkedin/components/LinkedInCallback";
 
 function App() {
@@ -28,6 +29,8 @@ function App() {
         return <AddFile />;
       case "auth_callback":
         return <LinkedInCallback />;
+      case "import_job":
+        return <ImportJobPage />;
       default:
         return <NotFoundPage />;
     }

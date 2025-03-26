@@ -1,6 +1,7 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 import { profileTables } from "./profiles";
+import { jobTables } from "./jobs";
 
 const schema = defineSchema({
   ...profileTables,
@@ -26,6 +27,7 @@ const schema = defineSchema({
     lastLoginAt: v.string(),
     profileId: v.optional(v.id("profiles")),
   }).index("by_linkedInId", ["linkedInId"]),
+  ...jobTables,
 });
 
 export default schema;

@@ -13,14 +13,6 @@ import type {
   FilterApi,
   FunctionReference,
 } from "convex/server";
-import type * as files from "../files.js";
-import type * as hello from "../hello.js";
-import type * as jobs from "../jobs.js";
-import type * as linkedin_auth from "../linkedin/auth.js";
-import type * as profiles from "../profiles.js";
-import type * as scrape from "../scrape.js";
-import type * as linkedin_auth from "../linkedin/auth.js";
-import type * as types_linkedInUserResult from "../types/linkedInUserResult.js";
 
 /**
  * A utility for referencing Convex functions in your app's API.
@@ -30,12 +22,7 @@ import type * as types_linkedInUserResult from "../types/linkedInUserResult.js";
  * const myFunctionReference = api.myModule.myFunction;
  * ```
  */
-declare const fullApi: ApiFromModules<{
-  files: typeof files;
-  hello: typeof hello;
-  profiles: typeof profiles;
-  scrape: typeof scrape;
-}>;
+declare const fullApi: ApiFromModules<{}>;
 export declare const api: FilterApi<
   typeof fullApi,
   FunctionReference<any, "public">
