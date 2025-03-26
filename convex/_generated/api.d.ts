@@ -32,8 +32,11 @@ import type * as types_linkedInUserResult from "../types/linkedInUserResult.js";
 declare const fullApi: ApiFromModules<{
   files: typeof files;
   hello: typeof hello;
+  jobs: typeof jobs;
+  "linkedin/auth": typeof linkedin_auth;
   profiles: typeof profiles;
   scrape: typeof scrape;
+  "types/linkedInUserResult": typeof types_linkedInUserResult;
 }>;
 export declare const api: FilterApi<
   typeof fullApi,
