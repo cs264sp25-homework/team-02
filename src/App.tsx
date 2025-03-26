@@ -6,6 +6,7 @@ import LoginPage from "./linkedin/pages/log-in";
 import ProfilePage from "./profile/pages/profile";
 import AddFile from "./file_upload/add_file";
 import ImportJobPage from "./jobs/pages/import-job";
+import JobDetailsPage from "./jobs/pages/job-details";
 import LinkedInCallback from "./linkedin/components/LinkedInCallback";
 
 function App() {
@@ -31,6 +32,8 @@ function App() {
         return <LinkedInCallback />;
       case "import_job":
         return <ImportJobPage />;
+      case "job_details":
+        return <JobDetailsPage />;
       default:
         return <NotFoundPage />;
     }

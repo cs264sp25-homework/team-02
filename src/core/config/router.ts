@@ -14,6 +14,7 @@ const pages = {
   add_file: `${baseUrl}/add-file`, // File upload page
   auth_callback: `${baseUrl}/auth/callback`, // LinkedIn OAuth callback
   import_job: `${baseUrl}/import-job`, // Job import page
+  job_details: `${baseUrl}/job-details/:jobId`, // Job details page with job ID parameter
 };
 
 export type Page = keyof typeof pages;
