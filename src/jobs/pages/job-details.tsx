@@ -24,7 +24,7 @@ const JobDetailsPage = () => {
   const { updateAnswer } = useMutationJob();
 
   const saveAnswer = async (index: number, answer: string) => {
-    const saved = await updateAnswer(job?._id, index, answer);
+    const saved = await updateAnswer(jobId, index, answer);
     if (saved) {
       toast.success("Answer saved");
     } else {
