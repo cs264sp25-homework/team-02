@@ -21,8 +21,9 @@ export const jobInSchema = {
   title: v.string(),
   description: v.string(),
 
-  // Application Questions
+  // Application Questions and Answers
   questions: v.array(v.string()),
+  answers: v.array(v.string()),
 
   // Urls
   postingUrl: v.string(),
@@ -45,6 +46,7 @@ export const jobUpdateSchema = {
   title: v.optional(v.string()),
   description: v.optional(v.string()),
   questions: v.optional(v.array(v.string())),
+  answers: v.optional(v.array(v.string())),
   postingUrl: v.optional(v.string()),
   applicationUrl: v.optional(v.string()),
 };
@@ -82,17 +84,26 @@ export const addJob = mutation({
     title: v.string(),
     description: v.string(),
     questions: v.array(v.string()),
+    answers: v.array(v.string()),
     postingUrl: v.string(),
     applicationUrl: v.string(),
   },
   handler: async (ctx, args): Promise<Id<"jobs">> => {
-    const { title, description, questions, postingUrl, applicationUrl } = args;
+    const {
+      title,
+      description,
+      questions,
+      answers,
+      postingUrl,
+      applicationUrl,
+    } = args;
 
     // Create the job data
     const jobId = await ctx.db.insert("jobs", {
       title: title,
       description: description,
       questions: questions,
+      answers: answers,
       postingUrl: postingUrl,
       applicationUrl: applicationUrl,
       createdAt: new Date().toISOString(),
@@ -165,6 +176,51 @@ export const deleteJob = mutation({
     }
 
     await ctx.db.delete(jobId);
+    return true;
+  },
+});
+
+/**
+ * Update the answers for a job
+ * @param jobId The ID of the job to update
+ * @param answers The new answers to set
+ * @returns true if successful
+ */
+export const updateAnswerAtIndex = mutation({
+  args: {
+    jobId: v.id("jobs"),
+    index: v.number(),
+    answer: v.string(),
+  },
+  handler: async (ctx, { jobId, index, answer }) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("Not authenticated");
+    }
+
+    const existingJob = await ctx.db.get(jobId);
+    if (!existingJob) {
+      throw new Error("Job not found");
+    }
+
+    // Get current answers array
+    const currentAnswers = existingJob.answers;
+
+    // Validate index
+    if (index < 0 || index >= currentAnswers.length) {
+      throw new Error("Invalid answer index");
+    }
+
+    // Create new answers array with updated value
+    const updatedAnswers = [...currentAnswers];
+    updatedAnswers[index] = answer;
+
+    // Update the job with new answers
+    await ctx.db.patch(jobId, {
+      answers: updatedAnswers,
+      updatedAt: new Date().toISOString(),
+    });
+
     return true;
   },
 });

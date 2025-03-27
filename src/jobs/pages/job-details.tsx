@@ -14,16 +14,25 @@ import { Textarea } from "@/core/components/textarea";
 import AiDropdownMenu from "../components/AiDropdownMenu";
 import { toast } from "sonner";
 import { useState } from "react";
+import { useMutationJob } from "../hooks/use-mutation-job";
 
 const JobDetailsPage = () => {
   const { params, navigate } = useRouter();
   const jobId = params.jobId as Id<"jobs">;
   const job = useQuery(api.jobs.getJobById, { jobId });
-  const [answers, setAnswers] = useState<Record<number, string>>({});
+  const [answers, setAnswers] = useState<string[]>(job?.answers || []);
+  const { updateAnswer } = useMutationJob();
 
-  const handleAiAction = (questionIndex: number, action: string) => {
-    const currentAnswer = answers[questionIndex] || "";
+  const saveAnswer = async (index: number, answer: string) => {
+    const saved = await updateAnswer(job?._id, index, answer);
+    if (saved) {
+      toast.success("Answer saved");
+    } else {
+      toast.error("Failed to save answer");
+    }
+  };
 
+  const handleAiAction = (index: number, action: string) => {
     switch (action) {
       case "improve":
         toast.info("Improving your answer...");
@@ -74,7 +83,11 @@ const JobDetailsPage = () => {
                         {question}
                       </span>
                       <div className="flex-shrink-0">
-                        <Button variant="outline" size="sm">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => saveAnswer(index, answers[index])}
+                        >
                           <Save className="mr-2 h-4 w-4" />
                           Save
                         </Button>

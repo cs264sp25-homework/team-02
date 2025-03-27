@@ -28,6 +28,7 @@ export function useMutationJobs() {
         title: jobData.title,
         description: jobData.description,
         questions: jobData.questions,
+        answers: new Array(jobData.questions.length).fill(""),
         postingUrl,
         applicationUrl,
       });
