@@ -9,12 +9,32 @@ import {
   CardTitle,
 } from "@/core/components/card";
 import { Button } from "@/core/components/button";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Save } from "lucide-react";
+import { Textarea } from "@/core/components/textarea";
+import AiDropdownMenu from "../components/AiDropdownMenu";
+import { toast } from "sonner";
+import { useState } from "react";
 
 const JobDetailsPage = () => {
   const { params, navigate } = useRouter();
   const jobId = params.jobId as Id<"jobs">;
   const job = useQuery(api.jobs.getJobById, { jobId });
+  const [answers, setAnswers] = useState<Record<number, string>>({});
+
+  const handleAiAction = (questionIndex: number, action: string) => {
+    const currentAnswer = answers[questionIndex] || "";
+
+    switch (action) {
+      case "improve":
+        toast.info("Improving your answer...");
+        // TODO: Implement AI improvement
+        break;
+      case "generate":
+        toast.info("Generating new answer...");
+        // TODO: Implement AI generation
+        break;
+    }
+  };
 
   if (!job) {
     return <div>Loading...</div>;
@@ -46,9 +66,37 @@ const JobDetailsPage = () => {
               <h3 className="text-lg font-semibold mb-2">
                 Application Questions
               </h3>
-              <ul className="list-disc pl-6 space-y-2">
+              <ul className="space-y-4">
                 {job.questions.map((question, index) => (
-                  <li key={index}>{question}</li>
+                  <li key={index} className="space-y-2">
+                    <div className="flex items-start gap-2">
+                      <span className="font-medium flex-1 text-left">
+                        {question}
+                      </span>
+                      <div className="flex-shrink-0">
+                        <Button variant="outline" size="sm">
+                          <Save className="mr-2 h-4 w-4" />
+                          Save
+                        </Button>
+                      </div>
+                      <div className="flex-shrink-0">
+                        <AiDropdownMenu
+                          onSelect={(action) => handleAiAction(index, action)}
+                        />
+                      </div>
+                    </div>
+                    <Textarea
+                      value={answers[index] || ""}
+                      onChange={(e) =>
+                        setAnswers((prev) => ({
+                          ...prev,
+                          [index]: e.target.value,
+                        }))
+                      }
+                      placeholder="This will contain auto-generated answers. To be implemented."
+                      className="mt-2"
+                    />
+                  </li>
                 ))}
               </ul>
             </div>
