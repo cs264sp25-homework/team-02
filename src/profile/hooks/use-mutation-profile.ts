@@ -5,7 +5,10 @@ import { useMutation } from "convex/react";
 import { useCallback } from "react";
 import { toast } from "sonner";
 
-export function useMutationProfile(profileId: string | undefined) {
+export function useMutationProfile(
+  profileId: string | undefined,
+  userId: string,
+) {
   const mutation = useMutation(api.profiles.updateProfile);
 
   const editProfile = useCallback(
@@ -13,6 +16,7 @@ export function useMutationProfile(profileId: string | undefined) {
       try {
         await mutation({
           profileId: profileId as Id<"profiles">,
+          userId,
           ...profile,
         });
         return true;
@@ -21,7 +25,7 @@ export function useMutationProfile(profileId: string | undefined) {
         return false;
       }
     },
-    [mutation, profileId],
+    [mutation, profileId, userId],
   );
 
   return {
