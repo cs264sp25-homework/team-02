@@ -7,12 +7,14 @@ export function useMutationJob() {
   const updateAnswerAtIndexMutation = useMutation(api.jobs.updateAnswerAtIndex);
 
   const updateAnswerAtIndex = async (
+    userId: string,
     jobId: Id<"jobs">,
     index: number,
     answer: string,
   ): Promise<boolean | null> => {
     try {
       return await updateAnswerAtIndexMutation({
+        userId,
         jobId,
         index,
         answer,

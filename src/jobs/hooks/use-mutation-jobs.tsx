@@ -10,25 +10,23 @@ export interface JobData {
   applicationUrl: string;
 }
 
-export function useMutationJobs() {
-  const addJobMutation = useMutation(api.jobs.addJob);
-  const scrapeJobAction = useAction(api.scrape.scrapeJob);
+export function useAddJob(userId: string) {
+  const addJob = useMutation(api.jobs.addJob);
+  const scrapeJob = useAction(api.scrape.scrapeJob);
 
-  const addJob = async (
-    postingUrl: string,
-    applicationUrl: string,
-  ): Promise<string | null> => {
+  const importJob = async (postingUrl: string, applicationUrl: string) => {
     try {
-      const jobData = await scrapeJobAction({
+      const jobData = await scrapeJob({
         postingUrl,
         applicationUrl,
       });
 
-      const jobId = await addJobMutation({
+      const jobId = await addJob({
+        userId,
         title: jobData.title,
         description: jobData.description,
         questions: jobData.questions,
-        answers: new Array(jobData.questions.length).fill(""),
+        answers: Array(jobData.questions.length).fill(""),
         postingUrl,
         applicationUrl,
       });
@@ -40,7 +38,5 @@ export function useMutationJobs() {
     }
   };
 
-  return {
-    add: addJob,
-  };
+  return { importJob };
 }

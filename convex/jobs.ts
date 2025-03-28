@@ -60,6 +60,7 @@ export type JobUpdateType = Infer<typeof jobUpdateSchemaObject>;
  */
 export const jobSchema = {
   ...jobInSchema,
+  userId: v.string(), // relation to user table
 };
 
 // eslint-disable-next-line
@@ -71,7 +72,7 @@ export type QuestionType = JobType["questions"][number];
  * Job table schema definition
  */
 export const jobTables = {
-  jobs: defineTable(jobSchema),
+  jobs: defineTable(jobSchema).index("by_userId", ["userId"]),
 };
 
 /**
@@ -81,6 +82,7 @@ export const jobTables = {
  */
 export const addJob = mutation({
   args: {
+    userId: v.string(),
     title: v.string(),
     description: v.string(),
     questions: v.array(v.string()),
@@ -90,6 +92,7 @@ export const addJob = mutation({
   },
   handler: async (ctx, args): Promise<Id<"jobs">> => {
     const {
+      userId,
       title,
       description,
       questions,
@@ -98,8 +101,19 @@ export const addJob = mutation({
       applicationUrl,
     } = args;
 
+    // get user from auth
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_id", (q) => q.eq("_id", userId as Id<"users">))
+      .first();
+
+    if (!user) {
+      throw new Error("Not authenticated!");
+    }
+
     // Create the job data
     const jobId = await ctx.db.insert("jobs", {
+      userId,
       title: title,
       description: description,
       questions: questions,
@@ -120,8 +134,18 @@ export const addJob = mutation({
  * @returns The job data or null if not found
  */
 export const getJobById = query({
-  args: { jobId: v.id("jobs") },
-  handler: async (ctx, { jobId }) => {
+  args: { userId: v.string(), jobId: v.id("jobs") },
+  handler: async (ctx, { userId, jobId }) => {
+    // get user from auth
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_id", (q) => q.eq("_id", userId as Id<"users">))
+      .first();
+
+    if (!user) {
+      throw new Error("Not authenticated!");
+    }
+
     return await ctx.db.get(jobId);
   },
 });
@@ -133,18 +157,29 @@ export const getJobById = query({
  */
 export const updateJob = mutation({
   args: {
-    ...jobUpdateSchema,
+    userId: v.string(),
     jobId: v.id("jobs"),
+    ...jobUpdateSchema,
   },
-  handler: async (ctx, { jobId, ...update }) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new Error("Not authenticated");
+  handler: async (ctx, { userId, jobId, ...update }) => {
+    // get user from auth
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_id", (q) => q.eq("_id", userId as Id<"users">))
+      .first();
+
+    if (!user) {
+      throw new Error("Not authenticated!");
     }
 
     const existingJob = await ctx.db.get(jobId);
+
     if (!existingJob) {
       throw new Error("Job not found");
+    }
+
+    if (existingJob.userId !== userId) {
+      throw new Error("Not authorized to update this job!");
     }
 
     // Add updatedAt timestamp
@@ -163,16 +198,26 @@ export const updateJob = mutation({
  * @returns true if successful
  */
 export const deleteJob = mutation({
-  args: { jobId: v.id("jobs") },
-  handler: async (ctx, { jobId }) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new Error("Not authenticated");
+  args: { jobId: v.id("jobs"), userId: v.string() },
+  handler: async (ctx, { jobId, userId }) => {
+    // get user from auth
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_id", (q) => q.eq("_id", userId as Id<"users">))
+      .first();
+
+    if (!user) {
+      throw new Error("Not authenticated!");
     }
 
     const existingJob = await ctx.db.get(jobId);
+
     if (!existingJob) {
       throw new Error("Job not found");
+    }
+
+    if (existingJob.userId !== userId) {
+      throw new Error("Not authorized to delete this job!");
     }
 
     await ctx.db.delete(jobId);
@@ -188,19 +233,29 @@ export const deleteJob = mutation({
  */
 export const updateAnswerAtIndex = mutation({
   args: {
+    userId: v.string(),
     jobId: v.id("jobs"),
     index: v.number(),
     answer: v.string(),
   },
-  handler: async (ctx, { jobId, index, answer }) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new Error("Not authenticated");
+  handler: async (ctx, { userId, jobId, index, answer }) => {
+    // get user from auth
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_id", (q) => q.eq("_id", userId as Id<"users">))
+      .first();
+
+    if (!user) {
+      throw new Error("Not authenticated!");
     }
 
     const existingJob = await ctx.db.get(jobId);
     if (!existingJob) {
       throw new Error("Job not found");
+    }
+
+    if (existingJob.userId !== userId) {
+      throw new Error("Not authorized to update this job's answers!");
     }
 
     // Get current answers array

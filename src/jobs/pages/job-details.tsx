@@ -15,16 +15,22 @@ import AiDropdownMenu from "../components/AiDropdownMenu";
 import { toast } from "sonner";
 import { useState } from "react";
 import { useMutationJob } from "../hooks/use-mutation-job";
+import { useAuth } from "@/linkedin/hooks/useAuth";
 
 const JobDetailsPage = () => {
-  const { params, navigate } = useRouter();
+  const { isAuthenticated, user } = useAuth();
+  const { params, navigate, redirect } = useRouter();
+
+  if (!isAuthenticated) {
+    redirect("login");
+  }
   const jobId = params.jobId as Id<"jobs">;
-  const job = useQuery(api.jobs.getJobById, { jobId });
+  const job = useQuery(api.jobs.getJobById, { jobId, userId: user!.id });
   const [answers, setAnswers] = useState<string[]>(job?.answers || []);
   const { updateAnswer } = useMutationJob();
 
   const saveAnswer = async (index: number, answer: string) => {
-    const saved = await updateAnswer(jobId, index, answer);
+    const saved = await updateAnswer(user!.id, jobId, index, answer);
     if (saved) {
       toast.success("Answer saved");
     } else {
