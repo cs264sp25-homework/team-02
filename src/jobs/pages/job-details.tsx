@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { useState } from "react";
 import { useMutationJob } from "../hooks/use-mutation-job";
 import { useAuth } from "@/linkedin/hooks/useAuth";
+import Tesseract from "tesseract.js";
 
 const JobDetailsPage = () => {
   const { isAuthenticated, user } = useAuth();
@@ -33,14 +34,22 @@ const JobDetailsPage = () => {
 
   const handleImageUpload = async (file: File) => {
     try {
+      const {
+        data: { text },
+      } = await Tesseract.recognize(
+        file,
+        "eng", // Language (English in this case)
+        { logger: (m) => console.log(m) }, // Optional: logs progress
+      );
+      console.log(text);
       // Upload the file to Convex storage
-      const storageId = await uploadQuestionImage({
-        jobId,
-        userId: user!.id,
-        imageUrl: URL.createObjectURL(file),
-      });
+      // const storageId = await uploadQuestionImage({
+      //   jobId,
+      //   userId: user!.id,
+      //   imageUrl: URL.createObjectURL(file),
+      // });
 
-      if (storageId) {
+      if (text) {
         toast.success("Image uploaded successfully");
       }
     } catch (error) {

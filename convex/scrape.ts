@@ -3,18 +3,6 @@ import * as cheerio from "cheerio";
 import { v } from "convex/values";
 import { createWorker } from "tesseract.js";
 
-export const scrapeQuestionsFromImage = action({
-  args: {
-    imageUrl: v.string(),
-  },
-  handler: async (_ctx, args) => {
-    const worker = await createWorker("eng");
-    const ret = await worker.recognize(args.imageUrl);
-    console.log(ret.data.text);
-    await worker.terminate();
-  },
-});
-
 export const scrapeJob = action({
   args: {
     postingUrl: v.string(),
