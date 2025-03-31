@@ -17,6 +17,7 @@ import type * as files from "../files.js";
 import type * as hello from "../hello.js";
 import type * as jobs from "../jobs.js";
 import type * as linkedin_auth from "../linkedin/auth.js";
+import type * as openai from "../openai.js";
 import type * as profiles from "../profiles.js";
 import type * as scrape from "../scrape.js";
 import type * as types_linkedInUserResult from "../types/linkedInUserResult.js";
@@ -34,6 +35,7 @@ declare const fullApi: ApiFromModules<{
   hello: typeof hello;
   jobs: typeof jobs;
   "linkedin/auth": typeof linkedin_auth;
+  openai: typeof openai;
   profiles: typeof profiles;
   scrape: typeof scrape;
   "types/linkedInUserResult": typeof types_linkedInUserResult;
