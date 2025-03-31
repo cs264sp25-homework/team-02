@@ -17,7 +17,7 @@ export const completion = internalAction({
       }),
     ),
   },
-  handler: async (ctx, args) => {
+  handler: async (_, args) => {
     const { textStream } = streamText({
       model: openai("gpt-4o-mini"),
       temperature: 0,
