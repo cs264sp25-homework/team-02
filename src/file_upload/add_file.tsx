@@ -6,6 +6,7 @@ import { Button } from "@/core/components/button";
 import { Label } from "@/core/components/label";
 import { useDropzone } from "react-dropzone";
 import { cn } from "@/core/lib/utils";
+import { useMupdf } from "./hooks/usePdfWorker";
 
 const MAX_FILE_SIZE = 5;
 
@@ -15,6 +16,7 @@ export default function AddFile() {
   const generateUploadUrl = useMutation(api.files.generateUploadUrl);
   const saveFile = useMutation(api.files.saveFile);
   const [fileSize, setFileSize] = useState(0);
+  const { isWorkerInitialized, loadDocument, extractText } = useMupdf();
 
   const onDrop = (acceptedFiles: File[]) => {
     const selectedFile = acceptedFiles[0];
@@ -44,6 +46,44 @@ export default function AddFile() {
     maxFiles: 1,
     multiple: false,
   });
+
+  // Function to read the selected file and return an ArrayBuffer
+  const readFileAsArrayBuffer = (file: File): Promise<ArrayBuffer> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => reject(reader.error);
+      reader.onload = () => resolve(reader.result as ArrayBuffer);
+      reader.readAsArrayBuffer(file);
+    });
+
+  const handleExtract = async () => {
+    if (!file) return;
+
+    try {
+      console.log("Extracting text from file...");
+      // Read file as an ArrayBuffer
+      const buffer = await readFileAsArrayBuffer(file);
+
+      console.log("Loading document into worker...");
+
+      // Load the document into the worker
+      await loadDocument(buffer);
+
+      console.log("Extracting text from document...");
+
+      // Extract text from the PDF
+      const text = await extractText();
+
+      console.log("Text extracted successfully!");
+
+      // Simply print the extracted text to the console
+      console.log("Extracted PDF Text:\n", text);
+      toast.success("Text extracted! Check your console.");
+    } catch (error) {
+      console.error("Text extraction error:", error);
+      toast.error("Failed to extract text from the file.");
+    }
+  };
 
   const handleUpload = async () => {
     if (!file) return;
@@ -123,6 +163,13 @@ export default function AddFile() {
         className="w-full"
       >
         {isUploading ? "Uploading..." : "Upload File"}
+      </Button>
+      <Button
+        onClick={handleExtract}
+        disabled={!file || !isWorkerInitialized}
+        className="w-full"
+      >
+        Extract PDF Text
       </Button>
     </div>
   );

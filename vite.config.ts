@@ -14,4 +14,22 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    target: "esnext", // This enables top-level await support
+    rollupOptions: {
+      input: {
+        main: path.resolve(__dirname, "index.html"),
+        worker: path.resolve(__dirname, "src/workers/mupdf.worker.ts"),
+      },
+    },
+  },
+  optimizeDeps: {
+    esbuildOptions: {
+      target: "esnext", // This enables top-level await support in dev mode
+    },
+    exclude: ["mupdf"], // Exclude mupdf from pre-bundling
+  },
+  worker: {
+    format: "es",
+  },
 });
