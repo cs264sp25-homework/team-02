@@ -13,8 +13,11 @@ const MAX_FILE_SIZE = 5;
 export default function AddFile() {
   const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const generateUploadUrl = useMutation(api.files.generateUploadUrl);
   const saveFile = useMutation(api.files.saveFile);
+  const parseResume = useMutation(api.openai.parseResume);
+  const createProfile = useMutation(api.profiles.createProfile);
   const [fileSize, setFileSize] = useState(0);
   const { isWorkerInitialized, loadDocument, extractText } = useMupdf();
 
@@ -60,6 +63,7 @@ export default function AddFile() {
     if (!file) return;
 
     try {
+      setIsProcessing(true);
       console.log("Extracting text from file...");
       // Read file as an ArrayBuffer
       const buffer = await readFileAsArrayBuffer(file);
@@ -75,13 +79,22 @@ export default function AddFile() {
       const text = await extractText();
 
       console.log("Text extracted successfully!");
-
-      // Simply print the extracted text to the console
       console.log("Extracted PDF Text:\n", text);
-      toast.success("Text extracted! Check your console.");
+
+      // Parse the resume text using OpenAI
+      console.log("Parsing resume with OpenAI...");
+      const parsedProfile = await parseResume({ resumeText: text });
+
+      // Create the profile in the database
+      console.log("Creating profile...");
+      await createProfile(parsedProfile);
+
+      toast.success("Resume processed and profile created successfully!");
     } catch (error) {
-      console.error("Text extraction error:", error);
-      toast.error("Failed to extract text from the file.");
+      console.error("Processing error:", error);
+      toast.error("Failed to process the resume.");
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -166,10 +179,10 @@ export default function AddFile() {
       </Button>
       <Button
         onClick={handleExtract}
-        disabled={!file || !isWorkerInitialized}
+        disabled={!file || !isWorkerInitialized || isProcessing}
         className="w-full"
       >
-        Extract PDF Text
+        {isProcessing ? "Processing Resume..." : "Extract & Create Profile"}
       </Button>
     </div>
   );

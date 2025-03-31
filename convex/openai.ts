@@ -1,7 +1,8 @@
 import { createOpenAI } from "@ai-sdk/openai";
-import { internalAction } from "./_generated/server";
+import { internalAction, mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { streamText } from "ai";
+import { streamText, generateObject } from "ai";
+import { z } from "zod";
 
 export const openai = createOpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -61,5 +62,87 @@ export const completion = internalAction({
     }
     console.log(fullResponse);
     return fullResponse;
+  },
+});
+
+export const parseResume = mutation({
+  args: {
+    resumeText: v.string(),
+  },
+  handler: async (ctx, args) => {
+    try {
+      const systemPrompt =
+        "You are a resume parser that extracts structured information from resume text. " +
+        "Parse the provided resume text into a structured profile format, ensuring all dates are in YYYY-MM format. " +
+        "Here is the resume text:\n\n" +
+        args.resumeText;
+
+      const { object } = await generateObject({
+        model: openai("gpt-4o-mini"),
+        prompt: systemPrompt,
+        schema: z.object({
+          name: z.string(),
+          email: z.string(),
+          phone: z.optional(z.string()),
+          location: z.optional(z.string()),
+          profilePictureUrl: z.optional(z.string()),
+
+          socialLinks: z.optional(
+            z.array(
+              z.object({
+                platform: z.string(),
+                url: z.string(),
+              }),
+            ),
+          ),
+
+          education: z.array(
+            z.object({
+              institution: z.string(),
+              degree: z.string(),
+              field: z.string(),
+              startDate: z.string(),
+              endDate: z.optional(z.string()),
+              gpa: z.optional(z.number()),
+              description: z.optional(z.string()),
+              location: z.optional(z.string()),
+            }),
+          ),
+
+          workExperience: z.array(
+            z.object({
+              company: z.string(),
+              position: z.string(),
+              location: z.optional(z.string()),
+              startDate: z.string(),
+              endDate: z.optional(z.string()),
+              current: z.boolean(),
+              description: z.array(z.string()),
+              technologies: z.optional(z.array(z.string())),
+            }),
+          ),
+
+          projects: z.array(
+            z.object({
+              name: z.string(),
+              description: z.array(z.string()),
+              startDate: z.optional(z.string()),
+              endDate: z.optional(z.string()),
+              technologies: z.array(z.string()),
+              link: z.optional(z.string()),
+              githubUrl: z.optional(z.string()),
+              highlights: z.optional(z.array(z.string())),
+            }),
+          ),
+
+          skills: z.record(z.string(), z.array(z.string())),
+        }),
+      });
+
+      return object;
+    } catch (error) {
+      console.error("Error parsing resume:", error);
+      throw error;
+    }
   },
 });
