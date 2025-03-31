@@ -2,6 +2,7 @@ import { Infer, v } from "convex/values";
 import { defineTable } from "convex/server";
 import { mutation, query } from "./_generated/server";
 import { Id } from "./_generated/dataModel";
+import { ConvexError } from "convex/values";
 
 /******************************************************************************
  * SCHEMA
@@ -28,6 +29,7 @@ export const jobInSchema = {
   // Urls
   postingUrl: v.string(),
   applicationUrl: v.string(),
+  questionImageUrl: v.optional(v.string()),
 
   // Timestamps
   createdAt: v.string(),
@@ -47,6 +49,7 @@ export const jobUpdateSchema = {
   description: v.optional(v.string()),
   questions: v.optional(v.array(v.string())),
   answers: v.optional(v.array(v.string())),
+  questionImageUrl: v.optional(v.string()),
   postingUrl: v.optional(v.string()),
   applicationUrl: v.optional(v.string()),
 };
@@ -274,6 +277,30 @@ export const updateAnswerAtIndex = mutation({
     await ctx.db.patch(jobId, {
       answers: updatedAnswers,
       updatedAt: new Date().toISOString(),
+    });
+
+    return true;
+  },
+});
+
+export const uploadQuestionImage = mutation({
+  args: {
+    jobId: v.id("jobs"),
+    userId: v.string(),
+    imageUrl: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const { jobId, userId, imageUrl } = args;
+
+    // Verify job ownership
+    const job = await ctx.db.get(jobId);
+    if (!job || job.userId !== userId) {
+      throw new ConvexError("Job not found or unauthorized");
+    }
+
+    // Update job with image URL
+    await ctx.db.patch(jobId, {
+      questionImageUrl: imageUrl,
     });
 
     return true;
