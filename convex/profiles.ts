@@ -77,7 +77,7 @@ export const profileInSchema = {
   ),
 
   // Skills
-  skills: v.record(v.string(), v.array(v.string())),
+  skills: v.array(v.string()),
 };
 
 // eslint-disable-next-line
@@ -134,7 +134,7 @@ export const profileUpdateSchema = {
       }),
     ),
   ),
-  skills: v.optional(v.record(v.string(), v.array(v.string()))),
+  skills: v.optional(v.array(v.string())),
 };
 
 // eslint-disable-next-line
@@ -255,7 +255,7 @@ export const getOrCreateProfile = mutation({
       education: [],
       workExperience: [],
       projects: [],
-      skills: {},
+      skills: [],
     };
 
     const profileId = await ctx.db.insert("profiles", {

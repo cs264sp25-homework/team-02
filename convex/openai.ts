@@ -154,7 +154,7 @@ export const parseResume = action({
                   .nullable()
                   .optional()
                   .describe(
-                    "End date in YYYY-MM format or 'Present' if ongoing",
+                    "End date in YYYY-MM format. If unknown or unclear, then ignore this field.",
                   ),
                 gpa: z
                   .number()
@@ -199,7 +199,9 @@ export const parseResume = action({
                   .string()
                   .nullable()
                   .optional()
-                  .describe("End date in YYYY-MM format or null if current"),
+                  .describe(
+                    "End date in YYYY-MM format. If unknown or unclear or present/ongoing, then ignore this field.",
+                  ),
                 current: z
                   .boolean()
                   .nullable()
@@ -212,7 +214,9 @@ export const parseResume = action({
                 technologies: z
                   .array(z.string())
                   .default([])
-                  .describe("Technologies or tools used in this role"),
+                  .describe(
+                    "Technologies or tools used in this role. (e.g. 'Python', 'JavaScript', 'React', 'Node.js', 'SQL', 'Git', 'Docker', 'AWS')",
+                  ),
               }),
             )
             .default([])
@@ -235,11 +239,15 @@ export const parseResume = action({
                   .string()
                   .nullable()
                   .optional()
-                  .describe("When the project ended in YYYY-MM format"),
+                  .describe(
+                    "When the project ended in YYYY-MM format. If the project is ongoing/present, then ignore this field.",
+                  ),
                 technologies: z
                   .array(z.string())
                   .default([])
-                  .describe("Technologies, languages, or frameworks used"),
+                  .describe(
+                    "Technologies, languages, or frameworks used. (e.g. 'Python', 'JavaScript', 'React', 'Node.js', 'SQL', 'Git', 'Docker', 'AWS')",
+                  ),
                 link: z
                   .string()
                   .nullable()
@@ -254,7 +262,7 @@ export const parseResume = action({
                   .array(z.string())
                   .default([])
                   .describe(
-                    "Key achievements or notable aspects of the project",
+                    "Key achievements or notable aspects of the project. (e.g. 'Won hackathon', 'Won award', 'Sold product', 'Raised $100k', 'Published paper', 'Open-sourced code')",
                   ),
               }),
             )
