@@ -19,7 +19,10 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: path.resolve(__dirname, "index.html"),
-        worker: path.resolve(__dirname, "src/workers/mupdf.worker.ts"),
+        worker: path.resolve(
+          __dirname,
+          "src/file-upload/workers/mupdf.worker.ts",
+        ),
       },
     },
   },
