@@ -10,14 +10,18 @@ import { useMupdf } from "./hooks/usePdfWorker";
 
 const MAX_FILE_SIZE = 5;
 
-export default function AddFile() {
+interface AddFileProps {
+  userId?: string;
+}
+
+export default function AddFile({ userId }: AddFileProps) {
   const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const generateUploadUrl = useMutation(api.files.generateUploadUrl);
   const saveFile = useMutation(api.files.saveFile);
   const parseResume = useAction(api.openai.parseResume);
-  // const createProfile = useMutation(api.profiles.createProfile);
+  const createProfile = useMutation(api.profiles.createProfile);
   const [fileSize, setFileSize] = useState(0);
   const { isWorkerInitialized, loadDocument, extractText } = useMupdf();
 
@@ -38,13 +42,13 @@ export default function AddFile() {
     onDrop,
     accept: {
       "application/pdf": [".pdf"],
-      "application/msword": [".doc"],
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
-        [".docx"],
-      "application/rtf": [".rtf"],
-      "text/rtf": [".rtf"],
-      "text/html": [".html"],
-      "application/vnd.oasis.opendocument.text": [".odt"],
+      // "application/msword": [".doc"],
+      // "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+      //   [".docx"],
+      // "application/rtf": [".rtf"],
+      // "text/rtf": [".rtf"],
+      // "text/html": [".html"],
+      // "application/vnd.oasis.opendocument.text": [".odt"],
     },
     maxFiles: 1,
     multiple: false,
@@ -64,33 +68,145 @@ export default function AddFile() {
 
     try {
       setIsProcessing(true);
-      console.log("Extracting text from file...");
+
       // Read file as an ArrayBuffer
       const buffer = await readFileAsArrayBuffer(file);
-
-      console.log("Loading document into worker...");
 
       // Load the document into the worker
       await loadDocument(buffer);
 
-      console.log("Extracting text from document...");
-
       // Extract text from the PDF
       const text = await extractText();
 
-      console.log("Text extracted successfully!");
-      console.log("Extracted PDF Text:\n", text);
-
-      // Parse the resume text using OpenAI
-      console.log("Parsing resume with OpenAI...");
       const parsedProfile = await parseResume({ resumeText: text });
 
-      // Create the profile in the database
-      console.log("Creating profile...");
-      console.log(parsedProfile);
-      // await createProfile(parsedProfile);
+      // Check if userId is provided
+      if (!userId) {
+        toast.warning(
+          "No user ID provided. Profile parsed but not saved to database.",
+        );
+        return;
+      }
 
-      toast.success("Resume processed and profile created successfully!");
+      try {
+        // Transform education to ensure fields match expected types
+        const transformedEducation = Array.isArray(parsedProfile.education)
+          ? parsedProfile.education.map((edu) => ({
+              institution: edu.institution || "Unknown Institution",
+              degree: edu.degree || "Unknown Degree",
+              field: edu.field || "Unknown Field",
+              startDate: edu.startDate || "2023-01",
+              // Only include optional fields if they're strings
+              ...(typeof edu.endDate === "string"
+                ? { endDate: edu.endDate }
+                : {}),
+              ...(typeof edu.gpa === "number" ? { gpa: edu.gpa } : {}),
+              ...(typeof edu.description === "string"
+                ? { description: edu.description }
+                : {}),
+              ...(typeof edu.location === "string"
+                ? { location: edu.location }
+                : {}),
+            }))
+          : [];
+
+        // Transform work experience to ensure fields match expected types
+        const transformedWorkExperience = Array.isArray(
+          parsedProfile.workExperience,
+        )
+          ? parsedProfile.workExperience.map((work) => ({
+              company: work.company || "Unknown Company",
+              position: work.position || "Unknown Position",
+              startDate: work.startDate || "2023-01",
+              current: typeof work.current === "boolean" ? work.current : true,
+              description: Array.isArray(work.description)
+                ? work.description
+                : [],
+              // Only include optional fields if they're valid
+              ...(typeof work.location === "string"
+                ? { location: work.location }
+                : {}),
+              ...(typeof work.endDate === "string"
+                ? { endDate: work.endDate }
+                : {}),
+              ...(Array.isArray(work.technologies)
+                ? { technologies: work.technologies }
+                : {}),
+            }))
+          : [];
+
+        // Transform projects to ensure fields match expected types
+        const transformedProjects = Array.isArray(parsedProfile.projects)
+          ? parsedProfile.projects.map((proj) => ({
+              name: proj.name || "Unnamed Project",
+              description: Array.isArray(proj.description)
+                ? proj.description
+                : [],
+              technologies: Array.isArray(proj.technologies)
+                ? proj.technologies
+                : [],
+              // Only include optional fields if they're valid
+              ...(typeof proj.startDate === "string"
+                ? { startDate: proj.startDate }
+                : {}),
+              ...(typeof proj.endDate === "string"
+                ? { endDate: proj.endDate }
+                : {}),
+              ...(typeof proj.link === "string" ? { link: proj.link } : {}),
+              ...(typeof proj.githubUrl === "string"
+                ? { githubUrl: proj.githubUrl }
+                : {}),
+              ...(Array.isArray(proj.highlights)
+                ? { highlights: proj.highlights }
+                : {}),
+            }))
+          : [];
+
+        // Transform social links if they exist
+        const transformedSocialLinks = Array.isArray(parsedProfile.socialLinks)
+          ? parsedProfile.socialLinks
+              .filter(
+                (link) =>
+                  typeof link.platform === "string" &&
+                  typeof link.url === "string",
+              )
+              .map((link) => ({
+                platform: link.platform as string,
+                url: link.url as string,
+              }))
+          : undefined;
+
+        // Create the profile with transformed data
+        await createProfile({
+          name: parsedProfile.name || "New User",
+          email: parsedProfile.email || "user@example.com",
+          education: transformedEducation,
+          workExperience: transformedWorkExperience,
+          projects: transformedProjects,
+          skills: Array.isArray(parsedProfile.skills)
+            ? parsedProfile.skills
+            : [],
+          userId,
+          // Optional fields - only include if they're valid strings
+          ...(typeof parsedProfile.phone === "string"
+            ? { phone: parsedProfile.phone }
+            : {}),
+          ...(typeof parsedProfile.location === "string"
+            ? { location: parsedProfile.location }
+            : {}),
+          ...(typeof parsedProfile.profilePictureUrl === "string"
+            ? { profilePictureUrl: parsedProfile.profilePictureUrl }
+            : {}),
+          ...(transformedSocialLinks
+            ? { socialLinks: transformedSocialLinks }
+            : {}),
+        });
+
+        toast.success("Resume processed and profile created successfully!");
+      } catch (error) {
+        console.error("Error creating profile:", error);
+        toast.error("Error creating profile. Please try again.");
+      }
     } catch (error) {
       console.error("Processing error:", error);
       toast.error("Failed to process the resume.");
@@ -104,6 +220,7 @@ export default function AddFile() {
 
     try {
       setIsUploading(true);
+      console.log("userId:", userId);
       // Get the upload URL from Convex
       const postUrl = await generateUploadUrl();
 
@@ -129,6 +246,7 @@ export default function AddFile() {
         fileName: file.name,
         fileType: file.type,
         fileSize: file.size,
+        userId,
       });
 
       toast.success("File uploaded successfully!");
@@ -155,7 +273,7 @@ export default function AddFile() {
         )}
       >
         <input {...getInputProps()} disabled={isUploading} />
-        <Label>Upload Resume (PDF, DOC, DOCX, RTF, HTML, ODT)</Label>
+        <Label>Upload Resume (PDF)</Label>
         <div className="text-sm text-muted-foreground text-center">
           {isDragActive ? (
             <p>Drop the file here</p>
