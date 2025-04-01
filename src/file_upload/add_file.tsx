@@ -7,14 +7,12 @@ import { Label } from "@/core/components/label";
 import { useDropzone } from "react-dropzone";
 import { cn } from "@/core/lib/utils";
 import { useMupdf } from "./hooks/usePdfWorker";
+import { useAuth } from "@/linkedin/hooks/useAuth";
+import { useRouter } from "@/core/hooks/use-router";
 
 const MAX_FILE_SIZE = 5;
 
-interface AddFileProps {
-  userId?: string;
-}
-
-export default function AddFile({ userId }: AddFileProps) {
+export default function AddFile() {
   const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -24,6 +22,12 @@ export default function AddFile({ userId }: AddFileProps) {
   const createProfile = useMutation(api.profiles.createProfile);
   const [fileSize, setFileSize] = useState(0);
   const { isWorkerInitialized, loadDocument, extractText } = useMupdf();
+  const { isAuthenticated, user } = useAuth();
+  const { redirect } = useRouter();
+
+  if (!isAuthenticated || !user) {
+    redirect("login");
+  }
 
   const onDrop = (acceptedFiles: File[]) => {
     const selectedFile = acceptedFiles[0];
@@ -79,14 +83,6 @@ export default function AddFile({ userId }: AddFileProps) {
       const text = await extractText();
 
       const parsedProfile = await parseResume({ resumeText: text });
-
-      // Check if userId is provided
-      if (!userId) {
-        toast.warning(
-          "No user ID provided. Profile parsed but not saved to database.",
-        );
-        return;
-      }
 
       try {
         // Transform education to ensure fields match expected types
@@ -186,7 +182,7 @@ export default function AddFile({ userId }: AddFileProps) {
           skills: Array.isArray(parsedProfile.skills)
             ? parsedProfile.skills
             : [],
-          userId,
+          userId: user?.id || "",
           // Optional fields - only include if they're valid strings
           ...(typeof parsedProfile.phone === "string"
             ? { phone: parsedProfile.phone }
@@ -220,7 +216,7 @@ export default function AddFile({ userId }: AddFileProps) {
 
     try {
       setIsUploading(true);
-      console.log("userId:", userId);
+      console.log("userId:", user);
       // Get the upload URL from Convex
       const postUrl = await generateUploadUrl();
 
@@ -246,7 +242,7 @@ export default function AddFile({ userId }: AddFileProps) {
         fileName: file.name,
         fileType: file.type,
         fileSize: file.size,
-        userId,
+        userId: user?.id || "",
       });
 
       toast.success("File uploaded successfully!");
