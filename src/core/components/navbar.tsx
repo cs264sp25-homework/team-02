@@ -26,15 +26,20 @@ export const NavBar = () => {
 
   // Filter nav items based on authentication status
   const filteredNavItems = navItems.filter(
-    (item) => !item.requiresAuth || isAuthenticated
+    (item) => !item.requiresAuth || isAuthenticated,
   );
 
   return (
     <nav className="bg-white border-b border-gray-200 px-4 py-2.5 fixed w-full top-0 left-0 z-50">
       <div className="flex flex-wrap justify-between items-center">
         {/* Logo/Brand */}
-        <div className="flex items-center cursor-pointer" onClick={() => navigate("home")}>
-          <span className="self-center text-xl font-semibold whitespace-nowrap">JobSync</span>
+        <div
+          className="flex items-center cursor-pointer"
+          onClick={() => navigate("home")}
+        >
+          <span className="self-center text-xl font-semibold whitespace-nowrap">
+            JobSync
+          </span>
         </div>
 
         {/* Mobile menu button */}
@@ -124,8 +129,8 @@ export const NavBar = () => {
               )}
             </div>
           ) : (
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => navigate("login")}
               className="ml-4"
             >
@@ -136,12 +141,7 @@ export const NavBar = () => {
       </div>
 
       {/* Mobile Navigation Menu */}
-      <div
-        className={cn(
-          "md:hidden",
-          isMobileMenuOpen ? "block" : "hidden"
-        )}
-      >
+      <div className={cn("md:hidden", isMobileMenuOpen ? "block" : "hidden")}>
         <ul className="flex flex-col py-4 space-y-4">
           {filteredNavItems.map((item) => (
             <li key={item.route}>

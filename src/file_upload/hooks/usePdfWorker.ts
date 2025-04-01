@@ -1,4 +1,7 @@
-import { MUPDF_LOADED, type MupdfWorker } from "@/file_upload/workers/mupdf.worker";
+import {
+  MUPDF_LOADED,
+  type MupdfWorker,
+} from "@/file_upload/workers/mupdf.worker";
 import * as Comlink from "comlink";
 import { Remote } from "comlink";
 import { useCallback, useEffect, useRef, useState } from "react";

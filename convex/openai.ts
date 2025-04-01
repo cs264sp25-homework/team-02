@@ -69,7 +69,7 @@ export const parseResume = action({
   args: {
     resumeText: v.string(),
   },
-  handler: async (ctx, args) => {
+  handler: async (_, args) => {
     try {
       console.log("Parsing resume...");
       const systemPrompt =

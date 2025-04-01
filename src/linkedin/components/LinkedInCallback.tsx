@@ -3,10 +3,14 @@ import { useAction } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { useRouter } from "@/core/hooks/use-router";
 import { Spinner } from "@/linkedin/components/spinner";
-import { Alert, AlertTitle, AlertDescription } from "@/linkedin/components/alert";
+import {
+  Alert,
+  AlertTitle,
+  AlertDescription,
+} from "@/linkedin/components/alert";
 import { Button } from "@/core/components/button";
 import { logger } from "@/lib/logger";
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from "../hooks/useAuth";
 
 export default function LinkedInCallback() {
   const { navigate } = useRouter();
@@ -20,17 +24,20 @@ export default function LinkedInCallback() {
   // Get the action and auth methods
   const exchangeCode = useAction(api.linkedin.auth.exchangeLinkedInCode);
   const { storeUserData } = useAuth();
-  
+
   // Use callback to stabilize the reference to storeUserData
-  const handleUserData = useCallback(async (userData: unknown) => {
-    try {
-      return await storeUserData(userData);
-    } catch (error) {
-      logger.error("Error storing user data:", error);
-      throw error;
-    }
-  }, [storeUserData]);
-  
+  const handleUserData = useCallback(
+    async (userData: unknown) => {
+      try {
+        return await storeUserData(userData);
+      } catch (error) {
+        logger.error("Error storing user data:", error);
+        throw error;
+      }
+    },
+    [storeUserData],
+  );
+
   useEffect(() => {
     const processCallback = async () => {
       // Skip if we've already processed this callback
@@ -47,9 +54,9 @@ export default function LinkedInCallback() {
 
         // Check for error from LinkedIn
         if (errorParam) {
-          logger.error("LinkedIn auth error from provider", { 
-            error: errorParam, 
-            description: errorDescription 
+          logger.error("LinkedIn auth error from provider", {
+            error: errorParam,
+            description: errorDescription,
           });
           setError(`LinkedIn login failed: ${errorDescription || errorParam}`);
           return;
@@ -57,7 +64,8 @@ export default function LinkedInCallback() {
 
         // Try to get the state from both localStorage and sessionStorage
         const stateFromLocalStorage = localStorage.getItem("linkedInAuthState");
-        const stateFromSessionStorage = sessionStorage.getItem("linkedInAuthState");
+        const stateFromSessionStorage =
+          sessionStorage.getItem("linkedInAuthState");
         const storedState = stateFromLocalStorage || stateFromSessionStorage;
 
         logger.debug("Retrieved state values", {
@@ -75,7 +83,7 @@ export default function LinkedInCallback() {
           logger.warn("OAuth state parameter validation failed", {
             receivedState: state ? "present" : "missing",
             storedState: storedState ? "present" : "missing",
-            match: state === storedState ? "yes" : "no"
+            match: state === storedState ? "yes" : "no",
           });
           setStateError(true);
           setError("Authentication failed: Security validation error.");
@@ -96,10 +104,10 @@ export default function LinkedInCallback() {
 
         // Exchange the code for a token and user info
         const result = await exchangeCode({ code });
-        
+
         logger.debug("Token exchange completed", {
           success: !!result,
-          hasUserData: result && result.firstName ? true : false
+          hasUserData: result && result.firstName ? true : false,
         });
 
         // Store the user data
@@ -115,8 +123,10 @@ export default function LinkedInCallback() {
               accessToken: result.accessToken,
               expiresAt: result.expiresAt,
             });
-            
-            logger.info("User successfully stored in database", { userId: storeResult?.userId });
+
+            logger.info("User successfully stored in database", {
+              userId: storeResult?.userId,
+            });
           } catch (storeError) {
             logger.error("Failed to store user data", { error: storeError });
             // Continue anyway so the user isn't stuck
@@ -131,14 +141,14 @@ export default function LinkedInCallback() {
           navigate("profile");
         }, 1500);
       } catch (err) {
-        logger.error("Unhandled exception during LinkedIn authentication", { 
-          error: err instanceof Error ? err.message : String(err)
+        logger.error("Unhandled exception during LinkedIn authentication", {
+          error: err instanceof Error ? err.message : String(err),
         });
-        
+
         setError(
           err instanceof Error
             ? err.message
-            : "An unknown error occurred during LinkedIn login."
+            : "An unknown error occurred during LinkedIn login.",
         );
       }
     };
@@ -165,7 +175,7 @@ export default function LinkedInCallback() {
           <AlertTitle>Error</AlertTitle>
           <AlertDescription>
             {error}
-            {stateError && import.meta.env.MODE === 'development' && (
+            {stateError && import.meta.env.MODE === "development" && (
               <div className="mt-2">
                 <p className="text-sm mt-2">Debug info:</p>
                 <p className="text-xs">

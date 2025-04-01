@@ -1,7 +1,6 @@
-import { atom } from 'nanostores';
-import { api } from '../../../convex/_generated/api';
-import { convex } from '@/lib/convex';
-
+import { atom } from "nanostores";
+import { api } from "../../../convex/_generated/api";
+import { convex } from "@/lib/convex";
 
 // Define the user type
 export interface User {
@@ -28,7 +27,7 @@ export async function initAuth() {
         firstName: currentUser.firstName,
         lastName: currentUser.lastName,
         email: currentUser.email,
-        profilePictureUrl: currentUser.profilePictureUrl
+        profilePictureUrl: currentUser.profilePictureUrl,
       });
       $isAuthenticated.set(true);
     } else {
@@ -36,7 +35,7 @@ export async function initAuth() {
       $user.set(null);
     }
   } catch (error) {
-    console.error('Failed to initialize auth:', error);
+    console.error("Failed to initialize auth:", error);
     $isAuthenticated.set(false);
     $user.set(null);
   } finally {
@@ -55,23 +54,23 @@ export async function storeUserData(userData: any) {
       profilePictureUrl: userData.profilePictureUrl,
       locale: userData.locale,
       accessToken: userData.accessToken,
-      expiresAt: userData.expiresAt
+      expiresAt: userData.expiresAt,
     });
-    
+
     if (result) {
       $user.set({
         id: result.userId,
         firstName: result.firstName,
         lastName: result.lastName,
         email: userData.email,
-        profilePictureUrl: userData.profilePictureUrl
+        profilePictureUrl: userData.profilePictureUrl,
       });
       $isAuthenticated.set(true);
       return result;
     }
     return null;
   } catch (error) {
-    console.error('Failed to store user:', error);
+    console.error("Failed to store user:", error);
     throw error;
   }
 }

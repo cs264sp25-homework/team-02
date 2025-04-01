@@ -1,7 +1,6 @@
 import { LinkedInLoginButton } from "@/linkedin/components/LinkedInLoginButton";
 
 const LoginPage: React.FC = () => {
-
   return (
     <div className="flex flex-col items-center justify-center w-full max-w-md p-8 mx-auto space-y-8">
       <div className="flex flex-col items-center space-y-2 text-center">
