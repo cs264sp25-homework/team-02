@@ -5,9 +5,8 @@ import { defineConfig } from "vite";
 
 const isProduction = process.env.NODE_ENV === "production";
 
-// https://vite.dev/config/
 export default defineConfig({
-  base: isProduction ? "/team-02/" : "/", // this needs to match the repo name to work on github pages
+  base: isProduction ? "/team-02/" : "/",
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
@@ -15,7 +14,7 @@ export default defineConfig({
     },
   },
   build: {
-    target: "esnext", // This enables top-level await support
+    target: "esnext",
     rollupOptions: {
       input: {
         main: path.resolve(__dirname, "index.html"),
@@ -28,9 +27,9 @@ export default defineConfig({
   },
   optimizeDeps: {
     esbuildOptions: {
-      target: "esnext", // This enables top-level await support in dev mode
+      target: "esnext",
     },
-    exclude: ["mupdf"], // Exclude mupdf from pre-bundling
+    exclude: ["mupdf"],
   },
   worker: {
     format: "es",
