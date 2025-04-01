@@ -8,7 +8,8 @@ import { LinkedInUserResult } from "../types/linkedInUserResult";
 export const LINKEDIN_CONFIG = {
   clientId: process.env.LINKEDIN_CLIENT_ID || "",
   clientSecret: process.env.LINKEDIN_CLIENT_SECRET || "",
-  redirectUri: process.env.LINKEDIN_REDIRECT_URI || "http://localhost:5173/auth/callback",
+  redirectUri:
+    process.env.LINKEDIN_REDIRECT_URI || "http://localhost:5173/auth/callback",
   scopes: ["openid", "profile", "email"],
 };
 
@@ -19,23 +20,26 @@ export const exchangeLinkedInCode = action({
   },
   handler: async (_ctx, args): Promise<LinkedInUserResult> => {
     const { code } = args;
-    
+
     try {
       // Exchange code for token
-      const tokenResponse = await fetch("https://www.linkedin.com/oauth/v2/accessToken", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
+      const tokenResponse = await fetch(
+        "https://www.linkedin.com/oauth/v2/accessToken",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: new URLSearchParams({
+            grant_type: "authorization_code",
+            code,
+            client_id: LINKEDIN_CONFIG.clientId,
+            client_secret: LINKEDIN_CONFIG.clientSecret,
+            redirect_uri: LINKEDIN_CONFIG.redirectUri,
+          }),
         },
-        body: new URLSearchParams({
-          grant_type: "authorization_code",
-          code,
-          client_id: LINKEDIN_CONFIG.clientId,
-          client_secret: LINKEDIN_CONFIG.clientSecret,
-          redirect_uri: LINKEDIN_CONFIG.redirectUri,
-        }),
-      });
-      
+      );
+
       if (!tokenResponse.ok) {
         const errorText = await tokenResponse.text();
         console.error("LinkedIn token error:", errorText);
@@ -44,16 +48,18 @@ export const exchangeLinkedInCode = action({
           message: `Failed to exchange LinkedIn code for token: ${errorText}`,
         });
       }
-      
-      const tokenData = await tokenResponse.json();      
+
+      const tokenData = await tokenResponse.json();
       // Get the user's profile information using the userinfo endpoint
-      const userInfoResponse = await fetch("https://api.linkedin.com/v2/userinfo", {
-        headers: {
-          Authorization: `Bearer ${tokenData.access_token}`,
+      const userInfoResponse = await fetch(
+        "https://api.linkedin.com/v2/userinfo",
+        {
+          headers: {
+            Authorization: `Bearer ${tokenData.access_token}`,
+          },
         },
-      });
-      
-      
+      );
+
       if (!userInfoResponse.ok) {
         const errorText = await userInfoResponse.text();
         console.error("LinkedIn userinfo error:", errorText);
@@ -62,13 +68,12 @@ export const exchangeLinkedInCode = action({
           message: `Failed to fetch LinkedIn profile: ${errorText}`,
         });
       }
-      
+
       const userInfo = await userInfoResponse.json();
-    
-      
+
       // Since we're in an action and can't run mutations, we return the user info directly
       return {
-        userId: "temp_id" as Id<"users">,  // This is a placeholder
+        userId: "temp_id" as Id<"users">, // This is a placeholder
         isNewUser: true,
         linkedInId: userInfo.sub,
         firstName: userInfo.given_name || "Unknown",
@@ -77,7 +82,9 @@ export const exchangeLinkedInCode = action({
         profilePictureUrl: userInfo.picture,
         locale: userInfo.locale,
         accessToken: tokenData.access_token,
-        expiresAt: new Date(Date.now() + tokenData.expires_in * 1000).toISOString()
+        expiresAt: new Date(
+          Date.now() + tokenData.expires_in * 1000,
+        ).toISOString(),
       };
     } catch (error) {
       console.error("LinkedIn auth action error:", error);
@@ -93,27 +100,35 @@ export const storeLinkedInUser = mutation({
     lastName: v.string(),
     email: v.optional(v.string()),
     profilePictureUrl: v.optional(v.string()),
-    locale: v.optional(v.union(v.string(), v.object({
-      country: v.string(),
-      language: v.string()
-    }))),
+    locale: v.optional(
+      v.union(
+        v.string(),
+        v.object({
+          country: v.string(),
+          language: v.string(),
+        }),
+      ),
+    ),
     accessToken: v.string(),
     expiresAt: v.string(),
   },
   handler: async (ctx, userData): Promise<LinkedInUserResult> => {
     // Convert locale to string if it's an object
-    const localeString = typeof userData.locale === 'string' 
-      ? userData.locale 
-      : userData.locale 
-        ? `${userData.locale.language}_${userData.locale.country}`
-        : undefined;
-    
+    const localeString =
+      typeof userData.locale === "string"
+        ? userData.locale
+        : userData.locale
+          ? `${userData.locale.language}_${userData.locale.country}`
+          : undefined;
+
     // Find existing user with this LinkedIn ID
     const existingUser = await ctx.db
       .query("users")
-      .withIndex("by_linkedInId", (q) => q.eq("linkedInId", userData.linkedInId))
+      .withIndex("by_linkedInId", (q) =>
+        q.eq("linkedInId", userData.linkedInId),
+      )
       .first();
-    
+
     if (existingUser) {
       // Update existing user
       await ctx.db.patch(existingUser._id, {
@@ -126,9 +141,9 @@ export const storeLinkedInUser = mutation({
         expiresAt: userData.expiresAt,
         lastLoginAt: new Date().toISOString(),
       });
-      
-      return { 
-        userId: existingUser._id, 
+
+      return {
+        userId: existingUser._id,
         isNewUser: false,
         firstName: userData.firstName,
         lastName: userData.lastName,
@@ -137,7 +152,7 @@ export const storeLinkedInUser = mutation({
         profilePictureUrl: userData.profilePictureUrl,
         locale: localeString,
         accessToken: userData.accessToken,
-        expiresAt: userData.expiresAt
+        expiresAt: userData.expiresAt,
       };
     } else {
       // Create new user
@@ -153,9 +168,9 @@ export const storeLinkedInUser = mutation({
         createdAt: new Date().toISOString(),
         lastLoginAt: new Date().toISOString(),
       });
-      
-      return { 
-        userId, 
+
+      return {
+        userId,
         isNewUser: true,
         firstName: userData.firstName,
         lastName: userData.lastName,
@@ -164,7 +179,7 @@ export const storeLinkedInUser = mutation({
         profilePictureUrl: userData.profilePictureUrl,
         locale: localeString,
         accessToken: userData.accessToken,
-        expiresAt: userData.expiresAt
+        expiresAt: userData.expiresAt,
       };
     }
   },
@@ -174,16 +189,16 @@ export const storeLinkedInUser = mutation({
 export const getCurrentUser = query({
   handler: async (ctx) => {
     const identity = await ctx.auth.getUserIdentity();
-    
+
     if (!identity) {
       return null;
     }
-    
+
     const user = await ctx.db
       .query("users")
       .withIndex("by_linkedInId", (q) => q.eq("linkedInId", identity.subject))
       .first();
-    
+
     return user;
   },
 });
@@ -192,17 +207,17 @@ export const getCurrentUser = query({
 export const isConnectedToLinkedIn = query({
   handler: async (ctx) => {
     const identity = await ctx.auth.getUserIdentity();
-    
+
     if (!identity) {
       return false;
     }
-    
+
     // For simplicity, we'll consider the user connected if they exist in our users table
     const user = await ctx.db
       .query("users")
       .withIndex("by_linkedInId", (q) => q.eq("linkedInId", identity.subject))
       .first();
-    
+
     return !!user;
   },
 });

@@ -24,9 +24,9 @@ const ProfilePage = () => {
   const { isAuthenticated, user } = useAuth();
   const { redirect } = useRouter();
 
-  if (!isAuthenticated) {
-    redirect("login");
-  }
+  // if (!isAuthenticated) {
+  //   redirect("login");
+  // }
 
   const { data: profile, loading: isLoading } = useGetOrCreateProfile(user!.id);
   const mutation = useMutationProfile(profile?._id, user!.id);
