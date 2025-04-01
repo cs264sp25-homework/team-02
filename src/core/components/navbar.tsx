@@ -2,7 +2,7 @@ import { useRouter } from "@/core/hooks/use-router";
 import { useAuth } from "@/linkedin/hooks/useAuth";
 import { useState } from "react";
 import { cn } from "@/core/lib/utils";
-import { LogOut, User, Menu, X } from "lucide-react";
+import { User, Menu, X } from "lucide-react";
 import { Button } from "@/core/components/button";
 
 export const NavBar = () => {
