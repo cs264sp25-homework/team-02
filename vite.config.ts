@@ -21,7 +21,7 @@ export default defineConfig({
         main: path.resolve(__dirname, "index.html"),
         worker: path.resolve(
           __dirname,
-          "src/file-upload/workers/mupdf.worker.ts",
+          "src/file_upload/workers/mupdf.worker.ts",
         ),
       },
     },
