@@ -75,6 +75,9 @@ export const parseResume = action({
       const systemPrompt =
         "You are a resume parser that extracts structured information from resume text. " +
         "Parse the provided resume text into a structured profile format, ensuring all dates are in YYYY-MM format. " +
+        "Output a JSON object that exactly fits the following schema. For the skills field, " +
+        "make sure it is an object mapping categories (like 'Programming Languages', 'Tools', etc.) " +
+        "to arrays of strings. If the resume only provides a list of skills, wrap them under a default category called 'General'. " +
         "Here is the resume text:\n\n" +
         args.resumeText;
 
@@ -107,7 +110,7 @@ export const parseResume = action({
                 platform: z
                   .string()
                   .describe(
-                    "Name of the social platform (e.g., LinkedIn, GitHub, Twitter)",
+                    "Name of the social platform (e.g., LinkedIn, GitHub)",
                   ),
                 url: z
                   .string()
@@ -129,9 +132,7 @@ export const parseResume = action({
                   .string()
                   .nullable()
                   .optional()
-                  .describe(
-                    "Degree obtained (e.g., Bachelor's, Master's, PhD)",
-                  ),
+                  .describe("Degree obtained (e.g., Bachelor's, Master's)"),
                 field: z
                   .string()
                   .nullable()
@@ -244,12 +245,21 @@ export const parseResume = action({
             .default([])
             .describe("Projects completed by the candidate"),
 
-          skills: z
-            .record(z.array(z.string()))
-            .default({})
-            .describe(
-              "Skills grouped by category (e.g. 'Programming Languages': ['JavaScript', 'Python'])",
-            ),
+          // Preprocess the skills field so that if an array is provided, it gets wrapped in an object
+          skills: z.preprocess(
+            (val) => {
+              if (Array.isArray(val)) {
+                return { General: val };
+              }
+              return val;
+            },
+            z
+              .record(z.array(z.string()))
+              .default({})
+              .describe(
+                "Skills grouped by category (e.g., 'Programming Languages': ['JavaScript', 'Python'])",
+              ),
+          ),
         }),
       });
 
