@@ -1,5 +1,12 @@
-import { useStore } from '@nanostores/react';
-import { $user, $isAuthenticated, $isLoading, initAuth, storeUserData, logout } from '../stores/auth-store';
+import { useStore } from "@nanostores/react";
+import {
+  $user,
+  $isAuthenticated,
+  $isLoading,
+  initAuth,
+  storeUserData,
+  logout,
+} from "../stores/auth-store";
 
 export function useAuth() {
   const user = useStore($user);
@@ -12,6 +19,6 @@ export function useAuth() {
     isLoading,
     initAuth,
     storeUserData,
-    logout
+    logout,
   };
 }
