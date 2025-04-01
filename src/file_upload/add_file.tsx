@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useMutation } from "convex/react";
+import { useMutation, useAction } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { toast } from "sonner";
 import { Button } from "@/core/components/button";
@@ -16,8 +16,8 @@ export default function AddFile() {
   const [isProcessing, setIsProcessing] = useState(false);
   const generateUploadUrl = useMutation(api.files.generateUploadUrl);
   const saveFile = useMutation(api.files.saveFile);
-  const parseResume = useMutation(api.openai.parseResume);
-  const createProfile = useMutation(api.profiles.createProfile);
+  const parseResume = useAction(api.openai.parseResume);
+  // const createProfile = useMutation(api.profiles.createProfile);
   const [fileSize, setFileSize] = useState(0);
   const { isWorkerInitialized, loadDocument, extractText } = useMupdf();
 
@@ -87,7 +87,8 @@ export default function AddFile() {
 
       // Create the profile in the database
       console.log("Creating profile...");
-      await createProfile(parsedProfile);
+      console.log(parsedProfile);
+      // await createProfile(parsedProfile);
 
       toast.success("Resume processed and profile created successfully!");
     } catch (error) {

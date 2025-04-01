@@ -1,5 +1,5 @@
 import { createOpenAI } from "@ai-sdk/openai";
-import { internalAction, mutation } from "./_generated/server";
+import { internalAction, action } from "./_generated/server";
 import { v } from "convex/values";
 import { streamText, generateObject } from "ai";
 import { z } from "zod";
@@ -65,12 +65,13 @@ export const completion = internalAction({
   },
 });
 
-export const parseResume = mutation({
+export const parseResume = action({
   args: {
     resumeText: v.string(),
   },
   handler: async (ctx, args) => {
     try {
+      console.log("Parsing resume...");
       const systemPrompt =
         "You are a resume parser that extracts structured information from resume text. " +
         "Parse the provided resume text into a structured profile format, ensuring all dates are in YYYY-MM format. " +
@@ -81,61 +82,174 @@ export const parseResume = mutation({
         model: openai("gpt-4o-mini"),
         prompt: systemPrompt,
         schema: z.object({
-          name: z.string(),
-          email: z.string(),
-          phone: z.optional(z.string()),
-          location: z.optional(z.string()),
-          profilePictureUrl: z.optional(z.string()),
+          name: z.string().describe("Full name of the candidate"),
+          email: z
+            .string()
+            .nullable()
+            .optional()
+            .describe("Email address of the candidate"),
+          phone: z
+            .string()
+            .optional()
+            .describe("Phone number of the candidate"),
+          location: z
+            .string()
+            .optional()
+            .describe("Location or address of the candidate"),
+          profilePictureUrl: z
+            .string()
+            .optional()
+            .describe("URL to the candidate's profile picture if available"),
 
-          socialLinks: z.optional(
-            z.array(
+          socialLinks: z
+            .array(
               z.object({
-                platform: z.string(),
-                url: z.string(),
+                platform: z
+                  .string()
+                  .describe(
+                    "Name of the social platform (e.g., LinkedIn, GitHub, Twitter)",
+                  ),
+                url: z
+                  .string()
+                  .describe(
+                    "Full URL to the candidate's profile on this platform",
+                  ),
               }),
+            )
+            .default([])
+            .describe("List of the candidate's social media profiles"),
+
+          education: z
+            .array(
+              z.object({
+                institution: z
+                  .string()
+                  .describe("Name of the school, college, or university"),
+                degree: z
+                  .string()
+                  .nullable()
+                  .optional()
+                  .describe(
+                    "Degree obtained (e.g., Bachelor's, Master's, PhD)",
+                  ),
+                field: z
+                  .string()
+                  .nullable()
+                  .optional()
+                  .describe("Field of study or major"),
+                startDate: z
+                  .string()
+                  .nullable()
+                  .optional()
+                  .describe("Start date in YYYY-MM format"),
+                endDate: z
+                  .string()
+                  .nullable()
+                  .optional()
+                  .describe(
+                    "End date in YYYY-MM format or 'Present' if ongoing",
+                  ),
+                gpa: z
+                  .number()
+                  .optional()
+                  .describe("Grade Point Average if mentioned"),
+                description: z
+                  .string()
+                  .optional()
+                  .describe("Additional details about the education"),
+                location: z
+                  .string()
+                  .optional()
+                  .describe("Location of the institution"),
+              }),
+            )
+            .default([])
+            .describe("Educational background of the candidate"),
+
+          workExperience: z
+            .array(
+              z.object({
+                company: z.string().describe("Name of the employer or company"),
+                position: z
+                  .string()
+                  .describe("Job title or role at the company"),
+                location: z
+                  .string()
+                  .optional()
+                  .describe("Location of the job (city, country, or remote)"),
+                startDate: z
+                  .string()
+                  .nullable()
+                  .optional()
+                  .describe("Start date in YYYY-MM format"),
+                endDate: z
+                  .string()
+                  .nullable()
+                  .optional()
+                  .describe("End date in YYYY-MM format or null if current"),
+                current: z
+                  .boolean()
+                  .describe("Whether this is the candidate's current position"),
+                description: z
+                  .array(z.string())
+                  .default([])
+                  .describe("List of job responsibilities and achievements"),
+                technologies: z
+                  .array(z.string())
+                  .optional()
+                  .describe("Technologies or tools used in this role"),
+              }),
+            )
+            .default([])
+            .describe("Professional work experience of the candidate"),
+
+          projects: z
+            .array(
+              z.object({
+                name: z.string().describe("Name or title of the project"),
+                description: z
+                  .array(z.string())
+                  .default([])
+                  .describe("Detailed description of the project"),
+                startDate: z
+                  .string()
+                  .nullable()
+                  .optional()
+                  .describe("When the project started in YYYY-MM format"),
+                endDate: z
+                  .string()
+                  .nullable()
+                  .optional()
+                  .describe("When the project ended in YYYY-MM format"),
+                technologies: z
+                  .array(z.string())
+                  .default([])
+                  .describe("Technologies, languages, or frameworks used"),
+                link: z
+                  .string()
+                  .optional()
+                  .describe("URL to the live project if available"),
+                githubUrl: z
+                  .string()
+                  .optional()
+                  .describe("URL to the project's GitHub repository"),
+                highlights: z
+                  .array(z.string())
+                  .optional()
+                  .describe(
+                    "Key achievements or notable aspects of the project",
+                  ),
+              }),
+            )
+            .default([])
+            .describe("Projects completed by the candidate"),
+
+          skills: z
+            .record(z.array(z.string()))
+            .default({})
+            .describe(
+              "Skills grouped by category (e.g. 'Programming Languages': ['JavaScript', 'Python'])",
             ),
-          ),
-
-          education: z.array(
-            z.object({
-              institution: z.string(),
-              degree: z.string(),
-              field: z.string(),
-              startDate: z.string(),
-              endDate: z.optional(z.string()),
-              gpa: z.optional(z.number()),
-              description: z.optional(z.string()),
-              location: z.optional(z.string()),
-            }),
-          ),
-
-          workExperience: z.array(
-            z.object({
-              company: z.string(),
-              position: z.string(),
-              location: z.optional(z.string()),
-              startDate: z.string(),
-              endDate: z.optional(z.string()),
-              current: z.boolean(),
-              description: z.array(z.string()),
-              technologies: z.optional(z.array(z.string())),
-            }),
-          ),
-
-          projects: z.array(
-            z.object({
-              name: z.string(),
-              description: z.array(z.string()),
-              startDate: z.optional(z.string()),
-              endDate: z.optional(z.string()),
-              technologies: z.array(z.string()),
-              link: z.optional(z.string()),
-              githubUrl: z.optional(z.string()),
-              highlights: z.optional(z.array(z.string())),
-            }),
-          ),
-
-          skills: z.record(z.string(), z.array(z.string())),
         }),
       });
 
