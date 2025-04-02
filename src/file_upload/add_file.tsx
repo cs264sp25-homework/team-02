@@ -173,14 +173,12 @@ export default function AddFile() {
             userId: user.id,
           });
           toast.success("Resume processed and profile updated successfully!");
-          console.log("Profile updated successfully:", parsedProfile.name);
         } else {
           await createProfile({
             ...profileData,
             userId: user.id,
           });
           toast.success("Resume processed and profile created successfully!");
-          console.log("Profile created successfully:", parsedProfile.name);
         }
       } catch (error) {
         console.error("Error processing profile:", error);
@@ -199,7 +197,6 @@ export default function AddFile() {
 
     try {
       setIsUploading(true);
-      console.log("userId:", user);
       // Get the upload URL from Convex
       const postUrl = await generateUploadUrl();
 
