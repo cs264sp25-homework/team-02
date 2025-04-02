@@ -1,6 +1,8 @@
 import { toast } from "sonner";
 import { api } from "../../../convex/_generated/api";
-import { useMutation, useAction } from "convex/react";
+import { useMutation, useAction, useQuery } from "convex/react";
+import { ProfileType } from "../../../convex/profiles";
+import { formatProfileBackground } from "../pages/job-details";
 
 export interface JobData {
   title: string;
@@ -13,6 +15,11 @@ export interface JobData {
 export function useAddJob(userId: string) {
   const addJob = useMutation(api.jobs.addJob);
   const scrapeJob = useAction(api.scrape.scrapeJob);
+  const profile = useQuery(api.profiles.getProfileByUserId, {
+    userId: userId,
+  });
+
+  const getAiGeneratedJobQuestions = useAction(api.openai.generateJobQuestions);
 
   const importJob = async (postingUrl: string, applicationUrl: string) => {
     try {
@@ -21,12 +28,19 @@ export function useAddJob(userId: string) {
         applicationUrl,
       });
 
+      const answersFromAi = await getAiGeneratedJobQuestions({
+        jobTitle: jobData.title,
+        jobRequirements: jobData.description,
+        jobQuestions: jobData.questions,
+        userBackground: formatProfileBackground(profile),
+      });
+
       const jobId = await addJob({
         userId,
         title: jobData.title,
         description: jobData.description,
         questions: jobData.questions,
-        answers: Array(jobData.questions.length).fill(""),
+        answers: answersFromAi,
         postingUrl,
         applicationUrl,
       });

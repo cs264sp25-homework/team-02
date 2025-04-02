@@ -191,7 +191,9 @@ export const updateJob = mutation({
       updatedAt: new Date().toISOString(),
     };
 
-    return await ctx.db.patch(jobId, jobUpdate);
+    await ctx.db.patch(jobId, jobUpdate);
+
+    return true;
   },
 });
 
