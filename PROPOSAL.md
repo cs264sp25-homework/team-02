@@ -147,8 +147,7 @@ This roadmap maps out the development of our AI-powered Flashcards App across tw
 2. Implement AI-improved versions of my responses to common job application questions (Primary Feature #7)
 
    - Add user control to either accept or reject AI improved content
-   - Allow user to describe how they want to imrpove their responses to the questions (make it more formal, am i addressing the prompt, I have this to start with but I am not sure how to finish off the response, can you help me)
-   - Use information from semantic search to help improve answers to common job application questions and make them more impactful and compelling
+   - Allow user to select from different options on how they want to improve their responses (make it more formal, am i addressing the prompt, I have this to start with but I am not sure how to finish off the response, can you help me)
 
 3. Implement a list of jobs shown on homepage (Primary Feature #8)
    - Set up a table of all imported jobs with two buttons
