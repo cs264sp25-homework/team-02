@@ -209,7 +209,8 @@ const JobDetailsPage = () => {
     }
   };
 
-  const handleAiAction = (index: number, action: string) => {
+  // index number should be used as the index of the answer to be improved
+  const handleAiAction = (action: string) => {
     switch (action) {
       case "improve":
         toast.info("Improving your answer...");
@@ -303,7 +304,7 @@ const JobDetailsPage = () => {
                       </div>
                       <div className="flex-shrink-0">
                         <AiDropdownMenu
-                          onSelect={(action) => handleAiAction(index, action)}
+                          onSelect={(action) => handleAiAction(action)}
                         />
                       </div>
                     </div>

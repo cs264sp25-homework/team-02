@@ -1,7 +1,6 @@
 import { toast } from "sonner";
 import { api } from "../../../convex/_generated/api";
 import { useMutation, useAction, useQuery } from "convex/react";
-import { ProfileType } from "../../../convex/profiles";
 import { formatProfileBackground } from "../pages/job-details";
 
 export interface JobData {

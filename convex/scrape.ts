@@ -1,7 +1,6 @@
 import { action } from "./_generated/server";
 import * as cheerio from "cheerio";
 import { v } from "convex/values";
-import { createWorker } from "tesseract.js";
 
 export const scrapeJob = action({
   args: {
