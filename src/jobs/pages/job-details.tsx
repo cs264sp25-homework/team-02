@@ -30,31 +30,45 @@ const JobDetailsPage = () => {
   const job = useQuery(api.jobs.getJobById, { jobId, userId: user!.id });
   const [answers, setAnswers] = useState<string[]>(job?.answers || []);
   const { updateAnswer } = useMutationJob();
-  const uploadQuestionImage = useMutation(api.jobs.uploadQuestionImage);
+  const updateJob = useMutation(api.jobs.updateJob);
 
-  const handleImageUpload = async (file: File) => {
+  const handleImageUpload = async (
+    file: File,
+    imageContentType: "requirements" | "questions",
+  ) => {
     try {
       const {
         data: { text },
       } = await Tesseract.recognize(
         file,
         "eng", // Language (English in this case)
-        { logger: (m) => console.log(m) }, // Optional: logs progress
       );
       console.log(text);
-      // Upload the file to Convex storage
-      // const storageId = await uploadQuestionImage({
-      //   jobId,
-      //   userId: user!.id,
-      //   imageUrl: URL.createObjectURL(file),
-      // });
 
-      if (text) {
-        toast.success("Image uploaded successfully");
+      let updatedJob: Id<"jobs"> | null;
+
+      if (imageContentType === "requirements") {
+        // update the job description
+        updatedJob = await updateJob({
+          userId: user!.id,
+          jobId: job!._id,
+          description: text,
+        });
+      } else {
+        // update the job questions
+        updatedJob = await updateJob({
+          userId: user!.id,
+          jobId: job!._id,
+          questions: text.split("\n").filter((line) => line.trim()),
+        });
+      }
+
+      if (updatedJob) {
+        toast.success("Image parsed and job updated successfully");
       }
     } catch (error) {
-      toast.error("Failed to upload image");
-      console.error("Upload error:", error);
+      toast.error("Failed to parse image or update job");
+      console.error("Error:", error);
     }
   };
 
@@ -101,8 +115,23 @@ const JobDetailsPage = () => {
         </CardHeader>
         <CardContent className="space-y-6">
           <div>
-            <h3 className="text-lg font-semibold mb-2">Description</h3>
-            <p className="whitespace-pre-wrap">{job.description}</p>
+            <h3 className="text-lg font-semibold mb-2">Requirements</h3>
+            {job.description && job.description !== "No requirements found" && (
+              <p className="whitespace-pre-wrap">{job.description}</p>
+            )}
+            {job.description === "No requirements found" && (
+              <div>
+                <p className="text-sm text-gray-600 mb-4">
+                  Unable to extract job requirements from provided link. Please
+                  upload screenshot of the job requirements.
+                </p>
+                <ImageUpload
+                  onImageUpload={(file) =>
+                    handleImageUpload(file, "requirements")
+                  }
+                />
+              </div>
+            )}
           </div>
 
           {job.questions.length == 0 && (
@@ -114,7 +143,9 @@ const JobDetailsPage = () => {
                 Unable to extract application questions from provided link.
                 Please upload screenshot of the questions.
               </p>
-              <ImageUpload onImageUpload={handleImageUpload} />
+              <ImageUpload
+                onImageUpload={(file) => handleImageUpload(file, "questions")}
+              />
             </div>
           )}
 

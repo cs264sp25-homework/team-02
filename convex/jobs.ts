@@ -3,7 +3,6 @@ import { defineTable } from "convex/server";
 import { mutation, query } from "./_generated/server";
 import { Id } from "./_generated/dataModel";
 import { ConvexError } from "convex/values";
-import { scrapeQuestionsFromImage } from "./scrape";
 
 /******************************************************************************
  * SCHEMA
