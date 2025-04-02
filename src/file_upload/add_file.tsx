@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useMutation, useAction } from "convex/react";
+import { useMutation, useAction, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { toast } from "sonner";
 import { Button } from "@/core/components/button";
@@ -7,6 +7,8 @@ import { Label } from "@/core/components/label";
 import { useDropzone } from "react-dropzone";
 import { cn } from "@/core/lib/utils";
 import { useMupdf } from "./hooks/usePdfWorker";
+import { useAuth } from "@/linkedin/hooks/useAuth";
+import { useRouter } from "@/core/hooks/use-router";
 
 const MAX_FILE_SIZE = 5;
 
@@ -17,9 +19,20 @@ export default function AddFile() {
   const generateUploadUrl = useMutation(api.files.generateUploadUrl);
   const saveFile = useMutation(api.files.saveFile);
   const parseResume = useAction(api.openai.parseResume);
-  // const createProfile = useMutation(api.profiles.createProfile);
+  const createProfile = useMutation(api.profiles.createProfile);
+  const updateProfile = useMutation(api.profiles.updateProfile);
   const [fileSize, setFileSize] = useState(0);
   const { isWorkerInitialized, loadDocument, extractText } = useMupdf();
+  const { isAuthenticated, user } = useAuth();
+  const { redirect } = useRouter();
+
+  const userProfile = useQuery(api.profiles.getProfileByUserId, {
+    userId: user?.id || "",
+  });
+
+  if (!isAuthenticated || !user) {
+    redirect("login");
+  }
 
   const onDrop = (acceptedFiles: File[]) => {
     const selectedFile = acceptedFiles[0];
@@ -38,19 +51,18 @@ export default function AddFile() {
     onDrop,
     accept: {
       "application/pdf": [".pdf"],
-      "application/msword": [".doc"],
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
-        [".docx"],
-      "application/rtf": [".rtf"],
-      "text/rtf": [".rtf"],
-      "text/html": [".html"],
-      "application/vnd.oasis.opendocument.text": [".odt"],
+      // "application/msword": [".doc"],
+      // "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+      //   [".docx"],
+      // "application/rtf": [".rtf"],
+      // "text/rtf": [".rtf"],
+      // "text/html": [".html"],
+      // "application/vnd.oasis.opendocument.text": [".odt"],
     },
     maxFiles: 1,
     multiple: false,
   });
 
-  // Function to read the selected file and return an ArrayBuffer
   const readFileAsArrayBuffer = (file: File): Promise<ArrayBuffer> =>
     new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -60,37 +72,118 @@ export default function AddFile() {
     });
 
   const handleExtract = async () => {
+    handleUpload();
     if (!file) return;
 
     try {
       setIsProcessing(true);
-      console.log("Extracting text from file...");
-      // Read file as an ArrayBuffer
+
       const buffer = await readFileAsArrayBuffer(file);
 
-      console.log("Loading document into worker...");
-
-      // Load the document into the worker
       await loadDocument(buffer);
 
-      console.log("Extracting text from document...");
-
-      // Extract text from the PDF
       const text = await extractText();
 
-      console.log("Text extracted successfully!");
-      console.log("Extracted PDF Text:\n", text);
-
-      // Parse the resume text using OpenAI
-      console.log("Parsing resume with OpenAI...");
       const parsedProfile = await parseResume({ resumeText: text });
 
-      // Create the profile in the database
-      console.log("Creating profile...");
-      console.log(parsedProfile);
-      // await createProfile(parsedProfile);
+      try {
+        if (!user?.id) {
+          toast.error("User ID not available. Cannot create/update profile.");
+          return;
+        }
 
-      toast.success("Resume processed and profile created successfully!");
+        const profileData = {
+          name: parsedProfile.name || "New User",
+          email: parsedProfile.email || "user@example.com",
+
+          education: (Array.isArray(parsedProfile.education)
+            ? parsedProfile.education
+                .filter(Boolean)
+                .filter(
+                  (edu) =>
+                    edu.institution && edu.degree && edu.field && edu.startDate,
+                )
+            : []) as {
+            institution: string;
+            degree: string;
+            field: string;
+            startDate: string;
+            endDate?: string;
+            gpa?: number;
+            description?: string;
+            location?: string;
+          }[],
+
+          workExperience: (Array.isArray(parsedProfile.workExperience)
+            ? parsedProfile.workExperience
+                .filter(Boolean)
+                .filter(
+                  (work) => work.company && work.position && work.startDate,
+                )
+            : []) as {
+            company: string;
+            position: string;
+            startDate: string;
+            current: boolean;
+            description: string[];
+            endDate?: string;
+            location?: string;
+            technologies?: string[];
+          }[],
+
+          projects: (Array.isArray(parsedProfile.projects)
+            ? parsedProfile.projects.filter(Boolean).filter((proj) => proj.name)
+            : []) as {
+            name: string;
+            description: string[];
+            technologies: string[];
+            startDate?: string;
+            endDate?: string;
+            link?: string;
+            githubUrl?: string;
+            highlights?: string[];
+          }[],
+
+          skills: Array.isArray(parsedProfile.skills)
+            ? parsedProfile.skills
+            : [],
+
+          ...(parsedProfile.phone
+            ? { phone: String(parsedProfile.phone) }
+            : {}),
+          ...(parsedProfile.location
+            ? { location: String(parsedProfile.location) }
+            : {}),
+          ...(Array.isArray(parsedProfile.socialLinks) &&
+          parsedProfile.socialLinks.length > 0
+            ? {
+                socialLinks: parsedProfile.socialLinks.filter(Boolean) as {
+                  platform: string;
+                  url: string;
+                }[],
+              }
+            : {}),
+        };
+
+        // Check if profile already exists
+        if (userProfile) {
+          await updateProfile({
+            ...profileData,
+            profileId: userProfile._id,
+            userId: user.id,
+          });
+          toast.success("Resume processed and profile updated successfully!");
+        } else {
+          await createProfile({
+            ...profileData,
+            userId: user.id,
+          });
+          toast.success("Resume processed and profile created successfully!");
+        }
+      } catch (error) {
+        console.error("Error processing profile:", error);
+        toast.error("Error processing profile. Please try again.");
+      }
     } catch (error) {
       console.error("Processing error:", error);
       toast.error("Failed to process the resume.");
@@ -129,6 +222,7 @@ export default function AddFile() {
         fileName: file.name,
         fileType: file.type,
         fileSize: file.size,
+        userId: user?.id || "",
       });
 
       toast.success("File uploaded successfully!");
@@ -155,7 +249,7 @@ export default function AddFile() {
         )}
       >
         <input {...getInputProps()} disabled={isUploading} />
-        <Label>Upload Resume (PDF, DOC, DOCX, RTF, HTML, ODT)</Label>
+        <Label>Upload Resume (PDF)</Label>
         <div className="text-sm text-muted-foreground text-center">
           {isDragActive ? (
             <p>Drop the file here</p>
@@ -172,18 +266,11 @@ export default function AddFile() {
       )}
 
       <Button
-        onClick={handleUpload}
-        disabled={!file || isUploading}
-        className="w-full"
-      >
-        {isUploading ? "Uploading..." : "Upload File"}
-      </Button>
-      <Button
         onClick={handleExtract}
         disabled={!file || !isWorkerInitialized || isProcessing}
         className="w-full"
       >
-        {isProcessing ? "Processing Resume..." : "Extract & Create Profile"}
+        {isProcessing ? "Processing Resume..." : "Update Profile"}
       </Button>
     </div>
   );

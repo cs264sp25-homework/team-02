@@ -75,10 +75,7 @@ export const parseResume = action({
       const systemPrompt =
         "You are a resume parser that extracts structured information from resume text. " +
         "Parse the provided resume text into a structured profile format, ensuring all dates are in YYYY-MM format. " +
-        "Output a JSON object that exactly fits the following schema. For the skills field, " +
-        "make sure it is an object mapping categories (like 'Programming Languages', 'Tools', etc.) " +
-        "to arrays of strings. If the resume only provides a list of skills, wrap them under a default category called 'General'. " +
-        "Here is the resume text:\n\n" +
+        "Output a JSON object that exactly fits the following schema. Here is the resume text:\n\n" +
         args.resumeText;
 
       const { object } = await generateObject({
@@ -93,27 +90,28 @@ export const parseResume = action({
             .describe("Email address of the candidate"),
           phone: z
             .string()
+            .nullable()
             .optional()
             .describe("Phone number of the candidate"),
           location: z
             .string()
+            .nullable()
             .optional()
             .describe("Location or address of the candidate"),
-          profilePictureUrl: z
-            .string()
-            .optional()
-            .describe("URL to the candidate's profile picture if available"),
-
           socialLinks: z
             .array(
               z.object({
                 platform: z
                   .string()
+                  .nullable()
+                  .optional()
                   .describe(
                     "Name of the social platform (e.g., LinkedIn, GitHub)",
                   ),
                 url: z
                   .string()
+                  .nullable()
+                  .optional()
                   .describe(
                     "Full URL to the candidate's profile on this platform",
                   ),
@@ -127,6 +125,8 @@ export const parseResume = action({
               z.object({
                 institution: z
                   .string()
+                  .nullable()
+                  .optional()
                   .describe("Name of the school, college, or university"),
                 degree: z
                   .string()
@@ -148,18 +148,21 @@ export const parseResume = action({
                   .nullable()
                   .optional()
                   .describe(
-                    "End date in YYYY-MM format or 'Present' if ongoing",
+                    "End date in YYYY-MM format. If unknown or unclear, then ignore this field.",
                   ),
                 gpa: z
                   .number()
+                  .nullable()
                   .optional()
                   .describe("Grade Point Average if mentioned"),
                 description: z
                   .string()
+                  .nullable()
                   .optional()
                   .describe("Additional details about the education"),
                 location: z
                   .string()
+                  .nullable()
                   .optional()
                   .describe("Location of the institution"),
               }),
@@ -173,9 +176,12 @@ export const parseResume = action({
                 company: z.string().describe("Name of the employer or company"),
                 position: z
                   .string()
+                  .nullable()
+                  .optional()
                   .describe("Job title or role at the company"),
                 location: z
                   .string()
+                  .nullable()
                   .optional()
                   .describe("Location of the job (city, country, or remote)"),
                 startDate: z
@@ -187,9 +193,13 @@ export const parseResume = action({
                   .string()
                   .nullable()
                   .optional()
-                  .describe("End date in YYYY-MM format or null if current"),
+                  .describe(
+                    "End date in YYYY-MM format. If unknown or unclear or present/ongoing, then ignore this field.",
+                  ),
                 current: z
                   .boolean()
+                  .nullable()
+                  .optional()
                   .describe("Whether this is the candidate's current position"),
                 description: z
                   .array(z.string())
@@ -197,8 +207,10 @@ export const parseResume = action({
                   .describe("List of job responsibilities and achievements"),
                 technologies: z
                   .array(z.string())
-                  .optional()
-                  .describe("Technologies or tools used in this role"),
+                  .default([])
+                  .describe(
+                    "Technologies or tools used in this role. (e.g. 'Python', 'JavaScript', 'React', 'Node.js', 'SQL', 'Git', 'Docker', 'AWS')",
+                  ),
               }),
             )
             .default([])
@@ -221,45 +233,42 @@ export const parseResume = action({
                   .string()
                   .nullable()
                   .optional()
-                  .describe("When the project ended in YYYY-MM format"),
+                  .describe(
+                    "When the project ended in YYYY-MM format. If the project is ongoing/present, then ignore this field.",
+                  ),
                 technologies: z
                   .array(z.string())
                   .default([])
-                  .describe("Technologies, languages, or frameworks used"),
+                  .describe(
+                    "Technologies, languages, or frameworks used. (e.g. 'Python', 'JavaScript', 'React', 'Node.js', 'SQL', 'Git', 'Docker', 'AWS')",
+                  ),
                 link: z
                   .string()
+                  .nullable()
                   .optional()
                   .describe("URL to the live project if available"),
                 githubUrl: z
                   .string()
+                  .nullable()
                   .optional()
                   .describe("URL to the project's GitHub repository"),
                 highlights: z
                   .array(z.string())
-                  .optional()
+                  .default([])
                   .describe(
-                    "Key achievements or notable aspects of the project",
+                    "Key achievements or notable aspects of the project. (e.g. 'Won hackathon', 'Won award', 'Sold product', 'Raised $100k', 'Published paper', 'Open-sourced code')",
                   ),
               }),
             )
             .default([])
             .describe("Projects completed by the candidate"),
 
-          // Preprocess the skills field so that if an array is provided, it gets wrapped in an object
-          skills: z.preprocess(
-            (val) => {
-              if (Array.isArray(val)) {
-                return { General: val };
-              }
-              return val;
-            },
-            z
-              .record(z.array(z.string()))
-              .default({})
-              .describe(
-                "Skills grouped by category (e.g., 'Programming Languages': ['JavaScript', 'Python'])",
-              ),
-          ),
+          skills: z
+            .array(z.string())
+            .default([])
+            .describe(
+              "All relevant skills of the candidate. (e.g. 'Python', 'JavaScript', 'React', 'Node.js', 'SQL', 'Git', 'Docker', 'AWS')",
+            ),
         }),
       });
 

@@ -77,7 +77,7 @@ export const profileInSchema = {
   ),
 
   // Skills
-  skills: v.record(v.string(), v.array(v.string())),
+  skills: v.array(v.string()),
 };
 
 // eslint-disable-next-line
@@ -134,7 +134,7 @@ export const profileUpdateSchema = {
       }),
     ),
   ),
-  skills: v.optional(v.record(v.string(), v.array(v.string()))),
+  skills: v.optional(v.array(v.string())),
 };
 
 // eslint-disable-next-line
@@ -170,17 +170,11 @@ export const profileTables = {
  * @returns The ID of the newly created profile
  */
 export const createProfile = mutation({
-  args: profileInSchemaObject,
-  handler: async (ctx, profile) => {
-    const identity = await ctx.auth.getUserIdentity();
-    let userId: string;
-    if (!identity) {
-      userId = "anonymous";
-    } else {
-      userId = identity.subject;
-    }
-    const profileData = { ...profile, userId };
-
+  args: {
+    ...profileInSchema,
+    userId: v.string(),
+  },
+  handler: async (ctx, { userId, ...profile }) => {
     // Check if profile already exists for this user
     const existing = await ctx.db
       .query("profiles")
@@ -191,7 +185,7 @@ export const createProfile = mutation({
       throw new Error("Profile already exists for this user");
     }
 
-    return await ctx.db.insert("profiles", profileData);
+    return await ctx.db.insert("profiles", { ...profile, userId });
   },
 });
 
@@ -255,7 +249,7 @@ export const getOrCreateProfile = mutation({
       education: [],
       workExperience: [],
       projects: [],
-      skills: {},
+      skills: [],
     };
 
     const profileId = await ctx.db.insert("profiles", {

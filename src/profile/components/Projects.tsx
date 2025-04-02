@@ -233,36 +233,34 @@ export const Projects = ({ profile, onUpdate }: ProjectsProps) => {
               </div>
 
               <div className="grid gap-1">
-                <div className="flex gap-2">
-                  <h4 className="text-lg font-semibold m-auto">
-                    {project.name}
-                  </h4>
-                  <div className="flex gap-2">
-                    {project.link && (
-                      <a
-                        href={project.link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sm text-blue-500 hover:underline"
-                      >
-                        Project Link
-                      </a>
-                    )}
-                    {project.githubUrl && (
-                      <a
-                        href={project.githubUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sm text-blue-500 hover:underline"
-                      >
-                        GitHub
-                      </a>
-                    )}
-                  </div>
+                <div className="flex items-center justify-center">
+                  <h4 className="text-lg font-semibold">{project.name}</h4>
                 </div>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-muted-foreground text-center">
                   {project.startDate} - {project.endDate || "Present"}
                 </p>
+                <div className="flex justify-center gap-2 mt-1">
+                  {project.link && (
+                    <a
+                      href={project.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-blue-500 hover:underline"
+                    >
+                      Project Link
+                    </a>
+                  )}
+                  {project.githubUrl && (
+                    <a
+                      href={project.githubUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-blue-500 hover:underline"
+                    >
+                      GitHub
+                    </a>
+                  )}
+                </div>
                 <p className="text-sm mt-2">
                   {project.description?.join("\n")}
                 </p>
