@@ -1,6 +1,6 @@
-import { atom } from "nanostores";
 import { api } from "../../../convex/_generated/api";
 import { convex } from "@/lib/convex";
+import { persistentAtom } from "@nanostores/persistent";
 
 // Define the user type
 export interface User {
@@ -11,37 +11,22 @@ export interface User {
   profilePictureUrl?: string;
 }
 
-// Create atoms for auth state
-export const $isAuthenticated = atom<boolean>(false);
-export const $user = atom<User | null>(null);
-export const $isLoading = atom<boolean>(true);
-
-// Initialize auth state
-export async function initAuth() {
-  $isLoading.set(true);
-  try {
-    const currentUser = await convex.query(api.linkedin.auth.getCurrentUser);
-    if (currentUser) {
-      $user.set({
-        id: currentUser._id,
-        firstName: currentUser.firstName,
-        lastName: currentUser.lastName,
-        email: currentUser.email,
-        profilePictureUrl: currentUser.profilePictureUrl,
-      });
-      $isAuthenticated.set(true);
-    } else {
-      $isAuthenticated.set(false);
-      $user.set(null);
-    }
-  } catch (error) {
-    console.error("Failed to initialize auth:", error);
-    $isAuthenticated.set(false);
-    $user.set(null);
-  } finally {
-    $isLoading.set(false);
-  }
-}
+export const $authStore = persistentAtom<{
+  isAuthenticated: boolean;
+  user: User | null;
+  isLoading: boolean;
+}>(
+  "auth",
+  {
+    isAuthenticated: false,
+    user: null,
+    isLoading: true,
+  },
+  {
+    encode: JSON.stringify,
+    decode: JSON.parse,
+  },
+);
 
 // Store user data
 export async function storeUserData(userData: any) {
@@ -58,14 +43,17 @@ export async function storeUserData(userData: any) {
     });
 
     if (result) {
-      $user.set({
-        id: result.userId,
-        firstName: result.firstName,
-        lastName: result.lastName,
-        email: userData.email,
-        profilePictureUrl: userData.profilePictureUrl,
+      $authStore.set({
+        isAuthenticated: true,
+        user: {
+          id: result.userId,
+          firstName: result.firstName,
+          lastName: result.lastName,
+          email: userData.email,
+          profilePictureUrl: userData.profilePictureUrl,
+        },
+        isLoading: false,
       });
-      $isAuthenticated.set(true);
       return result;
     }
     return null;
@@ -77,7 +65,9 @@ export async function storeUserData(userData: any) {
 
 // Logout
 export function logout() {
-  $isAuthenticated.set(false);
-  $user.set(null);
-  // Add any additional logout logic here
+  $authStore.set({
+    isAuthenticated: false,
+    user: null,
+    isLoading: false,
+  });
 }
