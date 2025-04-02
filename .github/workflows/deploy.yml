@@ -46,6 +46,7 @@ jobs:
           npx convex env set LINKEDIN_CLIENT_ID "${{ secrets.VITE_LINKEDIN_CLIENT_ID }}"
           npx convex env set LINKEDIN_CLIENT_SECRET "${{ secrets.VITE_LINKEDIN_CLIENT_SECRET }}"
           npx convex env set LINKEDIN_REDIRECT_URI "${{ secrets.VITE_LINKEDIN_REDIRECT_URI }}"
+          npx convex env set OPENAI_API_KEY "${{ secrets.OPENAI_API_KEY }}"
           npx convex deploy --cmd 'pnpm run build'
         env:
           CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
@@ -53,6 +54,7 @@ jobs:
           VITE_CONVEX_URL: ${{ secrets.VITE_CONVEX_URL }}
           VITE_LINKEDIN_CLIENT_ID: ${{ secrets.VITE_LINKEDIN_CLIENT_ID }}
           VITE_LINKEDIN_REDIRECT_URI: ${{ secrets.VITE_LINKEDIN_REDIRECT_URI }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
       - name: Upload build artifact
         if: github.event_name == 'push' && github.ref == 'refs/heads/master'
