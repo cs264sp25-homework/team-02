@@ -10,7 +10,7 @@ import {
 } from "@/core/components/card";
 import { useState } from "react";
 import { toast } from "sonner";
-import { PlusCircle, Pencil, X } from "lucide-react";
+import { PlusCircle, X } from "lucide-react";
 import { ProfileType } from "convex/profiles";
 
 interface SkillsProps {
@@ -19,45 +19,26 @@ interface SkillsProps {
 }
 
 interface SkillFormProps {
-  category?: string;
-  skills?: string[];
+  skills: string[];
   onCancel: () => void;
-  onSubmit: (category: string, skills: string[]) => void;
+  onSubmit: (skills: string[]) => void;
 }
 
-const SkillForm = ({
-  category,
-  skills,
-  onCancel,
-  onSubmit,
-}: SkillFormProps) => (
+const SkillForm = ({ skills, onCancel, onSubmit }: SkillFormProps) => (
   <form
     onSubmit={(e) => {
       e.preventDefault();
       const formData = new FormData(e.currentTarget);
-      const newCategory = formData.get("category") as string;
       const newSkills = (formData.get("skills") as string)
         .split(",")
         .map((skill) => skill.trim())
         .filter(Boolean);
 
-      onSubmit(newCategory, newSkills);
+      onSubmit(newSkills);
     }}
     className="space-y-4 mt-4 p-4 border rounded-lg"
   >
     <div className="grid gap-4">
-      <div className="grid gap-2">
-        <Label htmlFor="category">Category</Label>
-        <Input
-          id="category"
-          name="category"
-          defaultValue={category}
-          required
-          disabled={!!category}
-          placeholder="e.g., Programming Languages, Frameworks, Tools"
-        />
-      </div>
-
       <div className="grid gap-2">
         <Label htmlFor="skills">Skills (comma-separated)</Label>
         <Input
@@ -65,7 +46,7 @@ const SkillForm = ({
           name="skills"
           defaultValue={skills?.join(", ")}
           required
-          placeholder="e.g., JavaScript, React, Node.js"
+          placeholder="e.g., JavaScript, React, Node.js, Python, SQL, Git"
         />
       </div>
     </div>
@@ -74,43 +55,29 @@ const SkillForm = ({
       <Button type="button" variant="outline" onClick={onCancel}>
         Cancel
       </Button>
-      <Button type="submit">{category ? "Update" : "Add"} Skills</Button>
+      <Button type="submit">Update Skills</Button>
     </div>
   </form>
 );
 
 export const Skills = ({ profile, onUpdate }: SkillsProps) => {
-  const [editingSkillCategory, setEditingSkillCategory] = useState<
-    string | null
-  >(null);
   const [showSkillForm, setShowSkillForm] = useState(false);
 
-  const handleSkillSubmit = async (category: string, skills: string[]) => {
-    const updatedSkills = { ...(profile.skills || {}) };
-    if (editingSkillCategory) {
-      updatedSkills[editingSkillCategory] = skills;
-    } else if (category) {
-      updatedSkills[category] = skills;
-    }
-
-    const success = await onUpdate({ skills: updatedSkills });
+  const handleSkillSubmit = async (skills: string[]) => {
+    const success = await onUpdate({ skills });
     if (success) {
       setShowSkillForm(false);
-      setEditingSkillCategory(null);
-      toast.success(
-        editingSkillCategory
-          ? "Skills updated successfully"
-          : "Skills added successfully",
-      );
+      toast.success("Skills updated successfully");
     }
   };
 
-  const handleDeleteSkillCategory = async (category: string) => {
-    const updatedSkills = { ...profile.skills };
-    delete updatedSkills[category];
+  const handleRemoveSkill = async (skillToRemove: string) => {
+    const updatedSkills = profile.skills.filter(
+      (skill) => skill !== skillToRemove,
+    );
     const success = await onUpdate({ skills: updatedSkills });
     if (success) {
-      toast.success("Skills category removed");
+      toast.success("Skill removed");
     }
   };
 
@@ -131,70 +98,44 @@ export const Skills = ({ profile, onUpdate }: SkillsProps) => {
             className="absolute right-6 top-6"
           >
             <PlusCircle className="w-4 h-4 mr-2" />
-            Add Skills
+            Edit Skills
           </Button>
         )}
       </CardHeader>
       <CardContent>
         {showSkillForm && (
           <SkillForm
-            category={editingSkillCategory || undefined}
-            skills={
-              editingSkillCategory
-                ? profile?.skills[editingSkillCategory]
-                : undefined
-            }
+            skills={profile?.skills || []}
             onCancel={() => {
               setShowSkillForm(false);
-              setEditingSkillCategory(null);
             }}
             onSubmit={handleSkillSubmit}
           />
         )}
 
-        <div className="space-y-4 mt-4">
-          {Object.entries(profile?.skills || {}).map(([category, skills]) => (
+        <div className="flex flex-wrap gap-2 mt-4">
+          {profile?.skills?.map((skill, i) => (
             <div
-              key={category}
-              className="p-4 border rounded-lg hover:bg-muted/50 relative group"
+              key={i}
+              className="flex items-center px-3 py-1 bg-muted rounded-full text-sm group"
             >
-              <div className="absolute right-4 top-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 w-8 p-0 mr-2"
-                  onClick={() => {
-                    setEditingSkillCategory(category);
-                    setShowSkillForm(true);
-                  }}
-                >
-                  <Pencil className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 w-8 p-0 text-destructive"
-                  onClick={() => handleDeleteSkillCategory(category)}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-
-              <div className="grid gap-2">
-                <h4 className="text-lg font-semibold">{category}</h4>
-                <div className="flex flex-wrap gap-2">
-                  {skills.map((skill, i) => (
-                    <span
-                      key={i}
-                      className="px-2 py-1 bg-muted rounded-full text-xs"
-                    >
-                      {skill}
-                    </span>
-                  ))}
-                </div>
-              </div>
+              {skill}
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-5 w-5 p-0 ml-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                onClick={() => handleRemoveSkill(skill)}
+              >
+                <X className="h-3 w-3" />
+              </Button>
             </div>
           ))}
+
+          {(!profile?.skills || profile.skills.length === 0) && (
+            <div className="text-muted-foreground text-sm">
+              No skills added yet. Click 'Edit Skills' to add your skills.
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>

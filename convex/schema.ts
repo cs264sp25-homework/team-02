@@ -10,8 +10,9 @@ const schema = defineSchema({
     fileName: v.string(),
     fileType: v.string(),
     fileSize: v.number(),
+    userId: v.optional(v.string()),
     uploadedAt: v.string(),
-  }),
+  }).index("by_userId", ["userId"]),
 
   users: defineTable({
     linkedInId: v.string(),

@@ -8,6 +8,7 @@ import AddFile from "./file_upload/add_file";
 import ImportJobPage from "./jobs/pages/import-job";
 import JobDetailsPage from "./jobs/pages/job-details";
 import LinkedInCallback from "./linkedin/components/LinkedInCallback";
+import NavBar from "@/core/components/navbar";
 
 function App() {
   const { currentRoute } = useRouter();
@@ -16,10 +17,15 @@ function App() {
     return <NotFoundPage />;
   }
 
+  // Skip navbar on login and auth callback routes
+  const showNavbar = !["login", "auth_callback"].includes(currentRoute);
+
   const renderContent = () => {
     switch (currentRoute) {
       case "home":
-        return <Empty message="Please see modify routes in App.tsx" />;
+        return (
+          <Empty message="Welcome to JobSync! Navigate using the menu above." />
+        );
       case "demo":
         return <Demo />;
       case "login":
@@ -42,9 +48,14 @@ function App() {
   const content = renderContent();
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-svh">
-      {content}
-    </div>
+    <>
+      {showNavbar && <NavBar />}
+      <div
+        className={`flex flex-col items-center justify-center min-h-svh ${showNavbar ? "pt-16" : ""}`}
+      >
+        {content}
+      </div>
+    </>
   );
 }
 
