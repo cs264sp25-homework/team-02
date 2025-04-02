@@ -98,12 +98,6 @@ export const parseResume = action({
             .nullable()
             .optional()
             .describe("Location or address of the candidate"),
-          profilePictureUrl: z
-            .string()
-            .nullable()
-            .optional()
-            .describe("URL to the candidate's profile picture if available"),
-
           socialLinks: z
             .array(
               z.object({

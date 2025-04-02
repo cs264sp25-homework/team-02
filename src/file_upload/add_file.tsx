@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useMutation, useAction } from "convex/react";
+import { useMutation, useAction, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { toast } from "sonner";
 import { Button } from "@/core/components/button";
@@ -20,10 +20,15 @@ export default function AddFile() {
   const saveFile = useMutation(api.files.saveFile);
   const parseResume = useAction(api.openai.parseResume);
   const createProfile = useMutation(api.profiles.createProfile);
+  const updateProfile = useMutation(api.profiles.updateProfile);
   const [fileSize, setFileSize] = useState(0);
   const { isWorkerInitialized, loadDocument, extractText } = useMupdf();
   const { isAuthenticated, user } = useAuth();
   const { redirect } = useRouter();
+
+  const userProfile = useQuery(api.profiles.getProfileByUserId, {
+    userId: user?.id || "",
+  });
 
   if (!isAuthenticated || !user) {
     redirect("login");
@@ -58,7 +63,6 @@ export default function AddFile() {
     multiple: false,
   });
 
-  // Function to read the selected file and return an ArrayBuffer
   const readFileAsArrayBuffer = (file: File): Promise<ArrayBuffer> =>
     new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -68,140 +72,119 @@ export default function AddFile() {
     });
 
   const handleExtract = async () => {
+    handleUpload();
     if (!file) return;
 
     try {
       setIsProcessing(true);
 
-      // Read file as an ArrayBuffer
       const buffer = await readFileAsArrayBuffer(file);
 
-      // Load the document into the worker
       await loadDocument(buffer);
 
-      // Extract text from the PDF
       const text = await extractText();
 
       const parsedProfile = await parseResume({ resumeText: text });
 
       try {
-        // Transform education to ensure fields match expected types
-        const transformedEducation = Array.isArray(parsedProfile.education)
-          ? parsedProfile.education.map((edu) => ({
-              institution: edu.institution || "Unknown Institution",
-              degree: edu.degree || "Unknown Degree",
-              field: edu.field || "Unknown Field",
-              startDate: edu.startDate || "2023-01",
-              // Only include optional fields if they're strings
-              ...(typeof edu.endDate === "string"
-                ? { endDate: edu.endDate }
-                : {}),
-              ...(typeof edu.gpa === "number" ? { gpa: edu.gpa } : {}),
-              ...(typeof edu.description === "string"
-                ? { description: edu.description }
-                : {}),
-              ...(typeof edu.location === "string"
-                ? { location: edu.location }
-                : {}),
-            }))
-          : [];
+        if (!user?.id) {
+          toast.error("User ID not available. Cannot create/update profile.");
+          return;
+        }
 
-        // Transform work experience to ensure fields match expected types
-        const transformedWorkExperience = Array.isArray(
-          parsedProfile.workExperience,
-        )
-          ? parsedProfile.workExperience.map((work) => ({
-              company: work.company || "Unknown Company",
-              position: work.position || "Unknown Position",
-              startDate: work.startDate || "2023-01",
-              current: typeof work.current === "boolean" ? work.current : true,
-              description: Array.isArray(work.description)
-                ? work.description
-                : [],
-              // Only include optional fields if they're valid
-              ...(typeof work.location === "string"
-                ? { location: work.location }
-                : {}),
-              ...(typeof work.endDate === "string"
-                ? { endDate: work.endDate }
-                : {}),
-              ...(Array.isArray(work.technologies)
-                ? { technologies: work.technologies }
-                : {}),
-            }))
-          : [];
-
-        // Transform projects to ensure fields match expected types
-        const transformedProjects = Array.isArray(parsedProfile.projects)
-          ? parsedProfile.projects.map((proj) => ({
-              name: proj.name || "Unnamed Project",
-              description: Array.isArray(proj.description)
-                ? proj.description
-                : [],
-              technologies: Array.isArray(proj.technologies)
-                ? proj.technologies
-                : [],
-              // Only include optional fields if they're valid
-              ...(typeof proj.startDate === "string"
-                ? { startDate: proj.startDate }
-                : {}),
-              ...(typeof proj.endDate === "string"
-                ? { endDate: proj.endDate }
-                : {}),
-              ...(typeof proj.link === "string" ? { link: proj.link } : {}),
-              ...(typeof proj.githubUrl === "string"
-                ? { githubUrl: proj.githubUrl }
-                : {}),
-              ...(Array.isArray(proj.highlights)
-                ? { highlights: proj.highlights }
-                : {}),
-            }))
-          : [];
-
-        // Transform social links if they exist
-        const transformedSocialLinks = Array.isArray(parsedProfile.socialLinks)
-          ? parsedProfile.socialLinks
-              .filter(
-                (link) =>
-                  typeof link.platform === "string" &&
-                  typeof link.url === "string",
-              )
-              .map((link) => ({
-                platform: link.platform as string,
-                url: link.url as string,
-              }))
-          : undefined;
-
-        // Create the profile with transformed data
-        await createProfile({
+        const profileData = {
           name: parsedProfile.name || "New User",
           email: parsedProfile.email || "user@example.com",
-          education: transformedEducation,
-          workExperience: transformedWorkExperience,
-          projects: transformedProjects,
+
+          education: (Array.isArray(parsedProfile.education)
+            ? parsedProfile.education
+                .filter(Boolean)
+                .filter(
+                  (edu) =>
+                    edu.institution && edu.degree && edu.field && edu.startDate,
+                )
+            : []) as {
+            institution: string;
+            degree: string;
+            field: string;
+            startDate: string;
+            endDate?: string;
+            gpa?: number;
+            description?: string;
+            location?: string;
+          }[],
+
+          workExperience: (Array.isArray(parsedProfile.workExperience)
+            ? parsedProfile.workExperience
+                .filter(Boolean)
+                .filter(
+                  (work) => work.company && work.position && work.startDate,
+                )
+            : []) as {
+            company: string;
+            position: string;
+            startDate: string;
+            current: boolean;
+            description: string[];
+            endDate?: string;
+            location?: string;
+            technologies?: string[];
+          }[],
+
+          projects: (Array.isArray(parsedProfile.projects)
+            ? parsedProfile.projects.filter(Boolean).filter((proj) => proj.name)
+            : []) as {
+            name: string;
+            description: string[];
+            technologies: string[];
+            startDate?: string;
+            endDate?: string;
+            link?: string;
+            githubUrl?: string;
+            highlights?: string[];
+          }[],
+
           skills: Array.isArray(parsedProfile.skills)
             ? parsedProfile.skills
             : [],
-          userId: user?.id || "",
-          // Optional fields - only include if they're valid strings
-          ...(typeof parsedProfile.phone === "string"
-            ? { phone: parsedProfile.phone }
-            : {}),
-          ...(typeof parsedProfile.location === "string"
-            ? { location: parsedProfile.location }
-            : {}),
-          ...(typeof parsedProfile.profilePictureUrl === "string"
-            ? { profilePictureUrl: parsedProfile.profilePictureUrl }
-            : {}),
-          ...(transformedSocialLinks
-            ? { socialLinks: transformedSocialLinks }
-            : {}),
-        });
 
-        toast.success("Resume processed and profile created successfully!");
+          ...(parsedProfile.phone
+            ? { phone: String(parsedProfile.phone) }
+            : {}),
+          ...(parsedProfile.location
+            ? { location: String(parsedProfile.location) }
+            : {}),
+          ...(Array.isArray(parsedProfile.socialLinks) &&
+          parsedProfile.socialLinks.length > 0
+            ? {
+                socialLinks: parsedProfile.socialLinks.filter(Boolean) as {
+                  platform: string;
+                  url: string;
+                }[],
+              }
+            : {}),
+        };
+
+        // Check if profile already exists
+        if (userProfile) {
+          await updateProfile({
+            ...profileData,
+            profileId: userProfile._id,
+            userId: user.id,
+          });
+          toast.success("Resume processed and profile updated successfully!");
+          console.log("Profile updated successfully:", parsedProfile.name);
+        } else {
+          await createProfile({
+            ...profileData,
+            userId: user.id,
+          });
+          toast.success("Resume processed and profile created successfully!");
+          console.log("Profile created successfully:", parsedProfile.name);
+        }
       } catch (error) {
-        console.error("Error creating profile:", error);
-        toast.error("Error creating profile. Please try again.");
+        console.error("Error processing profile:", error);
+        toast.error("Error processing profile. Please try again.");
       }
     } catch (error) {
       console.error("Processing error:", error);
@@ -286,18 +269,11 @@ export default function AddFile() {
       )}
 
       <Button
-        onClick={handleUpload}
-        disabled={!file || isUploading}
-        className="w-full"
-      >
-        {isUploading ? "Uploading..." : "Upload File"}
-      </Button>
-      <Button
         onClick={handleExtract}
         disabled={!file || !isWorkerInitialized || isProcessing}
         className="w-full"
       >
-        {isProcessing ? "Processing Resume..." : "Extract & Create Profile"}
+        {isProcessing ? "Processing Resume..." : "Update Profile"}
       </Button>
     </div>
   );
