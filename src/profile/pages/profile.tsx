@@ -83,6 +83,9 @@ const ProfilePage = () => {
 
   return (
     <div className="container mx-auto max-w-5xl px-4 py-8">
+      <div className="flex justify-end mb-6">
+        <Button onClick={() => redirect("import_job")}>Import Job</Button>
+      </div>
       <div className="space-y-8">
         <Card>
           <CardHeader className="relative text-center pb-8">

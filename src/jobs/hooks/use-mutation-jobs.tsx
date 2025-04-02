@@ -1,6 +1,7 @@
 import { toast } from "sonner";
 import { api } from "../../../convex/_generated/api";
-import { useMutation, useAction } from "convex/react";
+import { useMutation, useAction, useQuery } from "convex/react";
+import { formatProfileBackground } from "../pages/job-details";
 
 export interface JobData {
   title: string;
@@ -10,24 +11,35 @@ export interface JobData {
   applicationUrl: string;
 }
 
-export function useMutationJobs() {
-  const addJobMutation = useMutation(api.jobs.addJob);
-  const scrapeJobAction = useAction(api.scrape.scrapeJob);
+export function useAddJob(userId: string) {
+  const addJob = useMutation(api.jobs.addJob);
+  const scrapeJob = useAction(api.scrape.scrapeJob);
+  const profile = useQuery(api.profiles.getProfileByUserId, {
+    userId: userId,
+  });
 
-  const addJob = async (
-    postingUrl: string,
-    applicationUrl: string,
-  ): Promise<string | null> => {
+  const getAiGeneratedJobQuestions = useAction(api.openai.generateJobQuestions);
+
+  const importJob = async (postingUrl: string, applicationUrl: string) => {
     try {
-      const jobData = await scrapeJobAction({
+      const jobData = await scrapeJob({
         postingUrl,
         applicationUrl,
       });
 
-      const jobId = await addJobMutation({
+      const answersFromAi = await getAiGeneratedJobQuestions({
+        jobTitle: jobData.title,
+        jobRequirements: jobData.description,
+        jobQuestions: jobData.questions,
+        userBackground: formatProfileBackground(profile),
+      });
+
+      const jobId = await addJob({
+        userId,
         title: jobData.title,
         description: jobData.description,
         questions: jobData.questions,
+        answers: answersFromAi,
         postingUrl,
         applicationUrl,
       });
@@ -39,7 +51,5 @@ export function useMutationJobs() {
     }
   };
 
-  return {
-    add: addJob,
-  };
+  return { importJob };
 }
