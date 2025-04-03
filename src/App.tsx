@@ -9,6 +9,7 @@ import ImportJobPage from "./jobs/pages/import-job";
 import JobDetailsPage from "./jobs/pages/job-details";
 import LinkedInCallback from "./linkedin/components/LinkedInCallback";
 import NavBar from "@/core/components/navbar";
+import HomePage from "./core/pages/home-page";
 
 function App() {
   const { currentRoute } = useRouter();
@@ -23,9 +24,7 @@ function App() {
   const renderContent = () => {
     switch (currentRoute) {
       case "home":
-        return (
-          <Empty message="Welcome to JobSync! Navigate using the menu above." />
-        );
+        return <HomePage />;
       case "demo":
         return <Demo />;
       case "login":
