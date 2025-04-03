@@ -5,21 +5,22 @@ import { Infer } from "convex/values";
 import { defineTable } from "convex/server";
 
 export const generationStatus = v.union(
-  v.literal("started"),
-  v.literal("fetching profile"),
-  v.literal("fetching job description"),
-  v.literal("generating tailored profile"),
-  v.literal("generating tailored resume"),
-  v.literal("compiling resume"),
-  v.literal("completed"),
-  v.literal("failed"),
+  v.literal("started"), // generation started
+  v.literal("fetching profile"), // fetch the profile from the database
+  v.literal("fetching job description"), // fetch the job description from the database
+  v.literal("generating tailored profile"), // (AI) use generateObject to generate a profile that is tailored to the job description
+  v.literal("generating tailored resume"), // fit the profile to the resume latex template
+  v.literal("enhancing resume with AI"), // (AI) use streamText to enhance the resume with AI and any user instructions
+  v.literal("compiling resume"), // use compileLatex to compile the resume
+  v.literal("completed"), // resume is ready to be viewed
+  v.literal("failed"), // generation failed
 );
 
 export type GenerationStatusType = Infer<typeof generationStatus>;
 
 export const resumeInSchema = {
-  templateStorageId: v.string(), // storage id of the template used for generation
   latexContent: v.string(), // latex content of the resume
+  tailoredProfile: v.record(v.string(), v.any()), // tailored profile
   generationStatus, // status of the generation
   generationError: v.optional(v.string()), // error message if generation failed
   chunkCount: v.number(), // number of chunks generated

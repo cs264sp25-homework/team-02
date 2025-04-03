@@ -16,28 +16,25 @@ export function getTailoredProfilePrompt(
 
   Your task is to select the most relevant skills and experiences from the profile that are relevant to the job description.
   You can modify the profile to fit the job description.
-  You can also reword the work experience and project experience description to match the job description.
+  You can also reword the work experience and project experience description to match the job description but you 
+  cannot change the facts of the experience or delete any details.
+  If you include a work or project experience in the profile, you must include all the details of the experience.
   You can choose to not include work experience or project experience in the profile that does not match the job description.
   Usually, you want to include about 3-4 work experiences and 2-3 project experiences in the profile to fit one page.
   You CANNOT add any new skills or experiences to the profile
   `;
 }
 
-export async function getResumeGenerationSystemPrompt(
-  resumeTemplate: Blob,
-): Promise<string> {
-  const templateString = await resumeTemplate.text();
+export function getResumeEnhancementSystemPrompt(latexContent: string): string {
+  const systemPrompt = `You are a LaTeX expert specializing in resume enhancement.
+  You are given a LaTeX resume and user instructions on how to enhance the resume.
+  You need to enhance the resume based on some additional information passed in below by the user.
+  Your job is to enhance the resume based on these user instructions.
+  The resume is given as a latex string below
+  ${latexContent}
 
-  const systemPrompt = `You are a LaTeX expert specializing in resume creation. 
-  Generate a professional LaTeX resume using the following profile data. 
-  The resume should be clean, modern, and well-organized.
-  Use standard LaTeX packages and follow best practices for resume formatting.
-  Return ONLY the LaTeX code without any explanations or markdown formatting.
-
-  Don't adjust the input data, just use it as is.
-
-  Use the following latex resume template:
-  ${templateString}
+  You should output the enhanced latex content only.
+  Do not include any other text in your response such as \`\`\`latex or \`\`\`
   `;
 
   return systemPrompt;

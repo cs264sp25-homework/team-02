@@ -10,7 +10,7 @@ import {
 import { api } from "../_generated/api";
 import { Id } from "../_generated/dataModel";
 import {
-  getResumeGenerationSystemPrompt,
+  getResumeEnhancementSystemPrompt,
   getTailoredProfilePrompt,
 } from "./prompts";
 import { generationStatus } from "./schema";
@@ -21,16 +21,14 @@ import { ProfileType, zodProfileInSchema } from "../profiles";
 export const generateResume = internalAction({
   args: {
     userId: v.string(),
-    templateStorageId: v.string(),
     jobId: v.optional(v.string()),
-    useAI: v.optional(v.boolean()),
+    aiEnhancementPrompt: v.optional(v.string()),
   },
-  handler: async (ctx, { userId, templateStorageId, jobId, useAI }) => {
+  handler: async (ctx, { userId, jobId, aiEnhancementPrompt }) => {
     const resumeId = await ctx.runMutation(
       api.resume.handlers.initializeResumeGeneration,
       {
         userId,
-        templateStorageId,
         jobId,
       },
     );
@@ -54,16 +52,13 @@ export const generateResume = internalAction({
         throw new Error("Profile not found");
       }
 
-      await ctx.runMutation(api.resume.handlers.updateResumeGenerationStatus, {
-        resumeId,
-        status: "generating tailored profile",
-      });
       let tailoredProfile: ProfileType = profile;
       if (jobId) {
         tailoredProfile = await createTailoredProfile(
           profile,
-          jobId as Id<"jobs">,
+          jobId,
           userId,
+          resumeId,
           ctx,
         );
       }
@@ -73,25 +68,21 @@ export const generateResume = internalAction({
         status: "generating tailored resume",
       });
 
-      let latexContent = "";
+      let latexContent = generateJakesResume(tailoredProfile);
+      await ctx.runMutation(api.resume.handlers.updateResumeLaTeXContent, {
+        resumeId,
+        latexContent,
+      });
 
-      if (useAI) {
+      if (aiEnhancementPrompt) {
         // Generate LaTeX content using ChatGPT, run internal action
-        latexContent = await generateWithAI(
-          tailoredProfile,
+        latexContent = await enhanceLatexWithAI(
+          latexContent,
+          aiEnhancementPrompt,
           resumeId,
-          templateStorageId as Id<"_storage">,
           ctx,
         );
-      } else {
-        // Generate LaTeX content using Jakes template
-        latexContent = generateJakesResume(tailoredProfile);
-        await ctx.runMutation(api.resume.handlers.updateResumeLaTeXContent, {
-          resumeId,
-          latexContent,
-        });
       }
-
       await ctx.runMutation(api.resume.handlers.updateResumeGenerationStatus, {
         resumeId,
         status: "completed",
@@ -114,18 +105,17 @@ export const generateResume = internalAction({
 export const initializeResumeGeneration = mutation({
   args: {
     userId: v.string(),
-    templateStorageId: v.string(),
     jobId: v.optional(v.string()),
   },
-  handler: async (ctx, { userId, templateStorageId, jobId }) => {
+  handler: async (ctx, { userId, jobId }) => {
     const resumeId = await ctx.db.insert("resumes", {
       userId,
-      templateStorageId,
       jobId,
       generationStatus: "started",
       generationError: undefined,
       latexContent: "",
       chunkCount: 0,
+      tailoredProfile: {},
     });
 
     return resumeId;
@@ -171,10 +161,15 @@ export const updateResumeChunkCount = mutation({
 
 async function createTailoredProfile(
   profile: ProfileType,
-  jobId: Id<"jobs">,
+  jobId: string,
   userId: string,
+  resumeId: string,
   ctx: ActionCtx,
 ): Promise<ProfileType> {
+  await ctx.runMutation(api.resume.handlers.updateResumeGenerationStatus, {
+    resumeId: resumeId as Id<"resumes">,
+    status: "generating tailored profile",
+  });
   const job = await ctx.runQuery(api.jobs.getJobById, {
     jobId: jobId as Id<"jobs">,
     userId,
@@ -190,6 +185,10 @@ async function createTailoredProfile(
       model: openai("gpt-4o-mini"),
       prompt: getTailoredProfilePrompt(profile, jobDescription),
       schema: zodProfileInSchema,
+    });
+    await ctx.runMutation(api.resume.handlers.updateResumeTailoredProfile, {
+      resumeId: resumeId as Id<"resumes">,
+      tailoredProfile: object,
     });
     return {
       ...object,
@@ -207,31 +206,36 @@ async function createTailoredProfile(
   }
 }
 
-async function generateWithAI(
-  profile: ProfileType,
+export const updateResumeTailoredProfile = mutation({
+  args: {
+    resumeId: v.id("resumes"),
+    tailoredProfile: v.record(v.string(), v.any()),
+  },
+  handler: async (ctx, { resumeId, tailoredProfile }) => {
+    await ctx.db.patch(resumeId, {
+      tailoredProfile,
+    });
+  },
+});
+
+async function enhanceLatexWithAI(
+  latexContent: string,
+  enhancementPrompt: string,
   resumeId: Id<"resumes">,
-  templateStorageId: Id<"_storage">,
   ctx: ActionCtx,
 ) {
-  const resumeTemplate = await ctx.storage.get(
-    templateStorageId as Id<"_storage">,
-  );
-
-  if (!resumeTemplate) {
-    throw new Error("Requested resume template not found");
-  }
-  const systemPrompt = await getResumeGenerationSystemPrompt(resumeTemplate);
-
+  await ctx.runMutation(api.resume.handlers.updateResumeGenerationStatus, {
+    resumeId,
+    status: "enhancing resume with AI",
+  });
   const messages = [
     {
       role: "system",
-      content: systemPrompt,
+      content: getResumeEnhancementSystemPrompt(latexContent),
     },
     {
       role: "user",
-      content: `Generate a LaTeX resume for the following profile:
-          ${JSON.stringify(profile)}
-          `,
+      content: enhancementPrompt,
     },
   ];
 
@@ -243,13 +247,13 @@ async function generateWithAI(
     },
   });
 
-  let latexContent = "";
+  let enhancedLatexContent = "";
   let chunkCount = 0;
   for await (const delta of textStream) {
-    latexContent += delta;
+    enhancedLatexContent += delta;
     await ctx.runMutation(api.resume.handlers.updateResumeLaTeXContent, {
       resumeId,
-      latexContent,
+      latexContent: enhancedLatexContent,
     });
     chunkCount++;
     if (chunkCount % 10 === 0) {
@@ -259,5 +263,5 @@ async function generateWithAI(
       });
     }
   }
-  return latexContent;
+  return enhancedLatexContent;
 }
