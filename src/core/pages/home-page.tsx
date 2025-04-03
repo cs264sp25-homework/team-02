@@ -9,24 +9,38 @@ import {
   CardTitle,
 } from "@/core/components/card";
 import { Skeleton } from "@/core/components/skeleton";
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { JobType } from "convex/jobs";
-import { PlusCircle, FileText, Download } from "lucide-react";
+import { PlusCircle, FileText, Download, Trash2 } from "lucide-react";
 import { Id } from "convex/_generated/dataModel";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/core/components/alert-dialog";
+import { toast } from "sonner";
 
-
+// Extended type that includes Convex's _id field
 type JobWithId = JobType & { _id: Id<"jobs"> };
-
 
 const HomePage = () => {
   const { isAuthenticated, user } = useAuth();
   const { navigate } = useRouter();
   const [jobs, setJobs] = useState<JobWithId[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [jobToDelete, setJobToDelete] = useState<Id<"jobs"> | null>(null);
 
   // Use a query hook to get all jobs for the current user
   const allJobs = useQuery(api.jobs.getAllJobs, user?.id ? { userId: user.id } : "skip");
+  
+  // Mutation to delete a job
+  const deleteJobMutation = useMutation(api.jobs.deleteJob);
 
   useEffect(() => {
     if (allJobs !== undefined) {
@@ -38,6 +52,28 @@ const HomePage = () => {
   // Handle job import
   const handleImportJob = () => {
     navigate("import_job");
+  };
+
+  // Handle job deletion
+  const handleDeleteJob = async () => {
+    if (!jobToDelete || !user) return;
+    
+    try {
+      await deleteJobMutation({
+        jobId: jobToDelete,
+        userId: user.id,
+      });
+      
+      // Update local state
+      setJobs(jobs.filter(job => job._id !== jobToDelete));
+      toast.success("Job deleted successfully");
+    } catch (error) {
+      console.error("Error deleting job:", error);
+      toast.error("Failed to delete job");
+    } finally {
+      // Close the dialog
+      setJobToDelete(null);
+    }
   };
 
   // If user is not authenticated, show sign-in prompt
@@ -102,11 +138,26 @@ const HomePage = () => {
                 <tbody>
                   {jobs.map((job) => (
                     <tr 
-                      key={job._id} 
-                      className="border-b hover:bg-muted/50 cursor-pointer"
+                      key={job._id.toString()} 
+                      className="border-b hover:bg-muted/50 cursor-pointer relative"
                       onClick={() => navigate("job_details", { jobId: job._id })}
                     >
-                      <td className="px-4 py-3">{job.title}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="mr-2 h-8 w-8 p-0 text-muted-foreground hover:text-red-500 absolute left-1"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setJobToDelete(job._id);
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                          <span className="ml-8">{job.title}</span>
+                        </div>
+                      </td>
                       <td className="px-4 py-3">
                         {new Date(job.createdAt).toLocaleDateString()}
                       </td>
@@ -127,8 +178,7 @@ const HomePage = () => {
                           size="sm"
                           onClick={(e) => {
                             e.stopPropagation();
-                            // This button doesn't do anything specific yet
-                            // It will be implemented by another team member
+                            // This button will be implemented by another team member
                             navigate("job_details", { jobId: job._id });
                           }}
                         >
@@ -144,6 +194,28 @@ const HomePage = () => {
           </CardContent>
         </Card>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!jobToDelete} onOpenChange={() => setJobToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure you want to delete this job?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the job
+              and all associated data.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteJob}
+              className="bg-red-500 hover:bg-red-600 text-white"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
