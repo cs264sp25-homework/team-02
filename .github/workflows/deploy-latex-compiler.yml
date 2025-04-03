@@ -3,9 +3,14 @@ name: Deploy to Cloud Run
 on:
   push:
     branches: [master]
+    paths:
+      - latex-compiler/**
+      - .github/workflows/deploy-latex-compiler.yml
   pull_request:
     branches: [master]
-
+    paths:
+      - latex-compiler/**
+      - .github/workflows/deploy-latex-compiler.yml
 env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
   SERVICE_NAME: latex-compiler
