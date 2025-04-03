@@ -25,6 +25,7 @@ import {
   AlertDialogTitle,
 } from "@/core/components/alert-dialog";
 import { toast } from "sonner";
+import { useMutationResume } from "@/resume/hooks/use-muatation-resume";
 
 // Extended type that includes Convex's _id field
 type JobWithId = JobType & { _id: Id<"jobs"> };
@@ -35,10 +36,13 @@ const HomePage = () => {
   const [jobs, setJobs] = useState<JobWithId[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [jobToDelete, setJobToDelete] = useState<Id<"jobs"> | null>(null);
-
+  const { startResumeGeneration } = useMutationResume();
   // Use a query hook to get all jobs for the current user
-  const allJobs = useQuery(api.jobs.getAllJobs, user?.id ? { userId: user.id } : "skip");
-  
+  const allJobs = useQuery(
+    api.jobs.getAllJobs,
+    user?.id ? { userId: user.id } : "skip",
+  );
+
   // Mutation to delete a job
   const deleteJobMutation = useMutation(api.jobs.deleteJob);
 
@@ -57,15 +61,15 @@ const HomePage = () => {
   // Handle job deletion
   const handleDeleteJob = async () => {
     if (!jobToDelete || !user) return;
-    
+
     try {
       await deleteJobMutation({
         jobId: jobToDelete,
         userId: user.id,
       });
-      
+
       // Update local state
-      setJobs(jobs.filter(job => job._id !== jobToDelete));
+      setJobs(jobs.filter((job) => job._id !== jobToDelete));
       toast.success("Job deleted successfully");
     } catch (error) {
       console.error("Error deleting job:", error);
@@ -76,6 +80,14 @@ const HomePage = () => {
     }
   };
 
+  const handleCustomizeResume = async (jobId: Id<"jobs">) => {
+    const resumeId = await startResumeGeneration({
+      userId: user!.id,
+      jobId,
+    });
+    navigate("customize_resume_status", { resumeId });
+  };
+
   // If user is not authenticated, show sign-in prompt
   if (!isAuthenticated) {
     return (
@@ -84,10 +96,12 @@ const HomePage = () => {
           <CardContent className="flex flex-col items-center justify-center p-6 space-y-4">
             <h2 className="text-xl font-semibold">Welcome to JobSync</h2>
             <p className="text-muted-foreground text-center max-w-md">
-              JobSync helps you manage job applications, generate tailored resumes, and prepare
-              responses for application questions.
+              JobSync helps you manage job applications, generate tailored
+              resumes, and prepare responses for application questions.
             </p>
-            <Button onClick={() => navigate("login")}>Sign in to continue</Button>
+            <Button onClick={() => navigate("login")}>
+              Sign in to continue
+            </Button>
           </CardContent>
         </Card>
       </div>
@@ -115,7 +129,8 @@ const HomePage = () => {
           <CardContent className="flex flex-col items-center justify-center p-6 space-y-4">
             <h2 className="text-xl font-semibold">No jobs found</h2>
             <p className="text-muted-foreground text-center">
-              You haven't imported any jobs yet. Import your first job to get started.
+              You haven't imported any jobs yet. Import your first job to get
+              started.
             </p>
             <Button onClick={handleImportJob}>Import Job</Button>
           </CardContent>
@@ -137,10 +152,12 @@ const HomePage = () => {
                 </thead>
                 <tbody>
                   {jobs.map((job) => (
-                    <tr 
-                      key={job._id.toString()} 
+                    <tr
+                      key={job._id.toString()}
                       className="border-b hover:bg-muted/50 cursor-pointer relative"
-                      onClick={() => navigate("job_details", { jobId: job._id })}
+                      onClick={() =>
+                        navigate("job_details", { jobId: job._id })
+                      }
                     >
                       <td className="px-4 py-3">
                         <div className="flex items-center">
@@ -178,8 +195,7 @@ const HomePage = () => {
                           size="sm"
                           onClick={(e) => {
                             e.stopPropagation();
-                            // This button will be implemented by another team member
-                            navigate("job_details", { jobId: job._id });
+                            handleCustomizeResume(job._id);
                           }}
                         >
                           <Download className="mr-2 h-4 w-4" />
@@ -196,10 +212,15 @@ const HomePage = () => {
       )}
 
       {/* Delete Confirmation Dialog */}
-      <AlertDialog open={!!jobToDelete} onOpenChange={() => setJobToDelete(null)}>
+      <AlertDialog
+        open={!!jobToDelete}
+        onOpenChange={() => setJobToDelete(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure you want to delete this job?</AlertDialogTitle>
+            <AlertDialogTitle>
+              Are you sure you want to delete this job?
+            </AlertDialogTitle>
             <AlertDialogDescription>
               This action cannot be undone. This will permanently delete the job
               and all associated data.

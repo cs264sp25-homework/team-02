@@ -1,4 +1,9 @@
-import { ActionCtx, internalAction, mutation } from "../_generated/server";
+import {
+  internalAction,
+  ActionCtx,
+  mutation,
+  query,
+} from "../_generated/server";
 import { v } from "convex/values";
 import { openai } from "../openai";
 import {
@@ -7,7 +12,7 @@ import {
   NoObjectGeneratedError,
   streamText,
 } from "ai";
-import { api } from "../_generated/api";
+import { api, internal } from "../_generated/api";
 import { Id } from "../_generated/dataModel";
 import {
   getResumeEnhancementSystemPrompt,
@@ -18,20 +23,61 @@ import { ConvexError } from "convex/values";
 import { generateJakesResume } from "./templates";
 import { ProfileType, zodProfileInSchema } from "../profiles";
 
-export const generateResume = internalAction({
+export const startResumeGeneration = mutation({
   args: {
     userId: v.string(),
     jobId: v.optional(v.string()),
     aiEnhancementPrompt: v.optional(v.string()),
   },
   handler: async (ctx, { userId, jobId, aiEnhancementPrompt }) => {
-    const resumeId = await ctx.runMutation(
-      api.resume.handlers.initializeResumeGeneration,
-      {
-        userId,
-        jobId,
-      },
-    );
+    // check if resume already exists for this job id, using index
+    const resume = await ctx.db
+      .query("resumes")
+      .withIndex("by_jobId", (q) => q.eq("jobId", jobId))
+      .first();
+    if (resume) {
+      return resume._id;
+    }
+    const resumeId = await ctx.db.insert("resumes", {
+      userId,
+      jobId,
+      generationStatus: "started",
+      generationError: undefined,
+      latexContent: "",
+      chunkCount: 0,
+      tailoredProfile: {},
+    });
+    ctx.scheduler.runAfter(0, internal.resume.handlers.generateResume, {
+      userId,
+      jobId,
+      aiEnhancementPrompt,
+      placeHolderResumeId: resumeId,
+    });
+    return resumeId;
+  },
+});
+
+export const generateResume = internalAction({
+  args: {
+    userId: v.string(),
+    jobId: v.optional(v.string()),
+    aiEnhancementPrompt: v.optional(v.string()),
+    placeHolderResumeId: v.optional(v.id("resumes")),
+  },
+  handler: async (
+    ctx,
+    { userId, jobId, aiEnhancementPrompt, placeHolderResumeId },
+  ) => {
+    let resumeId = placeHolderResumeId;
+    if (!resumeId) {
+      resumeId = await ctx.runMutation(
+        api.resume.handlers.initializeResumeGeneration,
+        {
+          userId,
+          jobId,
+        },
+      );
+    }
 
     if (!resumeId) {
       throw new ConvexError("Failed to initialize resume generation");
@@ -159,6 +205,33 @@ async function compileAndUploadResume(
     throw new ConvexError("Failed to compile and upload resume: " + error);
   }
 }
+
+export const getResumeById = query({
+  args: {
+    resumeId: v.string(),
+    userId: v.string(),
+  },
+  handler: async (ctx, { resumeId, userId }) => {
+    return await ctx.db
+      .query("resumes")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .filter((q) => q.eq(q.field("_id"), resumeId))
+      .first();
+  },
+});
+
+export const getResumeByJobId = query({
+  args: {
+    jobId: v.string(),
+    userId: v.string(),
+  },
+  handler: async (ctx, { jobId }) => {
+    return await ctx.db
+      .query("resumes")
+      .withIndex("by_jobId", (q) => q.eq("jobId", jobId))
+      .first();
+  },
+});
 
 export const initializeResumeGeneration = mutation({
   args: {
