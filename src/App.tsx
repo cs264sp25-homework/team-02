@@ -1,7 +1,6 @@
 import { useRouter } from "@/core/hooks/use-router";
 import NotFoundPage from "./core/pages/not-found-page";
 import Demo from "./core/pages/demo";
-import Empty from "./core/pages/empty";
 import LoginPage from "./linkedin/pages/log-in";
 import ProfilePage from "./profile/pages/profile";
 import AddFile from "./file_upload/add_file";

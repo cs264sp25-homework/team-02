@@ -10,15 +10,19 @@ import {
 } from "@/core/components/card";
 import { Skeleton } from "@/core/components/skeleton";
 import { useQuery } from "convex/react";
-import { api } from "../../convex/_generated/api";
+import { api } from "../../../convex/_generated/api";
 import { JobType } from "convex/jobs";
 import { PlusCircle, FileText, Download } from "lucide-react";
 import { Id } from "convex/_generated/dataModel";
 
+
+type JobWithId = JobType & { _id: Id<"jobs"> };
+
+
 const HomePage = () => {
   const { isAuthenticated, user } = useAuth();
   const { navigate } = useRouter();
-  const [jobs, setJobs] = useState<JobType[]>([]);
+  const [jobs, setJobs] = useState<JobWithId[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // Use a query hook to get all jobs for the current user
@@ -30,18 +34,6 @@ const HomePage = () => {
       setIsLoading(false);
     }
   }, [allJobs]);
-
-  // Handle navigation to job details page
-  const handleViewJobDetails = (jobId: Id<"jobs">) => {
-    navigate("job_details", { jobId });
-  };
-
-  // Handle navigation to resume generation page
-  const handleCustomizeResume = (jobId: Id<"jobs">) => {
-    // For now, we'll just navigate to job details
-    // This will be updated later when we implement resume customization
-    navigate("job_details", { jobId });
-  };
 
   // Handle job import
   const handleImportJob = () => {
@@ -109,7 +101,11 @@ const HomePage = () => {
                 </thead>
                 <tbody>
                   {jobs.map((job) => (
-                    <tr key={job._id} className="border-b hover:bg-muted/50">
+                    <tr 
+                      key={job._id} 
+                      className="border-b hover:bg-muted/50 cursor-pointer"
+                      onClick={() => navigate("job_details", { jobId: job._id })}
+                    >
                       <td className="px-4 py-3">{job.title}</td>
                       <td className="px-4 py-3">
                         {new Date(job.createdAt).toLocaleDateString()}
@@ -118,7 +114,10 @@ const HomePage = () => {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleViewJobDetails(job._id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate("job_details", { jobId: job._id });
+                          }}
                         >
                           <FileText className="mr-2 h-4 w-4" />
                           Job Application Questions
@@ -126,7 +125,12 @@ const HomePage = () => {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleCustomizeResume(job._id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            // This button doesn't do anything specific yet
+                            // It will be implemented by another team member
+                            navigate("job_details", { jobId: job._id });
+                          }}
                         >
                           <Download className="mr-2 h-4 w-4" />
                           Customize Resume
