@@ -86,6 +86,8 @@ export default function AddFile() {
 
       const parsedProfile = await parseResume({ resumeText: text });
 
+      console.log("parsedProfile", parsedProfile);
+
       try {
         if (!user?.id) {
           toast.error("User ID not available. Cannot create/update profile.");
@@ -96,73 +98,118 @@ export default function AddFile() {
           name: parsedProfile.name || "New User",
           email: parsedProfile.email || "user@example.com",
 
-          education: (Array.isArray(parsedProfile.education)
+          // Education: ensure all required fields are present
+          education: Array.isArray(parsedProfile.education)
             ? parsedProfile.education
                 .filter(Boolean)
                 .filter(
                   (edu) =>
+                    // Only include entries with all required fields
                     edu.institution && edu.degree && edu.field && edu.startDate,
                 )
-            : []) as {
-            institution: string;
-            degree: string;
-            field: string;
-            startDate: string;
-            endDate?: string;
-            gpa?: number;
-            description?: string;
-            location?: string;
-          }[],
+                .map((edu) => ({
+                  institution: String(edu.institution),
+                  degree: String(edu.degree),
+                  field: String(edu.field),
+                  startDate: String(edu.startDate),
+                  // Optional fields
+                  ...(edu.endDate ? { endDate: String(edu.endDate) } : {}),
+                  ...(edu.gpa !== undefined && edu.gpa !== null
+                    ? { gpa: Number(edu.gpa) }
+                    : {}),
+                  ...(edu.description
+                    ? { description: String(edu.description) }
+                    : {}),
+                  ...(edu.location ? { location: String(edu.location) } : {}),
+                }))
+            : [],
 
-          workExperience: (Array.isArray(parsedProfile.workExperience)
+          // Work Experience: ensure all required fields are present
+          workExperience: Array.isArray(parsedProfile.workExperience)
             ? parsedProfile.workExperience
                 .filter(Boolean)
                 .filter(
-                  (work) => work.company && work.position && work.startDate,
+                  (work) =>
+                    // Only include entries with all required fields
+                    work.company && work.position && work.startDate,
                 )
-            : []) as {
-            company: string;
-            position: string;
-            startDate: string;
-            current: boolean;
-            description: string[];
-            endDate?: string;
-            location?: string;
-            technologies?: string[];
-          }[],
+                .map((work) => ({
+                  company: String(work.company),
+                  position: String(work.position),
+                  startDate: String(work.startDate),
+                  // current is required in schema, so provide default if missing
+                  current: work.current === true,
+                  // Description is an array of strings, use default if missing
+                  description: Array.isArray(work.description)
+                    ? work.description
+                    : [],
+                  // Optional fields
+                  ...(work.endDate ? { endDate: String(work.endDate) } : {}),
+                  ...(work.location ? { location: String(work.location) } : {}),
+                  ...(Array.isArray(work.technologies)
+                    ? { technologies: work.technologies }
+                    : {}),
+                }))
+            : [],
 
-          projects: (Array.isArray(parsedProfile.projects)
-            ? parsedProfile.projects.filter(Boolean).filter((proj) => proj.name)
-            : []) as {
-            name: string;
-            description: string[];
-            technologies: string[];
-            startDate?: string;
-            endDate?: string;
-            link?: string;
-            githubUrl?: string;
-            highlights?: string[];
-          }[],
+          // Projects: ensure all required fields are present
+          projects: Array.isArray(parsedProfile.projects)
+            ? parsedProfile.projects
+                .filter(Boolean)
+                .filter((proj) => proj.name)
+                .map((proj) => ({
+                  name: String(proj.name),
+                  // Required arrays with defaults
+                  description: Array.isArray(proj.description)
+                    ? proj.description
+                    : [],
+                  technologies: Array.isArray(proj.technologies)
+                    ? proj.technologies
+                    : [],
+                  // Optional fields
+                  ...(proj.startDate
+                    ? { startDate: String(proj.startDate) }
+                    : {}),
+                  ...(proj.endDate ? { endDate: String(proj.endDate) } : {}),
+                  ...(proj.link ? { link: String(proj.link) } : {}),
+                  ...(proj.githubUrl
+                    ? { githubUrl: String(proj.githubUrl) }
+                    : {}),
+                  ...(Array.isArray(proj.highlights)
+                    ? { highlights: proj.highlights }
+                    : {}),
+                }))
+            : [],
 
+          // Skills: array of strings
           skills: Array.isArray(parsedProfile.skills)
             ? parsedProfile.skills
             : [],
 
+          // Optional scalar fields
           ...(parsedProfile.phone
             ? { phone: String(parsedProfile.phone) }
             : {}),
           ...(parsedProfile.location
             ? { location: String(parsedProfile.location) }
             : {}),
+
+          // Optional socialLinks array
           ...(Array.isArray(parsedProfile.socialLinks) &&
           parsedProfile.socialLinks.length > 0
             ? {
-                socialLinks: parsedProfile.socialLinks.filter(Boolean) as {
-                  platform: string;
-                  url: string;
-                }[],
+                socialLinks: parsedProfile.socialLinks
+                  .filter(Boolean)
+                  .filter((link) => link.platform && link.url)
+                  .map((link) => ({
+                    platform: String(link.platform),
+                    url: String(link.url),
+                  })),
               }
             : {}),
+
+          // Required userId
+          userId: user.id,
         };
 
         // Check if profile already exists

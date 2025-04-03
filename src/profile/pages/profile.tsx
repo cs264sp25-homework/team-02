@@ -43,20 +43,16 @@ const ProfilePage = () => {
       location: (formData.get("location") as string) || undefined,
       socialLinks: [
         {
-          platform: "website",
-          url: (formData.get("website") as string) || "",
+          platform: "Website",
+          url: (formData.get("Website") as string) || "",
         },
         {
-          platform: "github",
-          url: (formData.get("github") as string) || "",
+          platform: "GitHub",
+          url: (formData.get("GitHub") as string) || "",
         },
         {
-          platform: "linkedin",
-          url: (formData.get("linkedin") as string) || "",
-        },
-        {
-          platform: "twitter",
-          url: (formData.get("twitter") as string) || "",
+          platform: "LinkedIn",
+          url: (formData.get("LinkedIn") as string) || "",
         },
       ].filter((link) => link.url),
     };
@@ -138,44 +134,36 @@ const ProfilePage = () => {
                     defaultValue={profile?.location}
                   />
                 </div>
+              </div>
 
+              <div className="grid gap-4 md:grid-cols-3">
                 <div className="grid gap-2">
-                  <Label htmlFor="website">Website</Label>
+                  <Label htmlFor="Website">Website</Label>
                   <Input
-                    id="website"
-                    name="website"
+                    id="Website"
+                    name="Website"
                     type="url"
-                    defaultValue={getProfileLink("website")}
+                    defaultValue={getProfileLink("Website")}
                   />
                 </div>
 
                 <div className="grid gap-2">
-                  <Label htmlFor="github">GitHub</Label>
+                  <Label htmlFor="LinkedIn">LinkedIn</Label>
                   <Input
-                    id="github"
-                    name="github"
+                    id="LinkedIn"
+                    name="LinkedIn"
                     type="url"
-                    defaultValue={getProfileLink("github")}
+                    defaultValue={getProfileLink("LinkedIn")}
                   />
                 </div>
 
                 <div className="grid gap-2">
-                  <Label htmlFor="linkedin">LinkedIn</Label>
+                  <Label htmlFor="GitHub">GitHub</Label>
                   <Input
-                    id="linkedin"
-                    name="linkedin"
+                    id="GitHub"
+                    name="GitHub"
                     type="url"
-                    defaultValue={getProfileLink("linkedin")}
-                  />
-                </div>
-
-                <div className="grid gap-2">
-                  <Label htmlFor="twitter">Twitter</Label>
-                  <Input
-                    id="twitter"
-                    name="twitter"
-                    type="url"
-                    defaultValue={getProfileLink("twitter")}
+                    defaultValue={getProfileLink("GitHub")}
                   />
                 </div>
               </div>
