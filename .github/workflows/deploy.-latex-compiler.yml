@@ -23,15 +23,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Change to latex-compiler directory
-        run: |
-          if [ ! -d "$WORKING_DIR" ]; then
-            echo "Error: $WORKING_DIR directory not found"
-            exit 1
-          fi
-          cd $WORKING_DIR
-          echo "Changed to directory: $(pwd)"
-
       - name: Authenticate to Google Cloud
         uses: "google-github-actions/auth@v2"
         with:
@@ -42,6 +33,7 @@ jobs:
 
       - name: Build and Push Container
         run: |
+          cd $WORKING_DIR
           gcloud auth configure-docker
           docker build -t gcr.io/$PROJECT_ID/$SERVICE_NAME:${{ github.sha }} .
           docker push gcr.io/$PROJECT_ID/$SERVICE_NAME:${{ github.sha }}
