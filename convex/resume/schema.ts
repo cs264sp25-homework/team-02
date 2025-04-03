@@ -25,6 +25,7 @@ export const resumeInSchema = {
   generationError: v.optional(v.string()), // error message if generation failed
   chunkCount: v.number(), // number of chunks generated
   compiledResumeStorageId: v.optional(v.id("_storage")), // storage id of the compiled resume
+  compiledResumeUrl: v.optional(v.string()), // url of the compiled resume
 };
 
 export const resumeSchema = {

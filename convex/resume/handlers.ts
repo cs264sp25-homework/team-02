@@ -200,6 +200,14 @@ async function compileAndUploadResume(
         compiledResumeStorageId: storageId,
       },
     );
+    const compiledResumeUrl = await ctx.storage.getUrl(storageId);
+    if (!compiledResumeUrl) {
+      throw new Error("Failed to get compiled resume URL");
+    }
+    await ctx.runMutation(api.resume.handlers.updateResumeCompiledResumeUrl, {
+      resumeId,
+      compiledResumeUrl,
+    });
   } catch (error: unknown) {
     console.error("Failed to compile and upload resume: " + error);
     throw new ConvexError("Failed to compile and upload resume: " + error);
@@ -230,6 +238,18 @@ export const getResumeByJobId = query({
       .query("resumes")
       .withIndex("by_jobId", (q) => q.eq("jobId", jobId))
       .first();
+  },
+});
+
+export const updateResumeCompiledResumeUrl = mutation({
+  args: {
+    resumeId: v.id("resumes"),
+    compiledResumeUrl: v.string(),
+  },
+  handler: async (ctx, { resumeId, compiledResumeUrl }) => {
+    await ctx.db.patch(resumeId, {
+      compiledResumeUrl,
+    });
   },
 });
 
