@@ -7,7 +7,7 @@ import latexRoutes from "./routes/latex.routes";
 dotenv.config();
 
 const app = express();
-const port = process.env.PORT || 8080;
+const port = 8080;
 
 // Middleware
 app.use(cors());
