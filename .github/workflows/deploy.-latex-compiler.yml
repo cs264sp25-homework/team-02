@@ -32,11 +32,10 @@ jobs:
           cd $WORKING_DIR
           echo "Changed to directory: $(pwd)"
 
-      - name: Google Auth
-        id: auth
+      - name: Authenticate to Google Cloud
         uses: "google-github-actions/auth@v2"
         with:
-          workload_identity_provider: "${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}"
+          credentials_json: "${{ secrets.GCP_SA_KEY }}"
 
       - name: Set up Cloud SDK
         uses: "google-github-actions/setup-gcloud@v2"
