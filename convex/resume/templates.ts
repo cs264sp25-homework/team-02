@@ -21,8 +21,13 @@ export function generateJakesResume(profile: ProfileType): string {
     current?: boolean,
   ): string => {
     const start = formatDate(startDate);
+    if (start.includes("Invalid Date")) return "";
     if (current) return `${start} -- Present`;
-    if (endDate) return `${start} -- ${formatDate(endDate)}`;
+    if (endDate) {
+      const end = formatDate(endDate);
+      if (end.includes("Invalid Date")) return "";
+      return `${start} -- ${end}`;
+    }
     return start;
   };
 
