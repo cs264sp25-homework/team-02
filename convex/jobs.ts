@@ -308,3 +308,34 @@ export const uploadQuestionImage = mutation({
     return true;
   },
 });
+
+/**
+ * Get all jobs for a user
+ * @param userId The ID of the user whose jobs to fetch
+ * @returns Array of jobs or empty array if none found
+ */
+export const getAllJobs = query({
+  args: { userId: v.string() },
+  handler: async (ctx, { userId }) => {
+    // Get user from auth
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_id", (q) => q.eq("_id", userId as Id<"users">))
+      .first();
+
+    if (!user) {
+      throw new Error("Not authenticated!");
+    }
+
+    // Query all jobs for this user
+    const jobs = await ctx.db
+      .query("jobs")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .collect();
+
+    // Sort by createdAt date, newest first
+    return jobs.sort((a, b) => 
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+  },
+});

@@ -1,7 +1,6 @@
 import { useRouter } from "@/core/hooks/use-router";
 import NotFoundPage from "./core/pages/not-found-page";
 import Demo from "./core/pages/demo";
-import Empty from "./core/pages/empty";
 import LoginPage from "./linkedin/pages/log-in";
 import ProfilePage from "./profile/pages/profile";
 import AddFile from "./file_upload/add_file";
@@ -9,6 +8,7 @@ import ImportJobPage from "./jobs/pages/import-job";
 import JobDetailsPage from "./jobs/pages/job-details";
 import LinkedInCallback from "./linkedin/components/LinkedInCallback";
 import NavBar from "@/core/components/navbar";
+import HomePage from "./core/pages/home-page";
 
 function App() {
   const { currentRoute } = useRouter();
@@ -23,9 +23,7 @@ function App() {
   const renderContent = () => {
     switch (currentRoute) {
       case "home":
-        return (
-          <Empty message="Welcome to JobSync! Navigate using the menu above." />
-        );
+        return <HomePage />;
       case "demo":
         return <Demo />;
       case "login":
