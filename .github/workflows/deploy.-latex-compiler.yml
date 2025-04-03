@@ -2,9 +2,9 @@ name: Deploy to Cloud Run
 
 on:
   push:
-    branches: [main, jacky-latex-compiler-service]
+    branches: [master]
   pull_request:
-    branches: [main, jacky-latex-compiler-service]
+    branches: [master]
 
 env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
