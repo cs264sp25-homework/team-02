@@ -83,6 +83,9 @@ export const generateResume = internalAction({
           ctx,
         );
       }
+
+      await compileAndUploadResume(latexContent, resumeId, ctx);
+
       await ctx.runMutation(api.resume.handlers.updateResumeGenerationStatus, {
         resumeId,
         status: "completed",
@@ -101,6 +104,61 @@ export const generateResume = internalAction({
     }
   },
 });
+
+async function compileAndUploadResume(
+  latexContent: string,
+  resumeId: Id<"resumes">,
+  ctx: ActionCtx,
+) {
+  try {
+    await ctx.runMutation(api.resume.handlers.updateResumeGenerationStatus, {
+      resumeId,
+      status: "compiling resume",
+    });
+    const response = await fetch(
+      "https://latex-compiler-393050277209.us-central1.run.app/latex/compile",
+      {
+        method: "POST",
+        body: latexContent,
+      },
+    );
+
+    if (!response.ok) {
+      const body = await response.json();
+      throw new Error("Failed to compile resume: " + body.details);
+    }
+
+    const pdfBuffer = await response.arrayBuffer();
+    // get storage url
+    const storageUrl = await ctx.storage.generateUploadUrl();
+    const result = await fetch(storageUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/pdf",
+      },
+      body: pdfBuffer,
+    });
+
+    if (!result.ok) {
+      const body = await result.json();
+      console.error("Failed to upload resume: " + body.details);
+      throw new Error(`Upload failed: ${body.details}`);
+    }
+
+    const { storageId } = await result.json();
+
+    await ctx.runMutation(
+      api.resume.handlers.updateResumeCompiledResumeStorageId,
+      {
+        resumeId,
+        compiledResumeStorageId: storageId,
+      },
+    );
+  } catch (error: unknown) {
+    console.error("Failed to compile and upload resume: " + error);
+    throw new ConvexError("Failed to compile and upload resume: " + error);
+  }
+}
 
 export const initializeResumeGeneration = mutation({
   args: {
@@ -155,6 +213,18 @@ export const updateResumeChunkCount = mutation({
   handler: async (ctx, { resumeId, chunkCount }) => {
     await ctx.db.patch(resumeId, {
       chunkCount,
+    });
+  },
+});
+
+export const updateResumeCompiledResumeStorageId = mutation({
+  args: {
+    resumeId: v.id("resumes"),
+    compiledResumeStorageId: v.id("_storage"),
+  },
+  handler: async (ctx, { resumeId, compiledResumeStorageId }) => {
+    await ctx.db.patch(resumeId, {
+      compiledResumeStorageId,
     });
   },
 });
