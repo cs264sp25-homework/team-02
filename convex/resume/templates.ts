@@ -225,24 +225,39 @@ export function generateJakesResume(profile: ProfileType): string {
 
 
 %-----------EDUCATION-----------
-\\section{Education}
+${
+  profile.education && profile.education.length > 0
+    ? `\\section{Education}
   \\resumeSubHeadingListStart
     ${formatEducation(profile.education)}
   \\resumeSubHeadingListEnd
+`
+    : ""
+}
 
 
 %-----------EXPERIENCE-----------
-\\section{Experience}
+${
+  profile.workExperience && profile.workExperience.length > 0
+    ? `\\section{Experience}
   \\resumeSubHeadingListStart
     ${formatWorkExperience(profile.workExperience)}
   \\resumeSubHeadingListEnd
+`
+    : ""
+}
 
 
 %-----------PROJECTS-----------
-\\section{Projects}
+${
+  profile.projects && profile.projects.length > 0
+    ? `\\section{Projects}
   \\resumeSubHeadingListStart
     ${formatProjects(profile.projects)}
   \\resumeSubHeadingListEnd
+`
+    : ""
+}
 
 
 %-----------PROGRAMMING SKILLS-----------

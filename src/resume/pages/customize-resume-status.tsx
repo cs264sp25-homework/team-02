@@ -7,7 +7,7 @@ import { CopyButton } from "@/core/components/copy-button";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { useMutationResume } from "../hooks/use-muatation-resume";
-
+import { ProfileType } from "convex/profiles";
 type Tab = "latex" | "pdf";
 
 export const CustomizeResumeStatus = () => {
@@ -144,6 +144,7 @@ export const CustomizeResumeStatus = () => {
             currentStatus={resume.generationStatus}
             error={resume.generationError}
             statusBeforeFailure={resume.statusBeforeFailure}
+            tailoredProfile={resume.tailoredProfile as ProfileType}
           />
         </div>
 

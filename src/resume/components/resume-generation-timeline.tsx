@@ -1,16 +1,19 @@
+import { ProfileType } from "convex/profiles";
 import { GenerationStatusType } from "../../../convex/resume/schema";
 import { cn } from "@/core/lib/utils";
-
+import TailoredProfileInsights from "./tailored-profile-insights";
 interface ResumeGenerationTimelineProps {
   currentStatus: GenerationStatusType;
   error?: string;
   statusBeforeFailure?: GenerationStatusType;
+  tailoredProfile?: ProfileType;
 }
 
 export const ResumeGenerationTimeline = ({
   currentStatus,
   error,
   statusBeforeFailure,
+  tailoredProfile,
 }: ResumeGenerationTimelineProps) => {
   const STATUS_STAGES: { status: GenerationStatusType; label: string }[] = [
     { status: "started", label: "Generation Started" },
@@ -81,7 +84,7 @@ export const ResumeGenerationTimeline = ({
                 <div className="ml-8">
                   <h3
                     className={cn(
-                      "text-sm font-medium",
+                      "text-sm font-medium text-left",
                       isCompleted && "text-green-600",
                       isCurrent && !isFailed && "text-blue-600",
                       isFailed && "text-red-600",
@@ -96,6 +99,13 @@ export const ResumeGenerationTimeline = ({
                   {isFailed && error && (
                     <p className="mt-1 text-sm text-red-500">{error}</p>
                   )}
+                  {stage.status === "generating tailored profile" &&
+                    isCompleted &&
+                    tailoredProfile && (
+                      <TailoredProfileInsights
+                        tailoredProfile={tailoredProfile}
+                      />
+                    )}
                 </div>
               </div>
             );
