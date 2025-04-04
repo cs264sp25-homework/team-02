@@ -47,6 +47,7 @@ export const CustomizeResumeStatus = () => {
           <ResumeGenerationTimeline
             currentStatus={resume.generationStatus}
             error={resume.generationError}
+            statusBeforeFailure={resume.statusBeforeFailure}
           />
         </div>
 

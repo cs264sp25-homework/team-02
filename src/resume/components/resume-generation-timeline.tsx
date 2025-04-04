@@ -1,32 +1,51 @@
 import { GenerationStatusType } from "../../../convex/resume/schema";
 import { cn } from "@/core/lib/utils";
 
-const STATUS_STAGES: { status: GenerationStatusType; label: string }[] = [
-  { status: "started", label: "Generation Started" },
-  { status: "fetching profile", label: "Fetching Profile" },
-  { status: "fetching job description", label: "Fetching Job Description" },
-  {
-    status: "generating tailored profile",
-    label: "Generating Tailored Profile",
-  },
-  { status: "generating tailored resume", label: "Generating Tailored Resume" },
-  { status: "enhancing resume with AI", label: "Enhancing Resume with AI" },
-  { status: "compiling resume", label: "Compiling Resume" },
-  { status: "completed", label: "Completed" },
-];
-
 interface ResumeGenerationTimelineProps {
   currentStatus: GenerationStatusType;
   error?: string;
+  statusBeforeFailure?: GenerationStatusType;
 }
 
 export const ResumeGenerationTimeline = ({
   currentStatus,
   error,
+  statusBeforeFailure,
 }: ResumeGenerationTimelineProps) => {
-  const currentIndex = STATUS_STAGES.findIndex(
-    (stage) => stage.status === currentStatus,
-  );
+  const STATUS_STAGES: { status: GenerationStatusType; label: string }[] = [
+    { status: "started", label: "Generation Started" },
+    { status: "fetching profile", label: "Fetching Profile" },
+    { status: "fetching job description", label: "Fetching Job Description" },
+    {
+      status: "generating tailored profile",
+      label: "Generating Tailored Profile",
+    },
+    {
+      status: "generating tailored resume",
+      label: "Generating Tailored Resume",
+    },
+    { status: "enhancing resume with AI", label: "Enhancing Resume with AI" },
+    { status: "compiling resume", label: "Compiling Resume" },
+    { status: "completed", label: "Completed" },
+  ];
+
+  let currentIndex;
+  if (currentStatus === "failed" && statusBeforeFailure) {
+    currentIndex = STATUS_STAGES.findIndex(
+      (stage) => stage.status === statusBeforeFailure,
+    );
+  } else {
+    currentIndex = STATUS_STAGES.findIndex(
+      (stage) => stage.status === currentStatus,
+    );
+  }
+  if (currentStatus === "failed" && statusBeforeFailure) {
+    const failedStageIndex = STATUS_STAGES.findIndex(
+      (stage) => stage.status === statusBeforeFailure,
+    );
+    STATUS_STAGES[failedStageIndex].label += " (Failed)";
+    STATUS_STAGES[failedStageIndex].status = "failed";
+  }
 
   return (
     <div className="w-full max-w-2xl mx-auto">

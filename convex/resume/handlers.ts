@@ -140,9 +140,15 @@ export const generateResume = internalAction({
       return latexContent;
     } catch (error: unknown) {
       console.error("Failed to generate resume: " + error);
+      const resume = await ctx.runQuery(api.resume.handlers.getResumeById, {
+        userId,
+        resumeId,
+      });
+      const statusBeforeFailure = resume?.generationStatus;
       await ctx.runMutation(api.resume.handlers.updateResumeGenerationStatus, {
         resumeId,
         status: "failed",
+        statusBeforeFailure: statusBeforeFailure,
         generationError:
           error instanceof Error ? error.message : "Unknown error",
       });
@@ -277,11 +283,16 @@ export const updateResumeGenerationStatus = mutation({
     resumeId: v.id("resumes"),
     status: generationStatus,
     generationError: v.optional(v.string()),
+    statusBeforeFailure: v.optional(generationStatus),
   },
-  handler: async (ctx, { resumeId, status, generationError }) => {
+  handler: async (
+    ctx,
+    { resumeId, status, generationError, statusBeforeFailure },
+  ) => {
     await ctx.db.patch(resumeId, {
       generationStatus: status,
       generationError: generationError,
+      statusBeforeFailure: statusBeforeFailure,
     });
   },
 });
