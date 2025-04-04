@@ -4,7 +4,7 @@ import { Id } from "convex/_generated/dataModel";
 import { useQueryResume } from "../hooks/use-query-resume";
 import { ResumeGenerationTimeline } from "../components/resume-generation-timeline";
 import { CopyButton } from "@/core/components/copy-button";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { useMutationResume } from "../hooks/use-muatation-resume";
 
@@ -22,6 +22,17 @@ export const CustomizeResumeStatus = () => {
   }
   const resumeId = params.resumeId as Id<"resumes">;
   const { resume, loading } = useQueryResume(resumeId, user!.id);
+
+  // Auto-switch to PDF tab when PDF becomes available
+  useEffect(() => {
+    if (
+      resume &&
+      resume.generationStatus === "completed" &&
+      resume.compiledResumeUrl
+    ) {
+      setActiveTab("pdf");
+    }
+  }, [resume]);
 
   if (loading) {
     return <div>Loading...</div>;
