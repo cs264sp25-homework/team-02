@@ -9,12 +9,12 @@ import {
   CardTitle,
 } from "@/core/components/card";
 import { Button } from "@/core/components/button";
-import { ArrowLeft, Save } from "lucide-react";
+import { ArrowLeft, FileQuestion, Save } from "lucide-react";
 import { Textarea } from "@/core/components/textarea";
 import AiDropdownMenu from "../components/AiDropdownMenu";
 import { ImageUpload } from "../components/ImageUpload";
 import { toast } from "sonner";
-import { useState, useEffect } from "react";
+import { useState, useEffect, use } from "react";
 import { useMutationJob } from "../hooks/use-mutation-job";
 import { useAuth } from "@/linkedin/hooks/useAuth";
 import Tesseract from "tesseract.js";
@@ -37,6 +37,11 @@ const JobDetailsPage = () => {
     userId: user!.id,
   });
   const getAiGeneratedJobQuestions = useAction(api.openai.generateJobQuestions);
+
+  const refineResponse = useAction(api.openai.refineResponse);
+  const regenerateResponse = useAction(api.openai.regenerateResponse);
+  const optimizeResponse = useAction(api.openai.optimizeResponse);
+  const adjustTone = useAction(api.openai.adjustTone);
 
   // Initialize and update answers when job data changes
   useEffect(() => {
@@ -127,20 +132,86 @@ const JobDetailsPage = () => {
   };
 
   // index number should be used as the index of the answer to be improved
-  const handleAiAction = (action: string) => {
+  const handleAiAction = async (
+    action: string,
+    question: string,
+    index: number,
+  ) => {
+    const userBackground = formatProfileBackground(profile);
+    let newResponse = "";
+
     switch (action) {
       case "refine":
         toast.info("Refining response...");
+        {
+          newResponse = await refineResponse({
+            jobTitle: job?.title || "",
+            jobRequirements: job?.description || "",
+            jobQuestion: question,
+            userResponse: answers[index] || "",
+            userBackground: userBackground,
+          });
+        }
         break;
       case "generate":
         toast.info("Generating updated response...");
+        {
+          newResponse = await regenerateResponse({
+            jobTitle: job?.title || "",
+            jobRequirements: job?.description || "",
+            jobQuestion: question,
+            userResponse: answers[index] || "",
+            userBackground: userBackground,
+          });
+        }
         break;
       case "optimize":
         toast.info("Optimizing response...");
+        {
+          newResponse = await optimizeResponse({
+            jobTitle: job?.title || "",
+            jobRequirements: job?.description || "",
+            jobQuestion: question,
+            userResponse: answers[index] || "",
+            userBackground: userBackground,
+          });
+        }
         break;
       case "tone":
         toast.info("Adjusting tone...");
+        {
+          newResponse = await adjustTone({
+            jobTitle: job?.title || "",
+            jobRequirements: job?.description || "",
+            jobQuestion: question,
+            userResponse: answers[index] || "",
+            userBackground: userBackground,
+          });
+        }
         break;
+    }
+
+    if (newResponse) {
+      // Update the specific answer in the state
+      console.log("new response:", newResponse);
+      // Update the answer in the database
+      const updated = await updateAnswer(user!.id, jobId, index, newResponse);
+      if (updated) {
+        console.log("Answer updated successfully");
+        toast.success("Response updated successfully in db");
+      } else {
+        console.error("Failed to update answer");
+        toast.error("Failed to update answer in db");
+      }
+      // Update the local state immediately for better UX
+      setAnswers((prev) => {
+        const newAnswers = [...prev];
+        newAnswers[index] = newResponse;
+        return newAnswers;
+      });
+      toast.success("Response updated successfully");
+    } else {
+      toast.error("No response generated, no update");
     }
   };
 
@@ -225,7 +296,9 @@ const JobDetailsPage = () => {
                       </div>
                       <div className="flex-shrink-0">
                         <AiDropdownMenu
-                          onSelect={(action) => handleAiAction(action)}
+                          onSelect={(action) =>
+                            handleAiAction(action, question, index)
+                          }
                         />
                       </div>
                     </div>
