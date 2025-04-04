@@ -18,91 +18,8 @@ import { useState, useEffect } from "react";
 import { useMutationJob } from "../hooks/use-mutation-job";
 import { useAuth } from "@/linkedin/hooks/useAuth";
 import Tesseract from "tesseract.js";
-import { ProfileType } from "../../../convex/profiles";
-
-export const formatProfileBackground = (
-  profile: ProfileType | null | undefined,
-) => {
-  if (!profile) return "";
-
-  const sections = [];
-
-  // Education
-  if (profile.education?.length > 0) {
-    sections.push("Education:");
-    profile.education.forEach((edu) => {
-      sections.push(`- ${edu.degree} in ${edu.field} from ${edu.institution}`);
-      if (edu.description) sections.push(`  ${edu.description}`);
-    });
-  }
-
-  // Work Experience
-  if (profile.workExperience?.length > 0) {
-    sections.push("\nWork Experience:");
-    profile.workExperience.forEach((work) => {
-      sections.push(`- ${work.position} at ${work.company}`);
-      if (work.description?.length > 0) {
-        work.description.forEach((desc) => {
-          sections.push(`  ${desc}`);
-        });
-      }
-      if (work.technologies && work.technologies.length > 0) {
-        sections.push(`  Technologies: ${work.technologies.join(", ")}`);
-      }
-    });
-  }
-
-  // Projects
-  if (profile.projects?.length > 0) {
-    sections.push("\nProjects:");
-    profile.projects.forEach((project) => {
-      sections.push(`- ${project.name}`);
-      if (project.description?.length > 0) {
-        project.description.forEach((desc) => {
-          sections.push(`  ${desc}`);
-        });
-      }
-      if (project.technologies && project.technologies.length > 0) {
-        sections.push(`  Technologies: ${project.technologies.join(", ")}`);
-      }
-      if (project.highlights && project.highlights.length > 0) {
-        sections.push(`  Highlights: ${project.highlights.join(", ")}`);
-      }
-    });
-  }
-
-  // Skills
-  if (profile.skills?.length > 0) {
-    sections.push("\nSkills:");
-    sections.push(profile.skills.join(", "));
-  }
-
-  // Work Experience
-  if (profile.workExperience?.length > 0) {
-    // Check if there are any work experiences
-    sections.push("\nWork Experience:"); // Add "Work Experience:" as a section header with a newline
-
-    profile.workExperience.forEach((work) => {
-      // Loop through each work experience
-      sections.push(`- ${work.position} at ${work.company}`); // Add main work entry
-
-      if (work.description?.length > 0) {
-        // If there are descriptions
-        work.description.forEach((desc) => {
-          // Loop through each description
-          sections.push(`  ${desc}`); // Add each description with indentation
-        });
-      }
-
-      if (work.technologies && work.technologies.length > 0) {
-        // If there are technologies
-        sections.push(`  Technologies: ${work.technologies.join(", ")}`); // Add technologies list
-      }
-    });
-  }
-
-  return sections.join("\n");
-};
+import { formatProfileBackground } from "../utils/profile";
+import { extractQuestions } from "../utils/clean";
 
 const JobDetailsPage = () => {
   const { isAuthenticated, user } = useAuth();
@@ -120,6 +37,11 @@ const JobDetailsPage = () => {
     userId: user!.id,
   });
   const getAiGeneratedJobQuestions = useAction(api.openai.generateJobQuestions);
+
+  const refineResponse = useAction(api.openai.refineResponse);
+  const regenerateResponse = useAction(api.openai.regenerateResponse);
+  const optimizeResponse = useAction(api.openai.optimizeResponse);
+  const adjustTone = useAction(api.openai.adjustTone);
 
   // Initialize and update answers when job data changes
   useEffect(() => {
@@ -156,7 +78,7 @@ const JobDetailsPage = () => {
         jobUpdated = await updateJob({
           userId: user!.id,
           jobId: job!._id,
-          questions: text.split("\n").filter((line) => line.trim()),
+          questions: extractQuestions(text),
         });
       }
 
@@ -210,16 +132,86 @@ const JobDetailsPage = () => {
   };
 
   // index number should be used as the index of the answer to be improved
-  const handleAiAction = (action: string) => {
+  const handleAiAction = async (
+    action: string,
+    question: string,
+    index: number,
+  ) => {
+    const userBackground = formatProfileBackground(profile);
+    let newResponse = "";
+
     switch (action) {
-      case "improve":
-        toast.info("Improving your answer...");
-        // TODO: Implement AI improvement
+      case "refine":
+        toast.info("Refining response...");
+        {
+          newResponse = await refineResponse({
+            jobTitle: job?.title || "",
+            jobRequirements: job?.description || "",
+            jobQuestion: question,
+            userResponse: answers[index] || "",
+            userBackground: userBackground,
+          });
+        }
         break;
       case "generate":
-        toast.info("Generating new answer...");
-        // TODO: Implement AI generation
+        toast.info("Generating updated response...");
+        {
+          newResponse = await regenerateResponse({
+            jobTitle: job?.title || "",
+            jobRequirements: job?.description || "",
+            jobQuestion: question,
+            userResponse: answers[index] || "",
+            userBackground: userBackground,
+          });
+        }
         break;
+      case "optimize":
+        toast.info("Optimizing response...");
+        {
+          newResponse = await optimizeResponse({
+            jobTitle: job?.title || "",
+            jobRequirements: job?.description || "",
+            jobQuestion: question,
+            userResponse: answers[index] || "",
+            userBackground: userBackground,
+          });
+        }
+        break;
+      case "tone":
+        toast.info("Adjusting tone...");
+        {
+          newResponse = await adjustTone({
+            jobTitle: job?.title || "",
+            jobRequirements: job?.description || "",
+            jobQuestion: question,
+            userResponse: answers[index] || "",
+            userBackground: userBackground,
+          });
+        }
+        break;
+    }
+
+    if (newResponse) {
+      // Update the specific answer in the state
+      console.log("new response:", newResponse);
+      // Update the answer in the database
+      const updated = await updateAnswer(user!.id, jobId, index, newResponse);
+      if (updated) {
+        console.log("Answer updated successfully");
+        toast.success("Response updated successfully in db");
+      } else {
+        console.error("Failed to update answer");
+        toast.error("Failed to update answer in db");
+      }
+      // Update the local state immediately for better UX
+      setAnswers((prev) => {
+        const newAnswers = [...prev];
+        newAnswers[index] = newResponse;
+        return newAnswers;
+      });
+      toast.success("Response updated successfully");
+    } else {
+      toast.error("No response generated, no update");
     }
   };
 
@@ -304,7 +296,9 @@ const JobDetailsPage = () => {
                       </div>
                       <div className="flex-shrink-0">
                         <AiDropdownMenu
-                          onSelect={(action) => handleAiAction(action)}
+                          onSelect={(action) =>
+                            handleAiAction(action, question, index)
+                          }
                         />
                       </div>
                     </div>

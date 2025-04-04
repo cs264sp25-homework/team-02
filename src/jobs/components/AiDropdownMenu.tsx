@@ -21,11 +21,17 @@ const AiDropdownMenu = ({ onSelect }: AiDropdownMenuProps) => {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent>
-        <DropdownMenuItem onClick={() => onSelect("improve")}>
-          Improve my answer
+        <DropdownMenuItem onClick={() => onSelect("refine")}>
+          Refine my response
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => onSelect("generate")}>
-          Generate new answer
+          Regenerate
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => onSelect("optimize")}>
+          Optimize for job fit
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => onSelect("tone")}>
+          Adjust tone
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
