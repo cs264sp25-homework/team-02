@@ -31,16 +31,6 @@ export function LinkedInLoginButton({
       localStorage.setItem("linkedInAuthState", state);
       sessionStorage.setItem("linkedInAuthState", state);
 
-      // Log to confirm storage worked
-      console.log(
-        "State stored in localStorage:",
-        localStorage.getItem("linkedInAuthState"),
-      );
-      console.log(
-        "State stored in sessionStorage:",
-        sessionStorage.getItem("linkedInAuthState"),
-      );
-
       // Get authorization URL from environment variables
       const clientId = import.meta.env.VITE_LINKEDIN_CLIENT_ID;
       const redirectUri =

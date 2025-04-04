@@ -136,9 +136,9 @@ export default function LinkedInCallback() {
         setSuccess(true);
         logger.info("Authentication successful, redirecting to profile");
 
-        // Redirect to profile page after successful login
+        // Redirect to file upload after successful login
         setTimeout(() => {
-          navigate("profile");
+          navigate("add_file");
         }, 1500);
       } catch (err) {
         logger.error("Unhandled exception during LinkedIn authentication", {
