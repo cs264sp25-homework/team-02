@@ -13,10 +13,12 @@ import type {
   FilterApi,
   FunctionReference,
 } from "convex/server";
+import type * as chat from "../chat.js";
 import type * as files from "../files.js";
 import type * as hello from "../hello.js";
 import type * as jobs from "../jobs.js";
 import type * as linkedin_auth from "../linkedin/auth.js";
+import type * as messages from "../messages.js";
 import type * as openai from "../openai.js";
 import type * as profiles from "../profiles.js";
 import type * as resume_handlers from "../resume/handlers.js";
@@ -36,10 +38,12 @@ import type * as types_linkedInUserResult from "../types/linkedInUserResult.js";
  * ```
  */
 declare const fullApi: ApiFromModules<{
+  chat: typeof chat;
   files: typeof files;
   hello: typeof hello;
   jobs: typeof jobs;
   "linkedin/auth": typeof linkedin_auth;
+  messages: typeof messages;
   openai: typeof openai;
   profiles: typeof profiles;
   "resume/handlers": typeof resume_handlers;
