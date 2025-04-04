@@ -7,8 +7,12 @@ export const useMutationResume = () => {
   const startResumeGeneration = useMutation(
     api.resume.handlers.startResumeGeneration,
   );
+  const restartResumeGeneration = useMutation(
+    api.resume.handlers.restartResumeGeneration,
+  );
 
   return {
     startResumeGeneration,
+    restartResumeGeneration,
   };
 };

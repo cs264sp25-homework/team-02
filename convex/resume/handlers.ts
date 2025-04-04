@@ -57,6 +57,30 @@ export const startResumeGeneration = mutation({
   },
 });
 
+export const restartResumeGeneration = mutation({
+  args: {
+    resumeId: v.id("resumes"),
+    userId: v.string(),
+    jobId: v.optional(v.string()),
+    aiEnhancementPrompt: v.optional(v.string()),
+  },
+  handler: async (ctx, { resumeId, userId, jobId, aiEnhancementPrompt }) => {
+    await ctx.db.patch(resumeId, {
+      generationStatus: "started",
+      generationError: undefined,
+      latexContent: "",
+      chunkCount: 0,
+      tailoredProfile: {},
+    });
+    ctx.scheduler.runAfter(0, internal.resume.handlers.generateResume, {
+      userId,
+      jobId,
+      aiEnhancementPrompt,
+      placeHolderResumeId: resumeId,
+    });
+  },
+});
+
 export const generateResume = internalAction({
   args: {
     userId: v.string(),
