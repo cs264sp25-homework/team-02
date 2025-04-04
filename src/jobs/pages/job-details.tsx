@@ -9,12 +9,12 @@ import {
   CardTitle,
 } from "@/core/components/card";
 import { Button } from "@/core/components/button";
-import { ArrowLeft, FileQuestion, Save } from "lucide-react";
+import { ArrowLeft, Save } from "lucide-react";
 import { Textarea } from "@/core/components/textarea";
 import AiDropdownMenu from "../components/AiDropdownMenu";
 import { ImageUpload } from "../components/ImageUpload";
 import { toast } from "sonner";
-import { useState, useEffect, use } from "react";
+import { useState, useEffect } from "react";
 import { useMutationJob } from "../hooks/use-mutation-job";
 import { useAuth } from "@/linkedin/hooks/useAuth";
 import Tesseract from "tesseract.js";
