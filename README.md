@@ -1,54 +1,75 @@
-# React + TypeScript + Vite
+# JobSync
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+JobSync is an AI-powered job application assistant designed to streamline the process of filling out job applications and crafting tailored resumes. The application leverages AI to generate personalized responses to common job application questions and create customized resumes that match specific job descriptions.
 
-Currently, two official plugins are available:
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Features
 
-## Expanding the ESLint configuration
+### Implemented Features (Sprint 1)
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- **User Authentication**: Secure sign-in through LinkedIn OAuth integration
+- **Profile Management**: Create and edit a comprehensive profile with work history, education, skills, and projects
+- **Resume Parsing**: Upload your existing resume in PDF format and have it automatically parsed into your profile
+- **Job Import**: Import job postings and application questions from URLs
+- **AI-Generated Responses**: Generate tailored responses to job application questions based on your profile and the job requirements
+- **Resume Customization**: Generate tailored resumes based on your profile and the job description
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
-```
+## Tech Stack
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+- **Frontend**: React with Vite
+- **Styling**: TailwindCSS and Shadcn UI
+- **Backend**: Convex BaaS (Backend as a Service)
+- **AI Integration**: OpenAI APIs via Vercel AI SDK
+- **Deployment**: Github Pages: [JobSync](https://cs264sp25-homework.github.io/team-02/)
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Getting Started
 
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
-```
+### Prerequisites
+
+- Node.js (v18 or higher)
+- pnpm
+- LinkedIn Developer Account (for OAuth)
+- OpenAI API Key
+
+### Local Development Setup
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/cs264sp25-homework/team-02
+   cd team-02
+   ```
+
+2. Install dependencies:
+   ```bash
+   pnpm install
+   ```
+
+3. Create a `.env` file in the root directory with the following variables:
+   ```
+   VITE_LINKEDIN_CLIENT_ID=your_linkedin_client_id
+   VITE_LINKEDIN_CLIENT_SECRET=your_linkedin_client_secret
+   VITE_LINKEDIN_REDIRECT_URI=http://localhost:5173/auth/callback
+   OPENAI_API_KEY=your_openai_api_key
+   ```
+
+4. Start convex server: 
+  ```bash
+   npx convex dev 
+   ```
+
+5. Start the development server:
+   ```bash
+   pnpm dev
+   ```
+
+6. Open your browser to `http://localhost:5173`
+
+
+## Roadmap
+
+- **Sprint 1** (Completed): Core functionality including authentication, profile creation, resume parsing, job import, and AI-generated content
+
+
+## License
+
+See the [LICENSE](LICENSE) file for details.
