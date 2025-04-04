@@ -10,7 +10,7 @@ const TailoredProfileInsights = ({
   const projectExperiences = tailoredProfile.projects || [];
 
   return (
-    <div className="mt-2 pl-4 border-l-2 border-blue-200c text-left">
+    <div className="mt-2 pl-4 border-l-2 border-blue-200 text-left">
       {/* Work Experiences */}
       <div className="text-sm">
         <h4 className="font-medium text-blue-700 mb-1">
