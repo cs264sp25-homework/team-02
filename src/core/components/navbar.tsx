@@ -21,6 +21,7 @@ export const NavBar = () => {
     { label: "Home", route: "home" },
     { label: "Job Import", route: "import_job", requiresAuth: true },
     { label: "Resume Upload", route: "add_file", requiresAuth: true },
+    { label: "Chat", route: "chat", requiresAuth: true },
     { label: "Demo", route: "demo" },
   ];
 
@@ -31,7 +32,7 @@ export const NavBar = () => {
 
   return (
     <nav className="bg-white border-b border-gray-200 px-4 py-2.5 fixed w-full top-0 left-0 z-50">
-      <div className="flex flex-wrap justify-between items-center">
+      <div className="flex flex-wrap items-center justify-between">
         {/* Logo/Brand */}
         <div
           className="flex items-center cursor-pointer"
@@ -54,13 +55,13 @@ export const NavBar = () => {
         </div>
 
         {/* Desktop Navigation */}
-        <div className="hidden md:flex items-center">
+        <div className="items-center hidden md:flex">
           <ul className="flex flex-row space-x-8">
             {filteredNavItems.map((item) => (
               <li key={item.route}>
                 <a
                   href="#"
-                  className="text-gray-500 hover:text-primary font-medium cursor-pointer"
+                  className="font-medium text-gray-500 cursor-pointer hover:text-primary"
                   onClick={(e) => {
                     e.preventDefault();
                     navigate(item.route as any);
@@ -82,19 +83,19 @@ export const NavBar = () => {
                 className="flex items-center text-sm rounded-full focus:ring-4 focus:ring-gray-200"
                 onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
               >
-                <div className="h-8 w-8 rounded-full bg-primary text-white flex items-center justify-center">
+                <div className="flex items-center justify-center w-8 h-8 text-white rounded-full bg-primary">
                   {user?.firstName?.[0]?.toUpperCase() || <User size={20} />}
                 </div>
               </button>
 
               {/* Profile dropdown menu */}
               {isProfileMenuOpen && (
-                <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-lg shadow-lg z-50">
-                  <div className="py-2 px-4 text-sm text-gray-700">
-                    <div className="font-medium truncate mb-2">
+                <div className="absolute right-0 z-50 w-48 mt-2 bg-white rounded-lg shadow-lg top-full">
+                  <div className="px-4 py-2 text-sm text-gray-700">
+                    <div className="mb-2 font-medium truncate">
                       {user?.firstName} {user?.lastName}
                     </div>
-                    <div className="font-medium truncate text-gray-500 text-xs">
+                    <div className="text-xs font-medium text-gray-500 truncate">
                       {user?.email}
                     </div>
                   </div>
@@ -102,7 +103,7 @@ export const NavBar = () => {
                     <li>
                       <a
                         href="#"
-                        className="block py-2 px-4 text-sm hover:bg-gray-100"
+                        className="block px-4 py-2 text-sm hover:bg-gray-100"
                         onClick={(e) => {
                           e.preventDefault();
                           navigate("profile");
@@ -115,7 +116,7 @@ export const NavBar = () => {
                     <li>
                       <a
                         href="#"
-                        className="block py-2 px-4 text-sm text-red-600 hover:bg-gray-100"
+                        className="block px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
                         onClick={(e) => {
                           e.preventDefault();
                           handleLogout();
@@ -147,7 +148,7 @@ export const NavBar = () => {
             <li key={item.route}>
               <a
                 href="#"
-                className="block py-2 px-4 text-sm text-gray-500 hover:bg-gray-100 hover:text-primary"
+                className="block px-4 py-2 text-sm text-gray-500 hover:bg-gray-100 hover:text-primary"
                 onClick={(e) => {
                   e.preventDefault();
                   navigate(item.route as any);
@@ -162,7 +163,7 @@ export const NavBar = () => {
             <li>
               <a
                 href="#"
-                className="block py-2 px-4 text-sm text-gray-500 hover:bg-gray-100 hover:text-primary"
+                className="block px-4 py-2 text-sm text-gray-500 hover:bg-gray-100 hover:text-primary"
                 onClick={(e) => {
                   e.preventDefault();
                   navigate("profile");
@@ -177,7 +178,7 @@ export const NavBar = () => {
             <li>
               <a
                 href="#"
-                className="block py-2 px-4 text-sm text-red-600 hover:bg-gray-100"
+                className="block px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
                 onClick={(e) => {
                   e.preventDefault();
                   handleLogout();
