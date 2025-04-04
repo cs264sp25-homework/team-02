@@ -129,13 +129,17 @@ const JobDetailsPage = () => {
   // index number should be used as the index of the answer to be improved
   const handleAiAction = (action: string) => {
     switch (action) {
-      case "improve":
-        toast.info("Improving your answer...");
-        // TODO: Implement AI improvement
+      case "refine":
+        toast.info("Refining response...");
         break;
       case "generate":
-        toast.info("Generating new answer...");
-        // TODO: Implement AI generation
+        toast.info("Generating updated response...");
+        break;
+      case "optimize":
+        toast.info("Optimizing response...");
+        break;
+      case "tone":
+        toast.info("Adjusting tone...");
         break;
     }
   };

@@ -65,6 +65,104 @@ export const completion = internalAction({
   },
 });
 
+export const refineResponse = action({
+  args: {
+    jobTitle: v.string(),
+    jobRequirements: v.string(),
+    jobQuestions: v.array(v.string()),
+    userBackground: v.string(),
+    userResponse: v.string(),
+  },
+  handler: async (_, args) => {
+    console.log("starting refineResponse");
+
+    const systemPrompt = `You are an experienced career coach specializing in job applications, resume writing, and interview preparation. Your role is to help refine a user’s job application response to make it clearer, more specific, and impactful.
+
+      ### Instructions:
+      1. Review the user’s original response to the job application question. 
+      2. Improve the structure, clarity, and flow of the response. Ensure that the answer directly addresses the job application question in a more precise and detailed manner.
+      3. Strengthen the response by including more relevant examples, specific details, and removing any vague or unnecessary information.
+      4. Ensure the response remains confident and professional while maintaining the user’s voice.
+      5. Ensure that the response aligns with the job title, requirements, and industry-specific terminology.
+
+      ### Original Response:
+      ${args.userResponse}
+
+      ### Job Details:
+      - **Job Title:** ${args.jobTitle}
+      - **Job Requirements:** ${args.jobRequirements}
+
+      ### User Background:
+      ${args.userBackground}
+
+      ### Output:
+      Return a refined version of the response that is more specific, clear, and impactful.
+      `;
+  },
+});
+
+export const optimizeResponse = action({
+  args: {
+    jobTitle: v.string(),
+    jobRequirements: v.string(),
+    jobQuestions: v.array(v.string()),
+    userBackground: v.string(),
+    userResponse: v.string(),
+  },
+  handler: async (_, args) => {
+    console.log("starting optmizeResponse");
+
+    const systemPrompt = `You are an experienced career coach specializing in job applications, resume writing, and interview preparation. Your role is to optimize a user's job application response to better fit the job title, requirements, and company culture.
+
+      ### Instructions:
+      1. Review the user’s response to the job application question.
+      2. Ensure that the answer is aligned with the job title, job requirements, and company culture.
+      3. Incorporate key industry-specific keywords from the job posting and ensure that they are used naturally within the response.
+      4. Emphasize the user’s most relevant strengths, experiences, and skills that directly relate to the job posting.
+      5. Ensure the response is tailored to make the user appear as a strong fit for this specific job.
+
+      ### Original Response:
+      ${args.userResponse}
+
+      ### Job Details:
+      - **Job Title:** ${args.jobTitle}
+      - **Job Requirements:** ${args.jobRequirements}
+
+      ### User Background:
+      ${args.userBackground}
+
+      ### Output:
+      Return an optimized version of the response that highlights the most relevant skills and experiences and aligns better with the job posting and company culture.
+      `;
+  },
+});
+
+export const adjustTone = action({
+  args: {
+    jobTitle: v.string(),
+    jobRequirements: v.string(),
+    jobQuestions: v.array(v.string()),
+    userBackground: v.string(),
+    answers: v.array(v.string()),
+  },
+  handler: async (_, args) => {
+    console.log("starting adjustTone");
+  },
+});
+
+export const regenerateResponse = action({
+  args: {
+    jobTitle: v.string(),
+    jobRequirements: v.string(),
+    jobQuestions: v.array(v.string()),
+    userBackground: v.string(),
+    answers: v.array(v.string()),
+  },
+  handler: async (_, args) => {
+    console.log("starting regenerateResponse");
+  },
+});
+
 export const generateJobQuestions = action({
   args: {
     jobTitle: v.string(),
