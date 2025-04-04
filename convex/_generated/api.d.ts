@@ -19,6 +19,11 @@ import type * as jobs from "../jobs.js";
 import type * as linkedin_auth from "../linkedin/auth.js";
 import type * as openai from "../openai.js";
 import type * as profiles from "../profiles.js";
+import type * as resume_handlers from "../resume/handlers.js";
+import type * as resume_prompts from "../resume/prompts.js";
+import type * as resume_templates from "../resume/templates.js";
+import type * as resume_verifiers from "../resume/verifiers.js";
+import type * as resumeParser from "../resumeParser.js";
 import type * as scrape from "../scrape.js";
 import type * as types_linkedInUserResult from "../types/linkedInUserResult.js";
 
@@ -37,6 +42,11 @@ declare const fullApi: ApiFromModules<{
   "linkedin/auth": typeof linkedin_auth;
   openai: typeof openai;
   profiles: typeof profiles;
+  "resume/handlers": typeof resume_handlers;
+  "resume/prompts": typeof resume_prompts;
+  "resume/templates": typeof resume_templates;
+  "resume/verifiers": typeof resume_verifiers;
+  resumeParser: typeof resumeParser;
   scrape: typeof scrape;
   "types/linkedInUserResult": typeof types_linkedInUserResult;
 }>;

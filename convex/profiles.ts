@@ -2,7 +2,7 @@ import { Infer, v } from "convex/values";
 import { defineTable } from "convex/server";
 import { mutation, query } from "./_generated/server";
 import { Id } from "./_generated/dataModel";
-
+import { z } from "zod";
 /******************************************************************************
  * SCHEMA
  *
@@ -79,6 +79,141 @@ export const profileInSchema = {
   // Skills
   skills: v.array(v.string()),
 };
+
+export const zodProfileInSchema = z.object({
+  name: z.string().describe("Full name of the candidate"),
+  email: z.string().describe("Email address of the candidate"),
+  phone: z.string().optional().describe("Phone number of the candidate"),
+  location: z
+    .string()
+    .optional()
+    .describe("Location or address of the candidate"),
+  socialLinks: z
+    .array(
+      z.object({
+        platform: z
+          .string()
+          .describe("Name of the social platform (e.g., LinkedIn, GitHub)"),
+        url: z
+          .string()
+          .describe("Full URL to the candidate's profile on this platform"),
+      }),
+    )
+    .default([])
+    .describe("List of the candidate's social media profiles"),
+
+  education: z
+    .array(
+      z.object({
+        institution: z
+          .string()
+          .describe("Name of the school, college, or university"),
+        degree: z
+          .string()
+          .describe("Degree obtained (e.g., Bachelor's, Master's)"),
+        field: z.string().describe("Field of study or major"),
+        startDate: z.string().describe("Start date in YYYY-MM format"),
+        endDate: z
+          .string()
+          .optional()
+          .describe(
+            "End date in YYYY-MM format. If unknown or unclear, then ignore this field.",
+          ),
+        gpa: z.number().optional().describe("Grade Point Average if mentioned"),
+        description: z
+          .string()
+          .optional()
+          .describe("Additional details about the education"),
+        location: z.string().optional().describe("Location of the institution"),
+      }),
+    )
+    .default([])
+    .describe("Educational background of the candidate"),
+
+  workExperience: z
+    .array(
+      z.object({
+        company: z.string().describe("Name of the employer or company"),
+        position: z.string().describe("Job title or role at the company"),
+        location: z
+          .string()
+          .optional()
+          .describe("Location of the job (city, country, or remote)"),
+        startDate: z.string().describe("Start date in YYYY-MM format"),
+        endDate: z
+          .string()
+          .optional()
+          .describe(
+            "End date in YYYY-MM format. If unknown or unclear or present/ongoing, then ignore this field.",
+          ),
+        current: z
+          .boolean()
+          .describe("Whether this is the candidate's current position"),
+        description: z
+          .array(z.string())
+          .default([])
+          .describe("List of job responsibilities and achievements"),
+        technologies: z
+          .array(z.string())
+          .default([])
+          .describe(
+            "Technologies or tools used in this role. (e.g. 'Python', 'JavaScript', 'React', 'Node.js', 'SQL', 'Git', 'Docker', 'AWS')",
+          ),
+      }),
+    )
+    .default([])
+    .describe("Professional work experience of the candidate"),
+
+  projects: z
+    .array(
+      z.object({
+        name: z.string().describe("Name or title of the project"),
+        description: z
+          .array(z.string())
+          .default([])
+          .describe("Detailed description of the project"),
+        startDate: z
+          .string()
+          .optional()
+          .describe("When the project started in YYYY-MM format"),
+        endDate: z
+          .string()
+          .optional()
+          .describe(
+            "When the project ended in YYYY-MM format. If the project is ongoing/present, then ignore this field.",
+          ),
+        technologies: z
+          .array(z.string())
+          .default([])
+          .describe(
+            "Technologies, languages, or frameworks used. (e.g. 'Python', 'JavaScript', 'React', 'Node.js', 'SQL', 'Git', 'Docker', 'AWS')",
+          ),
+        link: z
+          .string()
+          .optional()
+          .describe("URL to the live project if available"),
+        githubUrl: z
+          .string()
+          .optional()
+          .describe("URL to the project's GitHub repository"),
+        highlights: z
+          .array(z.string())
+          .default([])
+          .describe(
+            "Key achievements or notable aspects of the project. (e.g. 'Won hackathon', 'Won award', 'Sold product', 'Raised $100k', 'Published paper', 'Open-sourced code')",
+          ),
+      }),
+    )
+    .default([])
+    .describe("Projects completed by the candidate"),
+
+  skills: z
+    .array(z.string())
+    .default([])
+    .describe(
+      "All relevant skills of the candidate. (e.g. 'Python', 'JavaScript', 'React', 'Node.js', 'SQL', 'Git', 'Docker', 'AWS')",
+    ),
+});
 
 // eslint-disable-next-line
 const profileInSchemaObject = v.object(profileInSchema);
