@@ -96,7 +96,8 @@ export const generateJobQuestions = action({
 
       ### Instructions:
       1. **Craft tailored responses** that align with the job title and requirements.
-      2. **Emphasize relevant skills, experiences, and achievements** from the user's background.
+      2. **Emphasize relevant skills, experiences, and achievements** from the user's background. If they don't have anything in the user background, tell
+      them that they need to add experience, skills, education to their profile. Do not make things up! Always base the responses on the user's background given to you.
       3. **Use a confident and professional tone** to make the user stand out.
       4. **Optimize for ATS (Applicant Tracking System)** by naturally incorporating key industry-specific keywords.
       5. **Where applicable, use the STAR (Situation, Task, Action, Result) method** to structure responses effectively.
