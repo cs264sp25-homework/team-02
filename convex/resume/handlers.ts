@@ -22,6 +22,7 @@ import { generationStatus } from "./schema";
 import { ConvexError } from "convex/values";
 import { generateJakesResume } from "./templates";
 import { ProfileType, zodProfileInSchema } from "../profiles";
+import { cleanTailoredProfile } from "./verifiers";
 
 export const startResumeGeneration = mutation({
   args: {
@@ -384,14 +385,19 @@ async function createTailoredProfile(
       prompt: getTailoredProfilePrompt(profile, jobDescription),
       schema: zodProfileInSchema,
     });
+    // remove any work experience, education, or projects that do not match the user's profile
+    const tailoredProfile = cleanTailoredProfile(
+      {
+        ...object,
+        userId,
+      },
+      profile,
+    );
     await ctx.runMutation(api.resume.handlers.updateResumeTailoredProfile, {
       resumeId: resumeId as Id<"resumes">,
       tailoredProfile: object,
     });
-    return {
-      ...object,
-      userId,
-    };
+    return tailoredProfile;
   } catch (error) {
     if (NoObjectGeneratedError.isInstance(error)) {
       console.error("NoObjectGeneratedError");
