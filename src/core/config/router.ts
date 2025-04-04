@@ -15,6 +15,7 @@ const pages = {
   auth_callback: `${baseUrl}/auth/callback`, // LinkedIn OAuth callback
   import_job: `${baseUrl}/import-job`, // Job import page
   job_details: `${baseUrl}/job-details/:jobId`, // Job details page with job ID parameter
+  customize_resume_status: `${baseUrl}/customize-resume-status/:resumeId`, // Customize resume status page
 };
 
 export type Page = keyof typeof pages;

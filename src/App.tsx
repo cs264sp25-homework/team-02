@@ -9,6 +9,7 @@ import JobDetailsPage from "./jobs/pages/job-details";
 import LinkedInCallback from "./linkedin/components/LinkedInCallback";
 import NavBar from "@/core/components/navbar";
 import HomePage from "./core/pages/home-page";
+import { CustomizeResumeStatus } from "./resume/pages/customize-resume-status";
 
 function App() {
   const { currentRoute } = useRouter();
@@ -38,6 +39,8 @@ function App() {
         return <ImportJobPage />;
       case "job_details":
         return <JobDetailsPage />;
+      case "customize_resume_status":
+        return <CustomizeResumeStatus />;
       default:
         return <NotFoundPage />;
     }
