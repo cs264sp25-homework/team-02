@@ -1,20 +1,17 @@
 import React from "react";
-import { MessageType } from "@/types/message";
-import { User } from "@/linkedin/stores/auth-store";
 import { cn } from "@/core/lib/utils";
-import ReactMarkdown from "react-markdown";
-import { CodeBlock } from "@/chat/components/code-block";
-import { Avatar } from "@/chat/components/avatar";
 
 interface MessageListProps {
-  messages: MessageType[];
-  user: User | null;
+  messages: any[];
+  user: any; 
 }
 
 export const MessageList: React.FC<MessageListProps> = ({ messages, user }) => {
+  const messageList = messages || [];
+  
   return (
     <div className="space-y-4 py-4">
-      {messages.map((message) => (
+      {messageList.map((message) => (
         <div
           key={message._id}
           className={cn(
@@ -31,34 +28,43 @@ export const MessageList: React.FC<MessageListProps> = ({ messages, user }) => {
                 />
               </div>
               <div className="flex-1 min-w-0 prose max-w-none break-words">
-                {message.role === "assistant" ? (
-                  <ReactMarkdown
-                    components={{
-                      code({ node, inline, className, children, ...props }) {
-                        const match = /language-(\w+)/.exec(className || "");
-                        return !inline && match ? (
-                          <CodeBlock
-                            language={match[1]}
-                            value={String(children).replace(/\n$/, "")}
-                          />
-                        ) : (
-                          <code className={className} {...props}>
-                            {children}
-                          </code>
-                        );
-                      },
-                    }}
-                  >
-                    {message.content}
-                  </ReactMarkdown>
-                ) : (
-                  <div className="whitespace-pre-wrap">{message.content}</div>
-                )}
+                <div className="font-semibold">
+                  {message.role === "assistant" ? "JobSync AI" : `${user?.firstName || "You"} ${user?.lastName || ""}`}
+                </div>
+                <div className="mt-1 whitespace-pre-wrap">{message.content}</div>
               </div>
             </div>
           </div>
         </div>
       ))}
+    </div>
+  );
+};
+
+// Simple Avatar component
+const Avatar = ({ role, name }: { role: string, name: string }) => {
+  // Get first letter of name for fallback
+  const initial = name ? name.charAt(0).toUpperCase() : "";
+
+  // Background colors based on role
+  const getBgColor = () => {
+    switch (role) {
+      case "assistant":
+        return "bg-blue-600";
+      case "user":
+      default:
+        return "bg-gray-700";
+    }
+  };
+
+  return (
+    <div
+      className={cn(
+        "flex items-center justify-center w-8 h-8 rounded-full text-white text-sm font-medium",
+        getBgColor()
+      )}
+    >
+      <span>{initial}</span>
     </div>
   );
 };
