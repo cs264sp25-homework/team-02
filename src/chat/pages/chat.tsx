@@ -9,6 +9,7 @@ import { useQueryProfile } from "@/profile/hooks/use-query-profile";
 import { Button } from "@/core/components/button";
 import { Textarea } from "@/core/components/textarea";
 import { Spinner } from "@/linkedin/components/spinner";
+import { useAutosizeTextArea } from "@/chat/hooks/use-autosize-textarea";
 import { formatProfileBackground } from "@/jobs/utils/profile";
 import { Sidebar } from "@/chat/components/chat-sidebar";
 import { MessageList } from "@/chat/components/message-list";
@@ -23,45 +24,51 @@ const ChatPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  
-  // Get chatId from URL parameters
+
+  // Get chatId from URL
   const chatId = params.chatId as Id<"chats">;
-  
-  // Get user profile for context
+
+  // Queries
   const { data: profile } = useQueryProfile(user?.id);
-  
-  // Get messages for current chat
   const { data: messages, loading: messagesLoading } = useQueryMessages(chatId);
-  
-  // Setup mutations
+  const { data: chats } = useQueryChats();
+
+  // Determine the selected chat for header title
+  const selectedChat = chats?.find(chat => chat._id === chatId);
+
+  // Mutations
   const messageMutations = useMutationMessages(chatId);
   const chatMutations = useMutationChats();
 
-  // Check authentication
+  // Auto-resize textarea
+  useAutosizeTextArea({
+    textAreaRef: textareaRef,
+    triggerAutoSize: input,
+    minHeight: 24,
+    maxHeight: 200,
+  });
+
+  // Redirect if not authenticated
   useEffect(() => {
     if (!isAuthenticated) {
       redirect("login");
     }
   }, [isAuthenticated, redirect]);
 
-  // Scroll to bottom of messages when new message arrives
+  // Scroll to bottom when messages update
   useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
-    }
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Handle creating a new chat
+  // Create a new chat
   const startNewChat = async () => {
     if (!user) return;
-    
     setIsLoading(true);
     try {
       const newChatId = await chatMutations.add({
         title: "New Conversation",
-        description: "Started on " + new Date().toLocaleString()
+        description: "Started on " + new Date().toLocaleString(),
       });
-      
       if (newChatId) {
         navigate("chat", { chatId: newChatId });
       }
@@ -72,6 +79,7 @@ const ChatPage = () => {
     }
   };
 
+  // Handle input changes
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInput(e.target.value);
   };
@@ -83,23 +91,17 @@ const ChatPage = () => {
     }
   };
 
+  // Send a message
   const handleSendMessage = async () => {
     if (sending || !input.trim() || !chatId) return;
-    
     try {
       setSending(true);
-      
-      // Add user profile context to the message
-      const userContext = profile ? `\n\nUser Profile Context:\n${formatProfileBackground(profile)}` : "";
-      
-      // Only add the context to the first message in a chat
+      const userContext = profile
+        ? `\n\nUser Profile Context:\n${formatProfileBackground(profile)}`
+        : "";
       const shouldAddContext = messages?.length === 0;
       const messageContent = shouldAddContext ? input + userContext : input;
-      
-      await messageMutations.add({
-        content: messageContent,
-      });
-      
+      await messageMutations.add({ content: messageContent });
       setInput("");
     } catch (error) {
       console.error("Error sending message:", error);
@@ -110,49 +112,38 @@ const ChatPage = () => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-full">
+      <div className="flex items-center justify-center h-screen w-screen">
         <Spinner size="lg" />
       </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-[272px_1fr] h-screen">
-      {/* Chat Sidebar - always flush on the far left */}
-      <div className="border-r h-full overflow-y-auto bg-white">
-        <Sidebar
-          onNewChat={startNewChat}
-          currentChatId={chatId}
-        />
-      </div>
+    <div className="flex h-screen w-screen">
+      {/* Sidebar with its own scroll */}
+      <aside className="w-64 border-r bg-white h-full overflow-y-auto">
+        <Sidebar onNewChat={startNewChat} currentChatId={chatId} />
+      </aside>
 
       {/* Main Chat Area */}
-      <div className="flex flex-col h-full overflow-hidden">
-        {/* Chat Header */}
-        <header className="flex items-center justify-between px-4 py-2 border-b h-14 bg-white">
-          <Button 
-            variant="outline" 
-            onClick={startNewChat}
-            className="flex items-center"
-          >
-            <PlusIcon className="w-4 h-4 mr-2" />
-            New Chat
-          </Button>
+      <main className="flex flex-col flex-1 h-full overflow-hidden">
+        {/* Header with chat title */}
+        <header className="flex items-center px-4 py-2 border-b bg-white h-14">
+          <h1 className="text-lg font-semibold">
+            {chatId ? selectedChat?.title || "Chat" : "JobSync Assistant"}
+          </h1>
         </header>
 
         {/* Messages Container */}
-        <div className="flex-1 overflow-y-auto pb-32">
+        <div className="flex-1 overflow-y-auto px-4 py-2">
           {!chatId ? (
-            <div className="flex flex-col items-center justify-center h-full mt-32">
-              <h1 className="mb-4 text-xl font-semibold">JobSync Assistant</h1>
+            <div className="flex flex-col items-center justify-center h-full">
+              <h1 className="text-xl font-semibold mb-2">JobSync Assistant</h1>
               <p className="text-center text-gray-500 max-w-md">
-                Start a new conversation to get personalized guidance on job applications, 
+                Start a new conversation to get personalized guidance on job applications,
                 resume tips, and career advice.
               </p>
-              <Button 
-                onClick={startNewChat}
-                className="mt-4"
-              >
+              <Button onClick={startNewChat} className="mt-4">
                 <PlusIcon className="w-4 h-4 mr-2" />
                 New Chat
               </Button>
@@ -162,12 +153,9 @@ const ChatPage = () => {
               <Spinner />
             </div>
           ) : messages?.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full mt-32">
-              <h1 className="mb-4 text-xl font-semibold">JobSync Assistant</h1>
-              <p className="text-center text-gray-500 max-w-md">
-                Ask me about job applications, resume tips, interview preparation,
-                or career advice. I'll use your profile information to provide
-                personalized guidance.
+            <div className="flex flex-col items-center justify-center h-full">
+              <p className="text-center text-gray-500">
+                Ask me about job applications, resume tips, interview prep, or career advice.
               </p>
             </div>
           ) : (
@@ -176,47 +164,40 @@ const ChatPage = () => {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Message Input Area - always shown when a chat is selected */}
+        {/* Message Input */}
         {chatId && (
-          <div className="sticky bottom-0 left-0 right-0 py-4 border-t bg-white">
-            <div className="max-w-3xl px-4 mx-auto">
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  handleSendMessage();
-                }}
-                className="relative"
+          <div className="border-t bg-white px-4 py-2">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleSendMessage();
+              }}
+              className="relative"
+            >
+              <Textarea
+                ref={textareaRef}
+                value={input}
+                onChange={handleInputChange}
+                onKeyDown={handleKeyDown}
+                placeholder="Message JobSync AI..."
+                className="min-h-[52px] max-h-[200px] w-full pr-12 resize-none rounded-lg"
+                disabled={sending}
+              />
+              <Button
+                type="submit"
+                size="icon"
+                disabled={sending || input.trim() === ""}
+                className="absolute right-2 bottom-2 h-9 w-9"
               >
-                <Textarea
-                  ref={textareaRef}
-                  value={input}
-                  onChange={handleInputChange}
-                  onKeyDown={handleKeyDown}
-                  placeholder="Message JobSync AI..."
-                  // Fixed height to remove auto-sizing behavior
-                  className="h-[52px] w-full pr-12 resize-none rounded-lg overflow-y-auto"
-                  disabled={sending}
-                />
-                <Button
-                  type="submit"
-                  size="icon"
-                  disabled={sending || input.trim() === ""}
-                  className="absolute right-2 bottom-1.5 h-9 w-9"
-                >
-                  {sending ? (
-                    <Spinner size="sm" />
-                  ) : (
-                    <SendIcon className="w-4 h-4" />
-                  )}
-                </Button>
-              </form>
-              <div className="mt-2 text-xs text-center text-gray-400">
-                JobSync AI can make mistakes. Verify important information.
-              </div>
+                {sending ? <Spinner size="sm" /> : <SendIcon className="w-4 h-4" />}
+              </Button>
+            </form>
+            <div className="mt-2 text-xs text-center text-gray-400">
+              JobSync AI can make mistakes. Verify important information.
             </div>
           </div>
         )}
-      </div>
+      </main>
     </div>
   );
 };
