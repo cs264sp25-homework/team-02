@@ -4,7 +4,7 @@ import { ConvexError } from "convex/values";
 import { api } from "./_generated/api";
 
 // Get messages for a chat
-export const getByChatId = query({
+export const getAll = query({
   args: {
     chatId: v.id("chats"),
     limit: v.optional(v.number()),
@@ -32,26 +32,19 @@ export const getByChatId = query({
 });
 
 // Create a new user message
-export const createUserMessage = mutation({
+export const create = mutation({
   args: {
     chatId: v.id("chats"),
     content: v.string(),
-    userId: v.string(),
+    userId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    // Check if chat exists and belongs to user
+    // Check if chat exists
     const chat = await ctx.db.get(args.chatId);
     if (!chat) {
       throw new ConvexError({
         code: 404,
         message: "Chat not found",
-      });
-    }
-    
-    if (chat.userId !== args.userId) {
-      throw new ConvexError({
-        code: 403,
-        message: "You don't have permission to message in this chat",
       });
     }
     
@@ -85,35 +78,13 @@ export const createUserMessage = mutation({
       messageCount: chat.messageCount + 2, // Add 2 for both messages
     });
     
-    // Get all previous messages for context (limit to recent 10 for performance)
-    const previousMessages = await ctx.db
-      .query("messages")
-      .withIndex("by_chat_id_and_created_at", (q) =>
-        q.eq("chatId", args.chatId)
-      )
-      .order("desc")
-      .take(11); // Include our new message + 10 previous ones
+  
     
-    // // Format messages for the AI
-    // const messageHistory = previousMessages
-    //   .reverse() // Get in chronological order
-    //   .filter(m => m._id !== aiMessageId) // Exclude placeholder
-    //   .map(m => ({
-    //     role: m.role,
-    //     content: m.content,
-    //   }));
-    
-    // // Schedule AI response generation
-    // ctx.scheduler.runAfter(0, api.openai.generateChatResponse, {
-    //   messageHistory,
-    //   responseMessageId: aiMessageId,
-    // });
-    
-    // return { userMessageId: messageId, aiMessageId };
+    return { userMessageId: messageId, aiMessageId };
   },
 });
 
-// Internal mutation to update AI message
+// Update an AI message
 export const updateAiMessage = internalMutation({
   args: {
     messageId: v.id("messages"),

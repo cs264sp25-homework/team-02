@@ -29,7 +29,7 @@ const schema = defineSchema({
   }).index("by_linkedInId", ["linkedInId"]),
   
   chats: defineTable({
-    userId: v.string(),  // Owner of the chat
+    userId: v.string(),
     title: v.string(),
     description: v.optional(v.string()),
     createdAt: v.string(),

@@ -3,7 +3,7 @@ import { query, mutation } from "./_generated/server";
 import { ConvexError } from "convex/values";
 
 // Get all chats for a user
-export const getByUserId = query({
+export const getAll = query({
   args: { userId: v.string() },
   handler: async (ctx, args) => {
     return await ctx.db
