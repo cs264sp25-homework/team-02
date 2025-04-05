@@ -28,8 +28,29 @@ JobSync is an AI-powered job application assistant designed to streamline the pr
 
 - Node.js (v18 or higher)
 - pnpm
-- LinkedIn Developer Account (for OAuth)
+- [LinkedIn Developer Account (for OAuth)](http://linkedin.com/developers) 
 - OpenAI API Key
+
+### LinkedIn OAuth Setup
+1. Go to the [LinkedIn Developer Portal](https://www.linkedin.com/developers/apps)
+2. Click "Create App"
+3. Fill in the required information:
+   - App name: "JobSync Development" (or any name you prefer)
+   - Company: Your company/organization
+   - Privacy policy URL: Can be a placeholder during development
+   - Business email: Your email
+4. Upload an app logo (optional)
+5. Click "Create App"
+6. In the "Auth" tab:
+   - Add the redirect URL: `http://localhost:5173/auth/callback`
+   - Request the following OAuth scopes:
+     - `openid`
+     - `profile`
+     - `email`
+     - You may need to go to the products tab and request access to "Sign In with LinkedIn using OpenID Connect"
+7. Save the changes
+8. Note your Client ID and Client Secret and add them to your `.env` file
+
 
 ### Local Development Setup
 
