@@ -24,10 +24,6 @@ JobSync is an AI-powered job application assistant designed to streamline the pr
 
 ## Getting Started
 
-### Deployed Version of Our App
-Our app is deployed on Github Pages. Please navigate to the following link.
-Link: [cs264sp25-homework.github.io/team-02/](cs264sp25-homework.github.io/team-02/)
-
 ### Prerequisites
 
 - Node.js (v18 or higher)
