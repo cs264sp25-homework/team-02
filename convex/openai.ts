@@ -96,7 +96,9 @@ export const refineResponse = action({
       ${args.userBackground}
 
       ### Output:
-      Return a refined version of the response that is more specific, clear, and impactful.
+      Return a refined version of the response that is more specific, clear, and impactful. 
+      Do not include any markdown formatting or code blocks in the response.
+      The response should just be a plaintext response without any additional formatting and don't include subject line, greeting, and closing. This is a job application response, not an email.
       `;
 
     try {
@@ -187,6 +189,8 @@ export const optimizeResponse = action({
 
       ### Output:
       Return an optimized version of the response that highlights the most relevant skills and experiences and aligns better with the job posting and company culture.
+      Do not include any markdown formatting or code blocks in the response.
+      The response should just be a plaintext response without any additional formatting and don't include subject line, greeting, and closing. This is a job application response, not an email.
       `;
 
     try {
@@ -271,7 +275,9 @@ export const adjustTone = action({
 
     ### Output:
     Return a version of the response that reflects the desired tone, matching the company’s culture.
-    `;
+    Do not include any markdown formatting or code blocks in the response.
+    The response should just be a plaintext response without any additional formatting and don't include subject line, greeting, and closing. This is a job application response, not an email.
+      `;
 
     try {
       console.log("About to call streamText...");
@@ -356,6 +362,8 @@ export const regenerateResponse = action({
 
       ### Output:
       Return the regenerated response incorporating the updated profile data.
+      Do not include any markdown formatting or code blocks in the response.
+      The response should just be a plaintext response without any additional formatting and don't include subject line, greeting, and closing. This is a job application response, not an email.
       `;
 
     try {

@@ -19,9 +19,7 @@ export const NavBar = () => {
 
   const navItems = [
     { label: "Home", route: "home" },
-    { label: "Job Import", route: "import_job", requiresAuth: true },
     { label: "Resume Upload", route: "add_file", requiresAuth: true },
-    { label: "Demo", route: "demo" },
   ];
 
   // Filter nav items based on authentication status
