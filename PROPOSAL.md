@@ -111,7 +111,7 @@ This roadmap maps out the development of our AI-powered Flashcards App across tw
    - Add upload feature for resumes in pdf
    - Create user profile interface with work history, skills, and education
 
-2. Be able to upload job application components and input my answers to job application (Primary Features #4, #5)
+2. Be able to import job application components and input my answers to job application (Primary Features #4, #5)
    - Streamline job application process by enabling users to add job posting and application links and images
    - Scrape the job title, requirements, and questions from uploaded links and images which saves time for users
    - Allow users to input their answers to job application questions
