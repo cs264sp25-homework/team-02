@@ -1,6 +1,6 @@
 # JobSync
 
-JobSync is an AI-powered job application assistant designed to streamline the process of filling out job applications and crafting tailored resumes. The application leverages AI to generate personalized responses to common job application questions and create customized resumes that match specific job descriptions.
+JobSync is an AI-powered job application assistant designed to streamline the process of filling out job applications and crafting tailored resumes. The application leverages AI to generate personalized responses to uploaded job application questions and create customized resumes that match specific job descriptions.
 
 
 ## Features
@@ -10,8 +10,8 @@ JobSync is an AI-powered job application assistant designed to streamline the pr
 - **User Authentication**: Secure sign-in through LinkedIn OAuth integration
 - **Profile Management**: Create and edit a comprehensive profile with work history, education, skills, and projects
 - **Resume Parsing**: Upload your existing resume in PDF format and have it automatically parsed into your profile
-- **Job Import**: Import job postings and application questions from URLs
-- **AI-Generated Responses**: Generate tailored responses to job application questions based on your profile and the job requirements
+- **Job Import**: Import job postings and application questions from URLs and images
+- **AI-Generated Responses**: Generate tailored, personalized responses to job application questions based on your profile and job requirements
 - **Resume Customization**: Generate tailored resumes based on your profile and the job description
 
 ## Tech Stack
@@ -23,6 +23,10 @@ JobSync is an AI-powered job application assistant designed to streamline the pr
 - **Deployment**: Github Pages: [JobSync](https://cs264sp25-homework.github.io/team-02/)
 
 ## Getting Started
+
+### Deployed Version of Our App
+Our app is deployed on Github Pages. Please navigate to the following link.
+Link: cs264sp25-homework.github.io/team-02/
 
 ### Prerequisites
 
@@ -53,6 +57,8 @@ JobSync is an AI-powered job application assistant designed to streamline the pr
 
 
 ### Local Development Setup
+
+Make sure you generated your own client ID and client secret for LinkedIn OAuth from above section. 
 
 1. Clone the repository:
    ```bash
