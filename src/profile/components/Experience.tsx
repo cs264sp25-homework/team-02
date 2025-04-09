@@ -28,133 +28,137 @@ const ExperienceForm = ({
   experience,
   onCancel,
   onSubmit,
-}: ExperienceFormProps) => (
-  <form
-    onSubmit={(e) => {
-      e.preventDefault();
-      const formData = new FormData(e.currentTarget);
-      const newExperience: WorkExperienceType = {
-        company: formData.get("company") as string,
-        position: formData.get("position") as string,
-        location: (formData.get("location") as string) || undefined,
-        startDate: formData.get("startDate") as string,
-        endDate: (formData.get("endDate") as string) || undefined,
-        current: formData.get("current") === "true",
-        description: (formData.get("description") as string)
-          .split("\n")
-          .filter(Boolean),
-        technologies: (formData.get("technologies") as string)
-          .split(",")
-          .map((tech) => tech.trim())
-          .filter(Boolean),
-      };
-      onSubmit(newExperience);
-    }}
-    className="space-y-4 mt-4 p-4 border rounded-lg"
-  >
-    <div className="grid gap-4 md:grid-cols-2">
-      <div className="grid gap-2">
-        <Label htmlFor="company">Company</Label>
-        <Input
-          id="company"
-          name="company"
-          defaultValue={experience?.company}
-          required
-        />
-      </div>
+}: ExperienceFormProps) => {
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        const formData = new FormData(e.currentTarget);
+        const newExperience: WorkExperienceType = {
+          company: formData.get("company") as string,
+          position: formData.get("position") as string,
+          location: (formData.get("location") as string) || undefined,
+          startDate: formData.get("startDate") as string,
+          endDate: (formData.get("endDate") as string) || undefined,
+          current: formData.get("current") === "on",
+          description: (formData.get("description") as string)
+            .split("\n")
+            .filter(Boolean),
+          technologies: (formData.get("technologies") as string)
+            .split(",")
+            .map((tech) => tech.trim())
+            .filter(Boolean),
+        };
+        onSubmit(newExperience);
+      }}
+      className="space-y-4 mt-4 p-4 border rounded-lg"
+    >
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-2">
+          <Label htmlFor="company">Company</Label>
+          <Input
+            id="company"
+            name="company"
+            defaultValue={experience?.company}
+            required
+          />
+        </div>
 
-      <div className="grid gap-2">
-        <Label htmlFor="position">Position</Label>
-        <Input
-          id="position"
-          name="position"
-          defaultValue={experience?.position}
-          required
-        />
-      </div>
+        <div className="grid gap-2">
+          <Label htmlFor="position">Position</Label>
+          <Input
+            id="position"
+            name="position"
+            defaultValue={experience?.position}
+            required
+          />
+        </div>
 
-      <div className="grid gap-2">
-        <Label htmlFor="location">Location</Label>
-        <Input
-          id="location"
-          name="location"
-          defaultValue={experience?.location}
-        />
-      </div>
+        <div className="grid gap-2">
+          <Label htmlFor="location">Location</Label>
+          <Input
+            id="location"
+            name="location"
+            defaultValue={experience?.location}
+          />
+        </div>
 
-      <div className="grid gap-2">
-        <Label htmlFor="startDate">Start Date</Label>
-        <Input
-          id="startDate"
-          name="startDate"
-          type="date"
-          defaultValue={experience?.startDate}
-          required
-        />
-      </div>
+        <div className="grid gap-2">
+          <Label htmlFor="startDate">Start Date</Label>
+          <Input
+            id="startDate"
+            name="startDate"
+            type="date"
+            defaultValue={experience?.startDate}
+            required
+          />
+        </div>
 
-      <div className="grid gap-2">
-        <Label htmlFor="endDate">End Date</Label>
-        <Input
-          id="endDate"
-          name="endDate"
-          type="date"
-          defaultValue={experience?.endDate}
-          disabled={experience?.current}
-        />
-      </div>
+        <div className="grid gap-2">
+          <Label htmlFor="endDate">End Date</Label>
+          <Input
+            id="endDate"
+            name="endDate"
+            type="date"
+            defaultValue={experience?.endDate}
+            disabled={experience?.current}
+          />
+        </div>
 
-      <div className="grid gap-2">
-        <Label htmlFor="current">Current Position</Label>
-        <Input
-          id="current"
-          name="current"
-          type="checkbox"
-          className="h-4 w-4"
-          defaultChecked={experience?.current}
-          onChange={(e) => {
-            const endDateInput = document.getElementById(
-              "endDate",
-            ) as HTMLInputElement;
-            if (endDateInput) {
-              endDateInput.disabled = e.target.checked;
-              if (e.target.checked) {
-                endDateInput.value = "";
+        <div className="grid gap-2">
+          <Label htmlFor="current">Current Position</Label>
+          <Input
+            id="current"
+            name="current"
+            type="checkbox"
+            className="h-4 w-4"
+            defaultChecked={experience?.current}
+            onChange={(e) => {
+              const endDateInput = document.getElementById(
+                "endDate",
+              ) as HTMLInputElement;
+              if (endDateInput) {
+                endDateInput.disabled = e.target.checked;
+                if (e.target.checked) {
+                  endDateInput.value = "";
+                }
               }
-            }
-          }}
-        />
+            }}
+          />
+        </div>
+
+        <div className="grid gap-2 md:col-span-2">
+          <Label htmlFor="description">Description (one item per line)</Label>
+          <textarea
+            id="description"
+            name="description"
+            className="min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            defaultValue={experience?.description.join("\n")}
+            required
+          />
+        </div>
+
+        <div className="grid gap-2 md:col-span-2">
+          <Label htmlFor="technologies">Technologies (comma-separated)</Label>
+          <Input
+            id="technologies"
+            name="technologies"
+            defaultValue={experience?.technologies?.join(", ")}
+          />
+        </div>
       </div>
 
-      <div className="grid gap-2 md:col-span-2">
-        <Label htmlFor="description">Description (one item per line)</Label>
-        <textarea
-          id="description"
-          name="description"
-          className="min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-          defaultValue={experience?.description.join("\n")}
-          required
-        />
+      <div className="flex justify-end gap-2">
+        <Button type="button" variant="outline" onClick={onCancel}>
+          Cancel
+        </Button>
+        <Button type="submit">
+          {experience ? "Update" : "Add"} Experience
+        </Button>
       </div>
-
-      <div className="grid gap-2 md:col-span-2">
-        <Label htmlFor="technologies">Technologies (comma-separated)</Label>
-        <Input
-          id="technologies"
-          name="technologies"
-          defaultValue={experience?.technologies?.join(", ")}
-        />
-      </div>
-    </div>
-
-    <div className="flex justify-end gap-2">
-      <Button type="button" variant="outline" onClick={onCancel}>
-        Cancel
-      </Button>
-      <Button type="submit">{experience ? "Update" : "Add"} Experience</Button>
-    </div>
-  </form>
-);
+    </form>
+  );
+};
 
 export const Experience = ({ profile, onUpdate }: ExperienceProps) => {
   const [editingExperience, setEditingExperience] = useState<number | null>(

@@ -13,8 +13,7 @@ export function cleanTailoredProfile(
         (userWorkExperience) =>
           userWorkExperience.company === workExperience.company &&
           userWorkExperience.position === workExperience.position &&
-          userWorkExperience.startDate === workExperience.startDate &&
-          userWorkExperience.endDate === workExperience.endDate,
+          userWorkExperience.startDate === workExperience.startDate,
       ),
     )
     .sort(

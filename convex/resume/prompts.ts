@@ -22,6 +22,9 @@ export function getTailoredProfilePrompt(
   You can choose to not include work experience or project experience in the profile that does not match the job description.
   Usually, you want to include about 3-4 work experiences and 2-3 project experiences in the profile to fit one page.
   You CANNOT add any new skills or experiences to the profile
+  The current field in the work experience and project experience is a boolean field. It is true if the experience is currently happening and false otherwise.
+  If the current field is true, then the end date field should be "Present".
+  The current field should be populated as false if the end date is present.
   `;
 }
 

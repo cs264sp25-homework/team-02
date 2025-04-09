@@ -144,10 +144,11 @@ export const zodProfileInSchema = z.object({
           .string()
           .optional()
           .describe(
-            "End date in YYYY-MM format. If unknown or unclear or present/ongoing, then ignore this field.",
+            "End date in YYYY-MM format. If unknown or unclear or present/ongoing, put in 'Present'.",
           ),
         current: z
           .boolean()
+          .default(false)
           .describe("Whether this is the candidate's current position"),
         description: z
           .array(z.string())
