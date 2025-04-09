@@ -54,7 +54,7 @@ function App() {
     <>
       {showNavbar && <NavBar />}
       <div
-        className={`flex flex-col items-center justify-center min-h-svh ${showNavbar ? "pt-16" : ""}`}
+        className={`flex flex-col items-center justify-center min-h-svh ${showNavbar ? "pt-5" : ""}`}
       >
         {content}
       </div>
