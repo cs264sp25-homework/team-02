@@ -22,19 +22,21 @@ As a user, I want to:
 As a user, I want to:
 
 1. Import personal information, work history, and skills into profile from uploaded resume
-2. Get AI feedback on whether the job that I am considering applying for is a goof fit for my current experience and skills (essentially, you put a link to the job posting and we will perform web scraping and then give you feedback on whether you should apply or not)
+2. Get AI feedback on whether the job that I am considering applying for is a good fit for my current experience and skills (essentially, you put a link to the job posting and we will perform web scraping and then give you feedback on whether you should apply or not)
 3. Generate personal insights from AI on what experience/skills I am lacking to become a competitive candidate for the job
 4. Get recommendations from AI on activities I can do to fill in those gaps in my resume (e.g. if I want to apply to a Marketing Coordinator position but I have only SWE internships on my profile and resume, then AI will tell me that I need to gain more experience in marketing and suggest me some activities I can do to become a more competitive candidate)
 5. Generate a message introducing oneself and expressing interest in open position that can be sent to hiring manager or recruiter who posted the job posting on LinkedIn.
+6. Generate potential technical and non-technical interview questions based on job description
 
+Note: Features 3, 4, and 5 are available via chat where they can access a personalized career coach. (from navbar)  
+   
 ### Tertiary Features (Nice to Have)
 
 As a user, I want to:
 
 1. Autofill repetitive job application questions with browser extension
 2. Bookmark jobs and track my search with a tailored job tracker
-3. Generate potential technical and non-technical interview questions based on job description
-4. Get notifications for when to submit the job application and for when to follow up on messages sent to recruiter
+3. Get notifications for when to submit the job application and for when to follow up on messages sent to recruiter
 
 ### Won't Have Features
 
@@ -170,20 +172,14 @@ This roadmap maps out the development of our AI-powered Flashcards App across tw
 
 **Tasks:**
 
-1. Implement import from LinkedIn (Secondary Feature #1)
-
-   - Add the input box for LinkedIn profile URL
-   - Implement necessary web scraping to collect data from LinkedIn profile page and fill in the user profile
-   - Allow user to add any missing info or correct any wrong info
-
-2. AI feedback on job fit (Secondary Feature #2)
+1. AI feedback on job fit (Secondary Feature #2)
 
    - Add input box for job posting URL
    - Add web scraping for AI to get necessary job posting information
    - Implement AI being able to determine if the person's resume and work history and user profile is a good fit for the job or not
    - Implement user interface for AI's feedback
 
-3. AI personal insights (Secondary Feature #3)
+2. AI personal insights (Secondary Feature #3)
 
    - Add button to generate personal insights
    - Implement personal insights from AI
@@ -191,7 +187,6 @@ This roadmap maps out the development of our AI-powered Flashcards App across tw
 
 **Deliverables:**
 
-- More efficient user profile creation with import from existing LinkedIn profile option
 - AI personal insights
 - AI assistant for job posting fit
 
