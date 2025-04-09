@@ -145,6 +145,7 @@ export const parseResume = action({
                   .boolean()
                   .nullable()
                   .optional()
+                  .default(false)
                   .describe("Whether this is the candidate's current position"),
                 description: z
                   .array(z.string())

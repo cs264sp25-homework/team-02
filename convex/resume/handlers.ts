@@ -385,6 +385,7 @@ async function createTailoredProfile(
       prompt: getTailoredProfilePrompt(profile, jobDescription),
       schema: zodProfileInSchema,
     });
+    console.log("Raw profile", object);
     // remove any work experience, education, or projects that do not match the user's profile
     const tailoredProfile = cleanTailoredProfile(
       {
@@ -395,7 +396,7 @@ async function createTailoredProfile(
     );
     await ctx.runMutation(api.resume.handlers.updateResumeTailoredProfile, {
       resumeId: resumeId as Id<"resumes">,
-      tailoredProfile: object,
+      tailoredProfile,
     });
     return tailoredProfile;
   } catch (error) {
