@@ -11,6 +11,7 @@ interface CodeEditorProps {
   onChange?: (value: string) => void;
   readOnly?: boolean;
   onSave?: () => void;
+  handleImproveWithAI: (lineNumber: number | null) => void;
 }
 
 export const CodeEditor = ({
@@ -18,12 +19,16 @@ export const CodeEditor = ({
   onChange,
   readOnly = false,
   onSave,
+  handleImproveWithAI,
 }: CodeEditorProps) => {
   const editorRef = useRef<AceEditor>(null);
   const [buttonPosition, setButtonPosition] = useState<{
     x: number;
     y: number;
   } | null>(null);
+  const [improveLineNumber, setImproveLineNumber] = useState<number | null>(
+    null,
+  );
 
   const handleClickOutside = (e: Event) => {
     // Don't hide if clicking the button itself
@@ -63,7 +68,6 @@ export const CodeEditor = ({
     if (editorRef.current?.editor) {
       const editor = editorRef.current.editor;
       const cursor = editor.getCursorPosition();
-      console.log("Double clicked at line:", cursor.row + 1);
 
       // Get the mouse x and y
       const mouseX = e.pageX;
@@ -72,8 +76,15 @@ export const CodeEditor = ({
       const absoluteX = mouseX;
       const absoluteY = mouseY;
 
-      console.log("Cursor position in page:", { x: absoluteX, y: absoluteY });
+      const lineContent = value.split("\n")[cursor.row];
+
+      console.log("lineContent", lineContent);
+      if (lineContent.trim() === "") {
+        return;
+      }
+
       setButtonPosition({ x: absoluteX, y: absoluteY });
+      setImproveLineNumber(cursor.row + 1);
     }
   };
 
@@ -114,7 +125,10 @@ export const CodeEditor = ({
             variant="outline"
             size="sm"
             className="flex items-center gap-1 bg-white shadow-sm hover:bg-gray-50 improve-ai-button"
-            onClick={() => setButtonPosition(null)}
+            onClick={() => {
+              handleImproveWithAI(improveLineNumber);
+              setButtonPosition(null);
+            }}
           >
             <Sparkles className="h-3 w-3" />
             Improve Line with AI

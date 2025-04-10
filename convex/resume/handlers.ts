@@ -269,6 +269,77 @@ export const updateResumeUserResumeCompilationErrorMessage = mutation({
   },
 });
 
+export const improveResumeLineWithAI = action({
+  args: {
+    resumeId: v.id("resumes"),
+    userId: v.string(),
+    lineNumber: v.number(),
+    latexContent: v.string(),
+  },
+  handler: async (ctx, { resumeId, userId, lineNumber, latexContent }) => {
+    const resume = await ctx.runQuery(api.resume.handlers.getResumeById, {
+      userId,
+      resumeId,
+    });
+    if (!resume) {
+      throw new Error("Resume not found");
+    }
+    const lines = latexContent.split("\n");
+
+    if (lineNumber < 1 || lineNumber > lines.length) {
+      throw new Error(`Line number ${lineNumber} is out of range`);
+    }
+
+    const line = lines[lineNumber - 1];
+    if (line.trim() === "") {
+      return;
+    }
+
+    // Get text before and after the line
+    const textBeforeLine = lines.slice(0, lineNumber - 1).join("\n");
+    const textAfterLine = lines.slice(lineNumber).join("\n");
+
+    const { textStream } = streamText({
+      model: openai("gpt-4o-mini"),
+      messages: [
+        {
+          role: "system",
+          content: `You are a resume writer. You are given a line of LaTeX code and you need to improve it.
+          The line is in the following format:
+          <line>
+          ${line.trim()}
+          </line>
+          You need to improve the line to make it more accurate and relevant to the user's profile.
+          Do not change the latex code, only improve the content.
+          Only output the improved line, do not include any other text.
+          `,
+        },
+      ],
+    });
+    let improvedLine = getIndentation(line);
+    for await (const delta of textStream) {
+      improvedLine += delta;
+      await ctx.runMutation(api.resume.handlers.updateResumeLaTeXContent, {
+        resumeId,
+        latexContent:
+          textBeforeLine + "\n" + improvedLine + "\n" + textAfterLine,
+      });
+    }
+  },
+});
+
+function getIndentation(line: string) {
+  let numSpaces = 0;
+  for (const char of line) {
+    if (char === " ") {
+      numSpaces++;
+    } else {
+      break;
+    }
+  }
+  return " ".repeat(numSpaces);
+}
+
 async function compileAndUploadResume(
   latexContent: string,
   resumeId: Id<"resumes">,

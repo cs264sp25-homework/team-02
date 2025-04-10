@@ -30,8 +30,12 @@ import {
 const EditResume = () => {
   const { isAuthenticated, user } = useAuth();
   const { redirect, params } = useRouter();
-  const { compileAndSaveResume, restartResumeGeneration, deleteResume } =
-    useMutationResume();
+  const {
+    compileAndSaveResume,
+    restartResumeGeneration,
+    deleteResume,
+    improveResumeLineWithAI,
+  } = useMutationResume();
   const [isCompiling, setIsCompiling] = useState(false);
 
   if (!isAuthenticated) {
@@ -90,8 +94,15 @@ const EditResume = () => {
     redirect("home");
   };
 
-  const handleImproveWithAI = (lineNumber: number) => {
-    console.log(lineNumber);
+  const handleImproveWithAI = (lineNumber: number | null) => {
+    if (lineNumber) {
+      improveResumeLineWithAI({
+        resumeId,
+        userId: user!.id,
+        lineNumber,
+        latexContent,
+      });
+    }
   };
 
   return (
@@ -171,6 +182,7 @@ const EditResume = () => {
               onChange={setLatexContent}
               readOnly={isGenerating}
               onSave={handleCompileAndSave}
+              handleImproveWithAI={handleImproveWithAI}
             />
           </div>
         </div>
