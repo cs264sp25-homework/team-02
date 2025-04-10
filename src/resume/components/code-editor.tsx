@@ -2,7 +2,9 @@ import AceEditor from "react-ace";
 import "ace-builds/src-noconflict/mode-latex";
 import "ace-builds/src-noconflict/theme-github";
 import "ace-builds/src-noconflict/ext-language_tools";
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
+import { Button } from "@/core/components/button";
+import { Sparkles } from "lucide-react";
 
 interface CodeEditorProps {
   value: string;
@@ -17,6 +19,25 @@ export const CodeEditor = ({
   readOnly = false,
   onSave,
 }: CodeEditorProps) => {
+  const editorRef = useRef<AceEditor>(null);
+  const [buttonPosition, setButtonPosition] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
+
+  const handleClickOutside = (e: Event) => {
+    // Don't hide if clicking the button itself
+    if ((e.target as HTMLElement).closest(".improve-ai-button")) {
+      return;
+    }
+
+    setButtonPosition(null);
+  };
+
+  const handleScroll = () => {
+    setButtonPosition(null);
+  };
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === "s") {
@@ -25,13 +46,41 @@ export const CodeEditor = ({
       }
     };
 
+    document.addEventListener("dblclick", handleDoubleClick);
     document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [onSave]);
+    document.addEventListener("click", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("dblclick", handleDoubleClick);
+      document.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("click", handleClickOutside);
+
+      // Clean up scroll listener
+    };
+  }, [onSave, editorRef]);
+
+  const handleDoubleClick = (e: MouseEvent) => {
+    if (editorRef.current?.editor) {
+      const editor = editorRef.current.editor;
+      const cursor = editor.getCursorPosition();
+      console.log("Double clicked at line:", cursor.row + 1);
+
+      // Get the mouse x and y
+      const mouseX = e.pageX;
+      const mouseY = e.pageY - 60;
+
+      const absoluteX = mouseX;
+      const absoluteY = mouseY;
+
+      console.log("Cursor position in page:", { x: absoluteX, y: absoluteY });
+      setButtonPosition({ x: absoluteX, y: absoluteY });
+    }
+  };
 
   return (
-    <div className="h-full w-full">
+    <div className="h-full w-full relative">
       <AceEditor
+        ref={editorRef}
         mode="latex"
         theme="github"
         onChange={onChange}
@@ -48,8 +97,30 @@ export const CodeEditor = ({
         width="100%"
         height="100%"
         readOnly={readOnly}
-        fontSize={14}
+        fontSize={17}
+        onScroll={handleScroll}
       />
+      {buttonPosition && (
+        <div
+          className="absolute z-50"
+          style={{
+            left: `${buttonPosition.x}px`,
+            top: `${buttonPosition.y}px`,
+            transform: "translate(-50%, -100%)",
+            marginTop: "-8px",
+          }}
+        >
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex items-center gap-1 bg-white shadow-sm hover:bg-gray-50 improve-ai-button"
+            onClick={() => setButtonPosition(null)}
+          >
+            <Sparkles className="h-3 w-3" />
+            Improve Line with AI
+          </Button>
+        </div>
+      )}
     </div>
   );
 };

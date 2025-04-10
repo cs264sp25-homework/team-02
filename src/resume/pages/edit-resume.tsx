@@ -89,6 +89,11 @@ const EditResume = () => {
     });
     redirect("home");
   };
+
+  const handleImproveWithAI = (lineNumber: number) => {
+    console.log(lineNumber);
+  };
+
   return (
     <Layout
       leftPanelContent={
