@@ -52,7 +52,7 @@ const Layout: React.FC<LayoutProps> = ({
               minSize={30}
               order={1}
               collapsedSize={0}
-              collapsible={true}
+              collapsible={false}
               id="left-panel"
             >
               {leftPanelContent}
@@ -69,6 +69,7 @@ const Layout: React.FC<LayoutProps> = ({
               })}
               order={2}
               id="middle-panel"
+              collapsible={false}
             >
               {middlePanelContent}
             </ResizablePanel>
@@ -78,7 +79,7 @@ const Layout: React.FC<LayoutProps> = ({
           )}
           {rightPanelContent && (
             <ResizablePanel
-              minSize={30}
+              minSize={15}
               className={cn({
                 "border-2 border-yellow-500": DEBUG,
               })}
