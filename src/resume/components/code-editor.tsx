@@ -1,6 +1,6 @@
 import AceEditor from "react-ace";
 import "ace-builds/src-noconflict/mode-latex";
-import "ace-builds/src-noconflict/theme-github";
+import "ace-builds/src-noconflict/theme-tomorrow";
 import "ace-builds/src-noconflict/ext-language_tools";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/core/components/button";
@@ -92,7 +92,7 @@ export const CodeEditor = ({
       <AceEditor
         ref={editorRef}
         mode="latex"
-        theme="github"
+        theme="tomorrow"
         onChange={onChange}
         value={value}
         name="latex-editor"
