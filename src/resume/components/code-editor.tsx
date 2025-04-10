@@ -103,6 +103,7 @@ export const CodeEditor = ({
           enableSnippets: true,
           showLineNumbers: true,
           tabSize: 2,
+          wrap: true,
         }}
         width="100%"
         height="100%"
