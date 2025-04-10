@@ -7,14 +7,32 @@ import { PdfViewer } from "../components/pdf-viewer";
 import { CodeEditor } from "../components/code-editor";
 import { useMutationResume } from "../hooks/use-muatation-resume";
 import { Button } from "@/core/components/button";
-import { Save, AlertCircle } from "lucide-react";
+import { Save, AlertCircle, RefreshCcw, Trash } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/core/components/tooltip";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/core/components/alert-dialog";
 
 const EditResume = () => {
   const { isAuthenticated, user } = useAuth();
   const { redirect, params } = useRouter();
-  const { compileAndSaveResume } = useMutationResume();
+  const { compileAndSaveResume, restartResumeGeneration, deleteResume } =
+    useMutationResume();
   const [isCompiling, setIsCompiling] = useState(false);
 
   if (!isAuthenticated) {
@@ -58,11 +76,27 @@ const EditResume = () => {
     }
   };
 
+  const handleRegenerate = async () => {
+    await restartResumeGeneration({
+      resumeId,
+      userId: user!.id,
+      jobId: resume.jobId,
+    });
+    redirect("customize_resume_status", { resumeId });
+  };
+
+  const handleDelete = async () => {
+    await deleteResume({
+      resumeId,
+      userId: user!.id,
+    });
+    redirect("home");
+  };
   return (
     <Layout
       leftPanelContent={
         <div className="flex flex-col h-full">
-          <div className="flex justify-end p-4 border-b">
+          <div className="flex justify-end p-4 border-b gap-2">
             <Button
               onClick={handleCompileAndSave}
               disabled={isCompiling || isGenerating}
@@ -73,6 +107,61 @@ const EditResume = () => {
               <Save className="h-4 w-4" />
               {isCompiling ? "Compiling..." : "Compile & Save"}
             </Button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    onClick={handleRegenerate}
+                    variant="secondary"
+                    size="sm"
+                    className="flex items-center gap-2"
+                  >
+                    <RefreshCcw className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Regenerate resume</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        className="flex items-center gap-2"
+                      >
+                        <Trash className="h-4 w-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Resume</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Are you sure you want to delete this resume? This
+                          action cannot be undone.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={handleDelete}
+                          className="bg-red-500 hover:bg-red-600 text-white"
+                        >
+                          Delete
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Delete resume</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
           <div className="flex-1">
             <CodeEditor

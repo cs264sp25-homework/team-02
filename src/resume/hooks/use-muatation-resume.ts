@@ -13,9 +13,11 @@ export const useMutationResume = () => {
   const compileAndSaveResume = useAction(
     api.resume.handlers.compileAndSaveResume,
   );
+  const deleteResume = useMutation(api.resume.handlers.deleteResume);
   return {
     startResumeGeneration,
     restartResumeGeneration,
     compileAndSaveResume,
+    deleteResume,
   };
 };

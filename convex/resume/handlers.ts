@@ -233,6 +233,30 @@ export const compileAndSaveResume = action({
   },
 });
 
+export const deleteResume = mutation({
+  args: {
+    userId: v.string(),
+    resumeId: v.id("resumes"),
+  },
+  handler: async (ctx, { userId, resumeId }) => {
+    // first delete the compiled resume from storage
+    const resume = await ctx.runQuery(api.resume.handlers.getResumeById, {
+      userId,
+      resumeId,
+    });
+    if (!resume) {
+      throw new Error("Resume not found");
+    }
+    await Promise.all([
+      Promise.all(
+        resume.compiledResumeStorageId
+          ? [ctx.storage.delete(resume.compiledResumeStorageId)]
+          : [],
+      ),
+      ctx.db.delete(resumeId),
+    ]);
+  },
+});
 export const updateResumeUserResumeCompilationErrorMessage = mutation({
   args: {
     resumeId: v.id("resumes"),
