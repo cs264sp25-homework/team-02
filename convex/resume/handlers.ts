@@ -3,6 +3,7 @@ import {
   ActionCtx,
   mutation,
   query,
+  action,
 } from "../_generated/server";
 import { v } from "convex/values";
 import { openai } from "../openai";
@@ -155,6 +156,11 @@ export const generateResume = internalAction({
         );
       }
 
+      await ctx.runMutation(api.resume.handlers.updateResumeGenerationStatus, {
+        resumeId,
+        status: "compiling resume",
+      });
+
       await compileAndUploadResume(latexContent, resumeId, ctx);
 
       await ctx.runMutation(api.resume.handlers.updateResumeGenerationStatus, {
@@ -182,16 +188,69 @@ export const generateResume = internalAction({
   },
 });
 
+export const compileAndSaveResume = action({
+  args: {
+    userId: v.string(),
+    resumeId: v.id("resumes"),
+    latexContent: v.string(),
+  },
+  handler: async (ctx, { userId, resumeId, latexContent }) => {
+    const resume = await ctx.runQuery(api.resume.handlers.getResumeById, {
+      userId,
+      resumeId,
+    });
+    if (!resume) {
+      throw new Error("Resume not found");
+    }
+    await ctx.runMutation(api.resume.handlers.updateResumeLaTeXContent, {
+      resumeId,
+      latexContent,
+    });
+
+    try {
+      await compileAndUploadResume(latexContent, resumeId, ctx);
+      await ctx.runMutation(
+        api.resume.handlers.updateResumeUserResumeCompilationErrorMessage,
+        {
+          resumeId,
+          userResumeCompilationErrorMessage: "",
+        },
+      );
+    } catch (error) {
+      await ctx.runMutation(
+        api.resume.handlers.updateResumeUserResumeCompilationErrorMessage,
+        {
+          resumeId,
+          userResumeCompilationErrorMessage:
+            error instanceof Error ? error.message : "Unknown error",
+        },
+      );
+      throw new ConvexError(
+        "Failed to compile and save resume: " +
+          (error instanceof Error ? error.message : "Unknown error"),
+      );
+    }
+  },
+});
+
+export const updateResumeUserResumeCompilationErrorMessage = mutation({
+  args: {
+    resumeId: v.id("resumes"),
+    userResumeCompilationErrorMessage: v.string(),
+  },
+  handler: async (ctx, { resumeId, userResumeCompilationErrorMessage }) => {
+    await ctx.db.patch(resumeId, {
+      userResumeCompilationErrorMessage,
+    });
+  },
+});
+
 async function compileAndUploadResume(
   latexContent: string,
   resumeId: Id<"resumes">,
   ctx: ActionCtx,
 ) {
   try {
-    await ctx.runMutation(api.resume.handlers.updateResumeGenerationStatus, {
-      resumeId,
-      status: "compiling resume",
-    });
     const response = await fetch(
       "https://latex-compiler-393050277209.us-central1.run.app/latex/compile",
       {
