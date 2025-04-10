@@ -26,7 +26,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/core/components/alert-dialog";
-
+import JobDetails from "../components/job-details";
 const EditResume = () => {
   const { isAuthenticated, user } = useAuth();
   const { redirect, params } = useRouter();
@@ -107,8 +107,10 @@ const EditResume = () => {
 
   return (
     <Layout
-      leftPanelContent={null}
-      middlePanelContent={
+      rightPanelContent={
+        resume.jobId && <JobDetails jobId={resume.jobId} userId={user!.id} />
+      }
+      leftPanelContent={
         <div className="flex flex-col h-full">
           <div className="flex justify-end p-4 border-b gap-2">
             <Button
@@ -188,7 +190,7 @@ const EditResume = () => {
           </div>
         </div>
       }
-      rightPanelContent={
+      middlePanelContent={
         <>
           {isCompiling ? (
             <div className="flex flex-col h-full items-center justify-center p-8 text-center">
