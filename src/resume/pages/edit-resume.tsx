@@ -30,8 +30,12 @@ import {
 const EditResume = () => {
   const { isAuthenticated, user } = useAuth();
   const { redirect, params } = useRouter();
-  const { compileAndSaveResume, restartResumeGeneration, deleteResume } =
-    useMutationResume();
+  const {
+    compileAndSaveResume,
+    restartResumeGeneration,
+    deleteResume,
+    improveResumeLineWithAI,
+  } = useMutationResume();
   const [isCompiling, setIsCompiling] = useState(false);
 
   if (!isAuthenticated) {
@@ -89,9 +93,22 @@ const EditResume = () => {
     });
     redirect("home");
   };
+
+  const handleImproveWithAI = (lineNumber: number | null) => {
+    if (lineNumber) {
+      improveResumeLineWithAI({
+        resumeId,
+        userId: user!.id,
+        lineNumber,
+        latexContent,
+      });
+    }
+  };
+
   return (
     <Layout
-      leftPanelContent={
+      leftPanelContent={null}
+      middlePanelContent={
         <div className="flex flex-col h-full">
           <div className="flex justify-end p-4 border-b gap-2">
             <Button
@@ -166,11 +183,12 @@ const EditResume = () => {
               onChange={setLatexContent}
               readOnly={isGenerating}
               onSave={handleCompileAndSave}
+              handleImproveWithAI={handleImproveWithAI}
             />
           </div>
         </div>
       }
-      middlePanelContent={
+      rightPanelContent={
         <>
           {resume.userResumeCompilationErrorMessage ? (
             <div className="flex flex-col h-full">
@@ -221,7 +239,6 @@ const EditResume = () => {
           )}
         </>
       }
-      rightPanelContent={null}
     />
   );
 };

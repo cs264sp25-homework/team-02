@@ -24,7 +24,7 @@ const Layout: React.FC<LayoutProps> = ({
   return (
     <div
       className={cn(
-        "flex min-h-screen w-full antialiased scroll-smooth w-screen",
+        "flex antialiased scroll-smooth w-screen  h-[calc(100vh-80px)]",
         className,
         {
           "border-2 border-red-500": DEBUG,
