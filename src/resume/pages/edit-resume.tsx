@@ -7,7 +7,7 @@ import { PdfViewer } from "../components/pdf-viewer";
 import { CodeEditor } from "../components/code-editor";
 import { useMutationResume } from "../hooks/use-muatation-resume";
 import { Button } from "@/core/components/button";
-import { Save, AlertCircle, RefreshCcw, Trash } from "lucide-react";
+import { Save, AlertCircle, RefreshCcw, Trash, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import {
   Tooltip,
@@ -190,7 +190,20 @@ const EditResume = () => {
       }
       rightPanelContent={
         <>
-          {resume.userResumeCompilationErrorMessage ? (
+          {isCompiling ? (
+            <div className="flex flex-col h-full items-center justify-center p-8 text-center">
+              <div className="flex flex-col items-center space-y-4">
+                <Loader2 className="h-12 w-12 text-blue-500 animate-spin" />
+                <h3 className="text-lg font-medium text-gray-900">
+                  Compiling Resume
+                </h3>
+                <p className="text-sm text-gray-500 max-w-md">
+                  Please wait while we compile your resume. This may take a few
+                  seconds.
+                </p>
+              </div>
+            </div>
+          ) : resume.userResumeCompilationErrorMessage ? (
             <div className="flex flex-col h-full">
               <div className="bg-red-50 border-l-4 border-red-500 p-4 m-4 rounded-md">
                 <div className="flex items-start">
