@@ -4,6 +4,7 @@ import { useRouter } from "@/core/hooks/use-router";
 import { Id } from "convex/_generated/dataModel";
 import { useQueryResume } from "../hooks/use-query-resume";
 import { PdfViewer } from "../components/pdf-viewer";
+import { CodeEditor } from "../components/code-editor";
 
 const EditResume = () => {
   const { isAuthenticated, user } = useAuth();
@@ -24,9 +25,13 @@ const EditResume = () => {
     return <div>Resume not found</div>;
   }
 
+  const isGenerating = resume.generationStatus !== "completed";
+
   return (
     <Layout
-      leftPanelContent={<div>Left Panel</div>}
+      leftPanelContent={
+        <CodeEditor value={resume.latexContent} readOnly={isGenerating} />
+      }
       middlePanelContent={
         <PdfViewer
           pdfUrl={resume.compiledResumeUrl || null}
