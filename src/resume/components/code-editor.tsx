@@ -2,6 +2,7 @@ import AceEditor from "react-ace";
 import "ace-builds/src-noconflict/mode-latex";
 import "ace-builds/src-noconflict/theme-tomorrow";
 import "ace-builds/src-noconflict/ext-language_tools";
+import "ace-builds/src-noconflict/ext-searchbox";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/core/components/button";
 import {
