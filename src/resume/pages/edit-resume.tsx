@@ -107,7 +107,8 @@ const EditResume = () => {
 
   return (
     <Layout
-      leftPanelContent={
+      leftPanelContent={null}
+      middlePanelContent={
         <div className="flex flex-col h-full">
           <div className="flex justify-end p-4 border-b gap-2">
             <Button
@@ -187,7 +188,7 @@ const EditResume = () => {
           </div>
         </div>
       }
-      middlePanelContent={
+      rightPanelContent={
         <>
           {resume.userResumeCompilationErrorMessage ? (
             <div className="flex flex-col h-full">
@@ -238,7 +239,6 @@ const EditResume = () => {
           )}
         </>
       }
-      rightPanelContent={null}
     />
   );
 };

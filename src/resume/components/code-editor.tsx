@@ -78,7 +78,6 @@ export const CodeEditor = ({
 
       const lineContent = value.split("\n")[cursor.row];
 
-      console.log("lineContent", lineContent);
       if (lineContent.trim() === "") {
         return;
       }
@@ -108,7 +107,7 @@ export const CodeEditor = ({
         width="100%"
         height="100%"
         readOnly={readOnly}
-        fontSize={17}
+        fontSize={14}
         onScroll={handleScroll}
       />
       {buttonPosition && (
