@@ -7,14 +7,29 @@ interface PdfViewerProps {
 }
 
 export const PdfViewer = ({ pdfUrl, generationStatus }: PdfViewerProps) => {
-  const handleDownloadPdf = () => {
+  const handleDownloadPdf = async () => {
     if (!pdfUrl) {
       alert(
         "PDF is not ready yet. Please wait for the generation to complete.",
       );
       return;
     }
-    window.open(pdfUrl, "_blank");
+
+    try {
+      const response = await fetch(pdfUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "resume.pdf";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Error downloading PDF:", error);
+      alert("Failed to download PDF. Please try again.");
+    }
   };
 
   if (generationStatus !== "completed" || !pdfUrl) {
