@@ -2,18 +2,33 @@ import AceEditor from "react-ace";
 import "ace-builds/src-noconflict/mode-latex";
 import "ace-builds/src-noconflict/theme-github";
 import "ace-builds/src-noconflict/ext-language_tools";
+import { useEffect } from "react";
 
 interface CodeEditorProps {
   value: string;
   onChange?: (value: string) => void;
   readOnly?: boolean;
+  onSave?: () => void;
 }
 
 export const CodeEditor = ({
   value,
   onChange,
   readOnly = false,
+  onSave,
 }: CodeEditorProps) => {
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "s") {
+        e.preventDefault();
+        onSave?.();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [onSave]);
+
   return (
     <div className="h-full w-full">
       <AceEditor

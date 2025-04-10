@@ -9,7 +9,6 @@ import { useMutationResume } from "../hooks/use-muatation-resume";
 import { Button } from "@/core/components/button";
 import { Save, AlertCircle, RefreshCcw, Trash } from "lucide-react";
 import { useState, useEffect } from "react";
-import { toast } from "sonner";
 import {
   Tooltip,
   TooltipContent,
@@ -67,10 +66,8 @@ const EditResume = () => {
         resumeId,
         latexContent,
       });
-      toast.success("Resume compiled and saved successfully");
     } catch (error) {
-      console.log(error);
-      toast.error("Failed to compile and save resume. Please try again.");
+      console.error("Failed to compile and save resume:", error);
     } finally {
       setIsCompiling(false);
     }
@@ -168,6 +165,7 @@ const EditResume = () => {
               value={latexContent}
               onChange={setLatexContent}
               readOnly={isGenerating}
+              onSave={handleCompileAndSave}
             />
           </div>
         </div>
