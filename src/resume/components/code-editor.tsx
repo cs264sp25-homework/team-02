@@ -49,6 +49,8 @@ export const CodeEditor = ({
   handleImproveWithAI,
 }: CodeEditorProps) => {
   const editorRef = useRef<AceEditor>(null);
+  const editorWrapperRef = useRef<HTMLDivElement>(null);
+
   const [buttonPosition, setButtonPosition] = useState<{
     x: number;
     y: number;
@@ -56,15 +58,6 @@ export const CodeEditor = ({
   const [improveLineNumber, setImproveLineNumber] = useState<number | null>(
     null,
   );
-
-  const handleClickOutside = (e: Event) => {
-    // Don't hide if clicking the button itself
-    if ((e.target as HTMLElement).closest(".improve-ai-button")) {
-      return;
-    }
-
-    setButtonPosition(null);
-  };
 
   const handleScroll = () => {
     setButtonPosition(null);
@@ -78,41 +71,55 @@ export const CodeEditor = ({
       }
     };
 
-    document.addEventListener("dblclick", handleDoubleClick);
+    const handleClickOutside = (e: Event) => {
+      // Don't hide if clicking the button itself
+      if ((e.target as HTMLElement).closest(".improve-ai-button")) {
+        return;
+      }
+
+      setButtonPosition(null);
+    };
+
+    const handleDoubleClick = (e: MouseEvent) => {
+      if (editorRef.current?.editor) {
+        const editor = editorRef.current.editor;
+        const cursor = editor.getCursorPosition();
+
+        // Get the mouse x and y
+        const mouseX = e.pageX;
+        const mouseY = e.pageY - 60;
+
+        const absoluteX = mouseX;
+        const absoluteY = mouseY;
+
+        const lineContent = value.split("\n")[cursor.row];
+
+        if (lineContent.trim() === "") {
+          return;
+        }
+
+        setButtonPosition({ x: absoluteX, y: absoluteY });
+        setImproveLineNumber(cursor.row + 1);
+      }
+    };
+
+    const wrapper = editorWrapperRef.current;
+    if (wrapper) {
+      wrapper.addEventListener("dblclick", handleDoubleClick);
+    }
     document.addEventListener("keydown", handleKeyDown);
     document.addEventListener("click", handleClickOutside);
 
     return () => {
-      document.removeEventListener("dblclick", handleDoubleClick);
+      if (wrapper) {
+        wrapper.removeEventListener("dblclick", handleDoubleClick);
+      }
       document.removeEventListener("keydown", handleKeyDown);
       document.removeEventListener("click", handleClickOutside);
 
       // Clean up scroll listener
     };
-  }, [onSave, editorRef]);
-
-  const handleDoubleClick = (e: MouseEvent) => {
-    if (editorRef.current?.editor) {
-      const editor = editorRef.current.editor;
-      const cursor = editor.getCursorPosition();
-
-      // Get the mouse x and y
-      const mouseX = e.pageX;
-      const mouseY = e.pageY - 60;
-
-      const absoluteX = mouseX;
-      const absoluteY = mouseY;
-
-      const lineContent = value.split("\n")[cursor.row];
-
-      if (lineContent.trim() === "") {
-        return;
-      }
-
-      setButtonPosition({ x: absoluteX, y: absoluteY });
-      setImproveLineNumber(cursor.row + 1);
-    }
-  };
+  }, [onSave, editorRef, value]);
 
   const insertText = (before: string, after: string = "") => {
     if (!editorRef.current?.editor || readOnly) return;
@@ -517,7 +524,7 @@ export const CodeEditor = ({
         </div>
       </div>
 
-      <div className="flex-1">
+      <div className="flex-1" ref={editorWrapperRef}>
         <AceEditor
           ref={editorRef}
           mode="latex"
@@ -555,7 +562,7 @@ export const CodeEditor = ({
           <Button
             variant="outline"
             size="sm"
-            className="flex items-center gap-1 bg-white shadow-sm hover:bg-gray-50 improve-ai-button"
+            className="flex items-center gap-1 bg-white shadow-sm hover:bg-gray-50 improve-ai-button border-black"
             onClick={() => {
               handleImproveWithAI(improveLineNumber);
               setButtonPosition(null);
