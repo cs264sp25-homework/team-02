@@ -87,6 +87,7 @@ const Layout: React.FC<LayoutProps> = ({
               collapsedSize={0}
               collapsible={true}
               id="right-panel"
+              style={{ overflow: "scroll" }}
             >
               {rightPanelContent}
             </ResizablePanel>
