@@ -20,7 +20,7 @@ function CustomizeResumeButton({ jobId, userId }: CustomizeResumeButtonProps) {
   }
 
   const handleCustomizeResume = async (jobId: Id<"jobs">) => {
-    if (resume) {
+    if (resume && resume.generationStatus === "completed") {
       navigate("edit_resume", { resumeId: resume._id });
       return;
     } else {
