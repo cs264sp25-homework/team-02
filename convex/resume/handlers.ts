@@ -346,13 +346,16 @@ async function compileAndUploadResume(
   ctx: ActionCtx,
 ) {
   try {
-    const response = await fetch(
-      "https://latex-compiler-393050277209.us-central1.run.app/latex/compile",
-      {
-        method: "POST",
-        body: latexContent,
-      },
-    );
+    let latexCompilerUrl = process.env.LATEX_COMPILER_URL;
+    const apiKey = process.env.LATEX_COMPILER_API_KEY;
+    if (!latexCompilerUrl || !apiKey) {
+      throw new Error("LATEX_COMPILER_URL is not set");
+    }
+    latexCompilerUrl += `/latex/compile?key=${apiKey}`;
+    const response = await fetch(latexCompilerUrl, {
+      method: "POST",
+      body: latexContent,
+    });
 
     if (!response.ok) {
       const body = await response.json();
