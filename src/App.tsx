@@ -3,7 +3,7 @@ import NotFoundPage from "./core/pages/not-found-page";
 import Demo from "./core/pages/demo";
 import LoginPage from "./linkedin/pages/log-in";
 import ProfilePage from "./profile/pages/profile";
-import AddFile from "./file_upload/add_file";
+import AddFile from "./file_upload/pages/add_file";
 import ImportJobPage from "./jobs/pages/import-job";
 import JobDetailsPage from "./jobs/pages/job-details";
 import LinkedInCallback from "./linkedin/components/LinkedInCallback";

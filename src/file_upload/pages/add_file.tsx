@@ -1,18 +1,18 @@
 import { useState } from "react";
 import { useMutation, useAction, useQuery } from "convex/react";
-import { api } from "../../convex/_generated/api";
+import { api } from "../../../convex/_generated/api";
 import { toast } from "sonner";
 import { Button } from "@/core/components/button";
 import { Label } from "@/core/components/label";
 import { useDropzone } from "react-dropzone";
 import { cn } from "@/core/lib/utils";
-import { useMupdf } from "./hooks/usePdfWorker";
+import { useMupdf } from "../hooks/usePdfWorker";
 import { useAuth } from "@/linkedin/hooks/useAuth";
 import { useRouter } from "@/core/hooks/use-router";
 import {
   FileUploadProgress,
   type FileUploadStage,
-} from "./components/FileUploadProgress";
+} from "../components/FileUploadProgress";
 
 const MAX_FILE_SIZE = 5;
 
