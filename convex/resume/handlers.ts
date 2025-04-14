@@ -16,10 +16,11 @@ import {
 import { api, internal } from "../_generated/api";
 import { Id } from "../_generated/dataModel";
 import {
+  getPromptForImproveResumeLine,
   getResumeEnhancementSystemPrompt,
   getTailoredProfilePrompt,
 } from "./prompts";
-import { generationStatus } from "./schema";
+import { generationStatus, improveResumeAction } from "./schema";
 import { ConvexError } from "convex/values";
 import { generateJakesResume } from "./templates";
 import { ProfileType, zodProfileInSchema } from "../profiles";
@@ -278,8 +279,12 @@ export const improveResumeLineWithAI = action({
     userId: v.string(),
     lineNumber: v.number(),
     latexContent: v.string(),
+    action: improveResumeAction,
   },
-  handler: async (ctx, { resumeId, userId, lineNumber, latexContent }) => {
+  handler: async (
+    ctx,
+    { resumeId, userId, lineNumber, latexContent, action },
+  ) => {
     const resume = await ctx.runQuery(api.resume.handlers.getResumeById, {
       userId,
       resumeId,
@@ -307,15 +312,7 @@ export const improveResumeLineWithAI = action({
       messages: [
         {
           role: "system",
-          content: `You are a resume writer. You are given a line of LaTeX code and you need to improve it.
-          The line is in the following format:
-          <line>
-          ${line.trim()}
-          </line>
-          You need to improve the line to make it more accurate and relevant to the user's profile.
-          Do not change the latex code, only improve the content.
-          Only output the improved line, do not include any other text.
-          `,
+          content: getPromptForImproveResumeLine(line, action),
         },
       ],
     });

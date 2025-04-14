@@ -4,6 +4,15 @@ import { Infer } from "convex/values";
 
 import { defineTable } from "convex/server";
 
+export const improveResumeAction = v.union(
+  v.literal("shorten"),
+  v.literal("lengthen"),
+  v.literal("professional"),
+  v.literal("technical"),
+);
+
+export type ImproveResumeActionType = Infer<typeof improveResumeAction>;
+
 export const generationStatus = v.union(
   v.literal("started"), // generation started
   v.literal("fetching profile"), // fetch the profile from the database

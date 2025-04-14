@@ -38,13 +38,16 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/core/components/dropdown-menu";
-
+import { ImproveResumeActionType } from "convex/resume/schema";
 interface CodeEditorProps {
   value: string;
   onChange?: (value: string) => void;
   readOnly?: boolean;
   onSave?: () => void;
-  handleImproveWithAI: (lineNumber: number | null, action: string) => void;
+  handleImproveWithAI: (
+    lineNumber: number | null,
+    action: ImproveResumeActionType,
+  ) => void;
 }
 
 export const CodeEditor = ({

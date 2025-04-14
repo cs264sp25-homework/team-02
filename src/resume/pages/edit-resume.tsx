@@ -27,6 +27,7 @@ import {
   AlertDialogTrigger,
 } from "@/core/components/alert-dialog";
 import JobDetails from "../components/job-details";
+import { ImproveResumeActionType } from "convex/resume/schema";
 const EditResume = () => {
   const { isAuthenticated, user } = useAuth();
   const { redirect, params } = useRouter();
@@ -45,6 +46,12 @@ const EditResume = () => {
   const resumeId = params.resumeId as Id<"resumes">;
   const { resume, loading } = useQueryResume(resumeId, user!.id);
   const [latexContent, setLatexContent] = useState(resume?.latexContent || "");
+
+  useEffect(() => {
+    if (resume && resume.generationStatus !== "completed") {
+      redirect("customize_resume_status", { resumeId });
+    }
+  }, [resume, redirect, resumeId]);
 
   useEffect(() => {
     setLatexContent(resume?.latexContent || "");
@@ -94,13 +101,17 @@ const EditResume = () => {
     redirect("home");
   };
 
-  const handleImproveWithAI = (lineNumber: number | null) => {
+  const handleImproveWithAI = (
+    lineNumber: number | null,
+    action: ImproveResumeActionType,
+  ) => {
     if (lineNumber) {
       improveResumeLineWithAI({
         resumeId,
         userId: user!.id,
         lineNumber,
         latexContent,
+        action,
       });
     }
   };

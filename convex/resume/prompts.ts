@@ -1,5 +1,6 @@
 import { JobType } from "../jobs";
 import { ProfileType } from "../profiles";
+import { ImproveResumeActionType } from "./schema";
 
 export function getTailoredProfilePrompt(
   profile: ProfileType,
@@ -60,4 +61,44 @@ export function getPromptForJob(job: JobType) {
   ${job.description}
   ###
   `;
+}
+
+export function getPromptForImproveResumeLine(
+  line: string,
+  action: ImproveResumeActionType,
+) {
+  let basePrompt = `You are a resume writer. You are given a line of LaTeX code and you need to improve it.
+  The line is in the following format:
+  <line>
+  ${line.trim()}
+  </line>
+
+  Do not change the latex code, only improve the content.
+  Only output the improved line, do not include any other text.
+
+  Your job is defined below:
+  `;
+  if (action === "shorten") {
+    basePrompt += `
+    Shorten the line to fit in one line on a letter sized paper. Only keep the most important details.
+    `;
+  }
+  if (action === "lengthen") {
+    basePrompt += `
+    Lengthen the line to make it longer. You can add more details to the line such as using more verbs and adjectives.
+    Do not add any new information, only add more details to the line.
+    It can be longer than one line on a letter sized paper.
+    `;
+  }
+  if (action === "professional") {
+    basePrompt += `
+    Make the line more professional. Use more formal language and avoid using contractions.
+    `;
+  }
+  if (action === "technical") {
+    basePrompt += `
+    Add more technical details to the line. Use more technical language to sound more technical.
+    `;
+  }
+  return basePrompt;
 }
