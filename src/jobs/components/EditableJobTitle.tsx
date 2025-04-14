@@ -27,7 +27,9 @@ const EditableJobTitle = ({ jobId, userId, initialTitle }: EditableJobTitleProps
     }
   }, [isEditing]);
 
-  const handleSave = async () => {
+  const handleSave = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    
     if (title.trim() === "") {
       toast.error("Job title cannot be empty");
       return;
@@ -52,28 +54,47 @@ const EditableJobTitle = ({ jobId, userId, initialTitle }: EditableJobTitleProps
     }
   };
 
-  const handleCancel = () => {
+  const handleCancel = (e: React.MouseEvent) => {
+    e.stopPropagation();
     setTitle(initialTitle);
     setIsEditing(false);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Stop propagation for all keyboard events in the input
+    e.stopPropagation();
+    
     if (e.key === "Enter") {
-      handleSave();
+      handleSave(e as any);
     } else if (e.key === "Escape") {
-      handleCancel();
+      handleCancel(e as any);
     }
   };
 
+  const handleStartEditing = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsEditing(true);
+  };
+
+  const handleInputClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    e.stopPropagation();
+    setTitle(e.target.value);
+  };
+
   return (
-    <div className="flex items-center">
+    <div className="flex items-center" onClick={(e) => e.stopPropagation()}>
       {isEditing ? (
         <div className="flex items-center space-x-2">
           <input
             ref={inputRef}
             type="text"
             value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            onClick={handleInputClick}
+            onChange={handleInputChange}
             onKeyDown={handleKeyDown}
             className="px-2 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-primary/50"
             data-testid="job-title-input"
@@ -101,7 +122,7 @@ const EditableJobTitle = ({ jobId, userId, initialTitle }: EditableJobTitleProps
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setIsEditing(true)}
+            onClick={handleStartEditing}
             className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
           >
             <Pencil className="h-4 w-4" />
