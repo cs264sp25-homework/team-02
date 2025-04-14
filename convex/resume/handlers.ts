@@ -70,9 +70,11 @@ export const restartResumeGeneration = mutation({
     await ctx.db.patch(resumeId, {
       generationStatus: "started",
       generationError: undefined,
+      statusBeforeFailure: undefined,
       latexContent: "",
       chunkCount: 0,
       tailoredProfile: {},
+      userResumeCompilationErrorMessage: "",
     });
     ctx.scheduler.runAfter(0, internal.resume.handlers.generateResume, {
       userId,
@@ -207,15 +209,16 @@ export const compileAndSaveResume = action({
       latexContent,
     });
 
+    await ctx.runMutation(
+      api.resume.handlers.updateResumeUserResumeCompilationErrorMessage,
+      {
+        resumeId,
+        userResumeCompilationErrorMessage: "",
+      },
+    );
+
     try {
       await compileAndUploadResume(latexContent, resumeId, ctx);
-      await ctx.runMutation(
-        api.resume.handlers.updateResumeUserResumeCompilationErrorMessage,
-        {
-          resumeId,
-          userResumeCompilationErrorMessage: "",
-        },
-      );
     } catch (error) {
       await ctx.runMutation(
         api.resume.handlers.updateResumeUserResumeCompilationErrorMessage,
