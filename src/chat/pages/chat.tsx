@@ -1,53 +1,45 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "@/core/hooks/use-router";
 import { useAuth } from "@/linkedin/hooks/useAuth";
-import { useQueryMessages } from "@/chat/hooks/use-query-messages";
-import { useMutationMessages } from "@/chat/hooks/use-mutation-messages";
-import { useQueryChats } from "@/chat/hooks/use-query-chats";
-import { useMutationChats } from "@/chat/hooks/use-mutation-chats";
-import { useQueryProfile } from "@/profile/hooks/use-query-profile";
 import { Button } from "@/core/components/button";
 import { Textarea } from "@/core/components/textarea";
 import { Spinner } from "@/linkedin/components/spinner";
-import { useAutosizeTextArea } from "@/chat/hooks/use-autosize-textarea";
-import { formatProfileBackground } from "@/jobs/utils/profile";
-import { Sidebar } from "@/chat/components/chat-sidebar";
-import { MessageList } from "@/chat/components/message-list";
 import { SendIcon, PlusIcon } from "lucide-react";
 import { Id } from "convex/_generated/dataModel";
+import { useQueryChats } from "@/chat/hooks/use-query-chats";
+import { useMutationChats } from "@/chat/hooks/use-mutation-chats";
+import { useQueryMessages } from "@/chat/hooks/use-query-messages";
+import { useMutationMessages } from "@/chat/hooks/use-mutation-messages";
+import { useQueryProfile } from "@/profile/hooks/use-query-profile";
+import { formatProfileBackground } from "@/jobs/utils/profile";
+import { MessageList } from "@/chat/components/message-list";
+import { Sidebar } from "@/chat/components/chat-sidebar";
+import CreateChatDialog from "@/chat/components/CreateChatDialog";
 
 const ChatPage = () => {
   const { isAuthenticated, user } = useAuth();
   const { redirect, params, navigate } = useRouter();
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-
+  
   // Get chatId from URL
   const chatId = params.chatId as Id<"chats">;
-
+  
   // Queries
   const { data: profile } = useQueryProfile(user?.id);
   const { data: messages, loading: messagesLoading } = useQueryMessages(chatId);
   const { data: chats } = useQueryChats();
-
-  // Determine the selected chat for header title
+  
+  // Find selected chat for header title
   const selectedChat = chats?.find(chat => chat._id === chatId);
-
+  
   // Mutations
   const messageMutations = useMutationMessages(chatId);
   const chatMutations = useMutationChats();
-
-  // Auto-resize textarea
-  useAutosizeTextArea({
-    textAreaRef: textareaRef,
-    triggerAutoSize: input,
-    minHeight: 24,
-    maxHeight: 200,
-  });
-
+  
   // Redirect if not authenticated
   useEffect(() => {
     if (!isAuthenticated) {
@@ -59,27 +51,24 @@ const ChatPage = () => {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
-
-  // Create a new chat
-  const startNewChat = async () => {
-    if (!user) return;
-    setIsLoading(true);
-    try {
-      const newChatId = await chatMutations.add({
-        title: "New Conversation",
-        description: "Started on " + new Date().toLocaleString(),
-      });
-      if (newChatId) {
-        navigate("chat", { chatId: newChatId });
-      }
-    } catch (error) {
-      console.error("Failed to create chat:", error);
-    } finally {
-      setIsLoading(false);
+  
+  // Auto-resize textarea based on content
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
     }
+  }, [input]);
+
+  const handleNewChat = () => {
+    setIsDialogOpen(true);
   };
 
-  // Handle input changes
+  const handleChatCreated = (newChatId: Id<"chats">) => {
+    navigate("chat", { chatId: newChatId });
+    setInput("");
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInput(e.target.value);
   };
@@ -91,17 +80,21 @@ const ChatPage = () => {
     }
   };
 
-  // Send a message
   const handleSendMessage = async () => {
     if (sending || !input.trim() || !chatId) return;
+    
     try {
       setSending(true);
-      const userContext = profile
-        ? `\n\nUser Profile Context:\n${formatProfileBackground(profile)}`
-        : "";
+      
+      // Add user profile context to first message
+      const userContext = profile ? `\n\nUser Profile Context:\n${formatProfileBackground(profile)}` : "";
       const shouldAddContext = messages?.length === 0;
       const messageContent = shouldAddContext ? input + userContext : input;
-      await messageMutations.add({ content: messageContent });
+      
+      await messageMutations.add({
+        content: messageContent,
+      });
+      
       setInput("");
     } catch (error) {
       console.error("Error sending message:", error);
@@ -110,19 +103,11 @@ const ChatPage = () => {
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-screen w-screen">
-        <Spinner size="lg" />
-      </div>
-    );
-  }
-
   return (
     <div className="flex h-screen w-screen">
       {/* Sidebar with its own scroll */}
       <aside className="w-64 border-r bg-white h-full overflow-y-auto">
-        <Sidebar onNewChat={startNewChat} currentChatId={chatId} />
+        <Sidebar onNewChat={handleNewChat} currentChatId={chatId} />
       </aside>
 
       {/* Main Chat Area */}
@@ -143,7 +128,7 @@ const ChatPage = () => {
                 Start a new conversation to get personalized guidance on job applications,
                 resume tips, and career advice.
               </p>
-              <Button onClick={startNewChat} className="mt-4">
+              <Button onClick={handleNewChat} className="mt-4">
                 <PlusIcon className="w-4 h-4 mr-2" />
                 New Chat
               </Button>
@@ -198,6 +183,13 @@ const ChatPage = () => {
           </div>
         )}
       </main>
+
+      {/* New Chat Dialog */}
+      <CreateChatDialog
+        isOpen={isDialogOpen}
+        onClose={() => setIsDialogOpen(false)}
+        onChatCreated={handleChatCreated}
+      />
     </div>
   );
 };

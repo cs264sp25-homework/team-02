@@ -14,6 +14,22 @@ export const getAll = query({
   },
 });
 
+// Get chats related to a specific job
+export const getByJobId = query({
+  args: { 
+    userId: v.string(),
+    jobId: v.string() 
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("chats")
+      .withIndex("by_relatedJobId", (q) => q.eq("relatedJobId", args.jobId))
+      .filter((q) => q.eq(q.field("userId"), args.userId))
+      .order("desc")
+      .collect();
+  },
+});
+
 // Get a single chat by ID
 export const getById = query({
   args: { chatId: v.id("chats") },
@@ -35,6 +51,7 @@ export const create = mutation({
     userId: v.string(),
     title: v.string(),
     description: v.optional(v.string()),
+    relatedJobId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const now = new Date().toISOString();
@@ -43,6 +60,7 @@ export const create = mutation({
       userId: args.userId,
       title: args.title,
       description: args.description,
+      relatedJobId: args.relatedJobId,
       createdAt: now,
       updatedAt: now,
       lastMessageAt: now,
@@ -60,6 +78,7 @@ export const update = mutation({
     userId: v.string(),
     title: v.optional(v.string()),
     description: v.optional(v.string()),
+    relatedJobId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const { chatId, userId, ...updates } = args;

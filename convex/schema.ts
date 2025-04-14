@@ -32,11 +32,14 @@ const schema = defineSchema({
     userId: v.string(),
     title: v.string(),
     description: v.optional(v.string()),
+    relatedJobId: v.optional(v.string()),
     createdAt: v.string(),
     updatedAt: v.string(),
     lastMessageAt: v.optional(v.string()),
     messageCount: v.number(),
-  }).index("by_userId", ["userId"]),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_relatedJobId", ["relatedJobId"]),
   
   messages: defineTable({
     chatId: v.id("chats"),
