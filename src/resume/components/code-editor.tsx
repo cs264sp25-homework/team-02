@@ -25,6 +25,7 @@ import {
   Redo,
   Search,
   Replace,
+  RotateCcw,
 } from "lucide-react";
 import {
   Tooltip,
@@ -32,13 +33,22 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/core/components/tooltip";
-
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/core/components/dropdown-menu";
+import { ImproveResumeActionType } from "convex/resume/schema";
 interface CodeEditorProps {
   value: string;
   onChange?: (value: string) => void;
   readOnly?: boolean;
   onSave?: () => void;
-  handleImproveWithAI: (lineNumber: number | null) => void;
+  handleImproveWithAI: (
+    lineNumber: number | null,
+    action: ImproveResumeActionType,
+  ) => void;
 }
 
 export const CodeEditor = ({
@@ -58,6 +68,7 @@ export const CodeEditor = ({
   const [improveLineNumber, setImproveLineNumber] = useState<number | null>(
     null,
   );
+  const [originalContent, setOriginalContent] = useState<string | null>(null);
 
   const handleScroll = () => {
     setButtonPosition(null);
@@ -72,12 +83,17 @@ export const CodeEditor = ({
     };
 
     const handleClickOutside = (e: Event) => {
-      // Don't hide if clicking the button itself
-      if ((e.target as HTMLElement).closest(".improve-ai-button")) {
-        return;
+      // If the class is "ace_content", hide the dropdown
+      if ((e.target as HTMLElement).closest(".ace_content")) {
+        setButtonPosition(null);
       }
-
-      setButtonPosition(null);
+      // When the dropdown is open, hide the dropdown when the user clicks outside
+      if ((e.target as HTMLElement).tagName === "HTML") {
+        const body = document.body;
+        if (body.style.pointerEvents !== "none") {
+          setButtonPosition(null);
+        }
+      }
     };
 
     const handleDoubleClick = (e: MouseEvent) => {
@@ -177,6 +193,25 @@ export const CodeEditor = ({
         cursor.row,
         cursor.column - `\\end{${environment}}`.length,
       );
+    }
+  };
+
+  const handleRevertAIChanges = () => {
+    if (editorRef.current?.editor && improveLineNumber && originalContent) {
+      editorRef.current.editor.session.replace(
+        {
+          start: {
+            row: improveLineNumber - 1,
+            column: 0,
+          },
+          end: {
+            row: improveLineNumber - 1,
+            column: Number.MAX_VALUE,
+          },
+        },
+        originalContent,
+      );
+      setOriginalContent(null);
     }
   };
 
@@ -521,6 +556,26 @@ export const CodeEditor = ({
               <TooltipContent>Replace</TooltipContent>
             </Tooltip>
           </TooltipProvider>
+
+          {originalContent && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 px-2 text-amber-600 hover:text-amber-700 border-amber-200 hover:bg-amber-50 flex items-center gap-1"
+                    onClick={handleRevertAIChanges}
+                    disabled={readOnly}
+                  >
+                    <RotateCcw className="h-3 w-3" />
+                    <span className="text-xs">Revert AI</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Revert AI Changes</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
         </div>
       </div>
 
@@ -529,7 +584,10 @@ export const CodeEditor = ({
           ref={editorRef}
           mode="latex"
           theme="tomorrow"
-          onChange={onChange}
+          onChange={(value) => {
+            onChange?.(value);
+            setOriginalContent(null);
+          }}
           value={value}
           name="latex-editor"
           editorProps={{ $blockScrolling: true }}
@@ -559,18 +617,62 @@ export const CodeEditor = ({
             marginTop: "-8px",
           }}
         >
-          <Button
-            variant="outline"
-            size="sm"
-            className="flex items-center gap-1 bg-white shadow-sm hover:bg-gray-50 improve-ai-button border-black"
-            onClick={() => {
-              handleImproveWithAI(improveLineNumber);
-              setButtonPosition(null);
-            }}
-          >
-            <Sparkles className="h-3 w-3" />
-            Improve Line with AI
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex items-center gap-1 bg-white shadow-sm hover:bg-gray-50 improve-ai-button border-black"
+              >
+                <Sparkles className="h-3 w-3" />
+                Improve Line with AI
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              onClick={(e) => {
+                e.stopPropagation();
+                if (editorRef.current && improveLineNumber) {
+                  const lineText = editorRef.current.editor.session.getLine(
+                    improveLineNumber - 1,
+                  );
+                  setOriginalContent(lineText);
+                }
+              }}
+            >
+              <DropdownMenuItem
+                onClick={() => {
+                  handleImproveWithAI(improveLineNumber, "shorten");
+                  setButtonPosition(null);
+                }}
+              >
+                Shorten
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => {
+                  handleImproveWithAI(improveLineNumber, "lengthen");
+                  setButtonPosition(null);
+                }}
+              >
+                Lengthen
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => {
+                  handleImproveWithAI(improveLineNumber, "professional");
+                  setButtonPosition(null);
+                }}
+              >
+                Make More Professional
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => {
+                  handleImproveWithAI(improveLineNumber, "technical");
+                  setButtonPosition(null);
+                }}
+              >
+                Add Technical Details
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       )}
     </div>
