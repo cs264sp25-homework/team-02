@@ -131,7 +131,7 @@ const ChatPage = () => {
               </p>
             </div>
           ) : (
-            <MessageList messages={messages} user={user} />
+            <MessageList messages={messages || []} user={user} />
           )}
           <div ref={messagesEndRef} />
         </div>

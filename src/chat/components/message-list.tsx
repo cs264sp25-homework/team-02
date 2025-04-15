@@ -9,7 +9,7 @@ interface MessageListProps {
   user: any;
 }
 
-export const MessageList: React.FC<MessageListProps> = ({ messages, user }) => {
+export const MessageList: React.FC<MessageListProps> = ({ messages }) => {
   return (
     <div className="space-y-6 py-4">
       {messages.map((message, index) => {

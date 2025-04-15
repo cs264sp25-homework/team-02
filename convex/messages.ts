@@ -1,5 +1,5 @@
 import { ConvexError, v } from "convex/values";
-import { query, mutation, internalMutation, action } from "./_generated/server";
+import { query, mutation, action } from "./_generated/server";
 import { api } from "./_generated/api";
 
 // Get messages for a chat
