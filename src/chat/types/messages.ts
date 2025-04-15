@@ -6,10 +6,12 @@ export interface MessageType {
   chatId: Id<"chats">;
   content: string;
   role: "user" | "assistant";
+  createdAt?: string;
 }
 
 export interface CreateMessageType {
   content: string;
+  userId?: string;
 }
 
 export interface UpdateMessageType {

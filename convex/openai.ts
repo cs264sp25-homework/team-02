@@ -3,6 +3,8 @@ import { internalAction, action } from "./_generated/server";
 import { v } from "convex/values";
 import { streamText } from "ai";
 import { parseResume } from "./resumeParser";
+import { api } from "./_generated/api";
+import { Id } from "./_generated/dataModel";
 
 export const openai = createOpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -539,6 +541,169 @@ export const generateJobQuestions = action({
       }
     } catch (error) {
       console.error("Error generating job questions:", error);
+      throw error;
+    }
+  },
+});
+
+// Function to handle chat messages
+export const handleChatMessage = action({
+  args: {
+    chatId: v.id("chats"),
+    userId: v.string(),
+    message: v.string(),
+    isFirstMessage: v.boolean(),
+  },
+  handler: async (ctx, args) => {
+    try {
+      console.log("Starting chat message processing");
+      
+      // Get the current chat
+      const chat = await ctx.runQuery(api.chat.getById, {
+        chatId: args.chatId,
+      });
+      
+      if (!chat) {
+        throw new Error("Chat not found");
+      }
+      
+      // Get user profile for context (only for first message)
+      let userProfile = null;
+      if (args.isFirstMessage) {
+        userProfile = await ctx.runQuery(api.profiles.getProfileByUserId, {
+          userId: args.userId,
+        });
+      }
+      
+      // Get related job if one is specified
+      let relatedJob = null;
+      if (chat.relatedJobId) {
+        // Get job with proper type casting
+        relatedJob = await ctx.runQuery(api.jobs.getJobById, {
+          userId: args.userId,
+          jobId: chat.relatedJobId as unknown as Id<"jobs">,
+        });
+      }
+      
+      // Get message history (last 10 messages)
+      const messageHistory = await ctx.runQuery(api.messages.getAll, {
+        chatId: args.chatId,
+        limit: 10,
+      });
+      
+      // Create system prompt based on context
+      let systemPrompt = `You are JobSync AI, a career coach specializing in job applications, resume writing, and interview preparation. Your goal is to provide helpful, personalized advice to job seekers.
+
+Guidelines:
+- Be concise, clear, and actionable in your responses.
+- Be honest about limitations - if you don't know something, say so.
+- Be supportive but realistic - don't make false promises about job prospects.
+- Provide specific, practical advice based on the user's background and goals.
+- Focus on helping the user improve their job application materials and interview skills.
+- When appropriate, use the STAR (Situation, Task, Action, Result) method to help structure responses.
+- Analyze and provide constructive criticism on user's application materials, resumes, and responses.
+- Always make recommendations grounded in the user's actual background - don't make up experiences or skills.
+- Be particularly attentive to skills alignment and look for opportunities to suggest improvements.`;
+
+      // Add user profile context if available and this is the first message
+      if (userProfile && args.isFirstMessage) {
+        systemPrompt += `\n\n### User Profile Context:`;
+        
+        if (userProfile.education && userProfile.education.length > 0) {
+          systemPrompt += `\n#### Education:`;
+          userProfile.education.forEach(edu => {
+            systemPrompt += `\n- ${edu.degree} in ${edu.field} from ${edu.institution}`;
+            if (edu.startDate && edu.endDate) {
+              systemPrompt += ` (${edu.startDate} - ${edu.endDate})`;
+            }
+          });
+        }
+        
+        if (userProfile.workExperience && userProfile.workExperience.length > 0) {
+          systemPrompt += `\n#### Work Experience:`;
+          userProfile.workExperience.forEach(work => {
+            systemPrompt += `\n- ${work.position} at ${work.company}`;
+            if (work.startDate) {
+              systemPrompt += ` (${work.startDate} - ${work.endDate || "Present"})`;
+            }
+            if (work.description && work.description.length > 0) {
+              work.description.slice(0, 2).forEach(desc => {
+                systemPrompt += `\n  * ${desc}`;
+              });
+            }
+            if (work.technologies && work.technologies.length > 0) {
+              systemPrompt += `\n  * Technologies: ${work.technologies.join(', ')}`;
+            }
+          });
+        }
+        
+        if (userProfile.projects && userProfile.projects.length > 0) {
+          systemPrompt += `\n#### Projects:`;
+          userProfile.projects.forEach(project => {
+            systemPrompt += `\n- ${project.name}`;
+            if (project.startDate) {
+              systemPrompt += ` (${project.startDate} - ${project.endDate || "Present"})`;
+            }
+            if (project.technologies && project.technologies.length > 0) {
+              systemPrompt += `\n  * Technologies: ${project.technologies.join(', ')}`;
+            }
+          });
+        }
+        
+        if (userProfile.skills && userProfile.skills.length > 0) {
+          systemPrompt += `\n#### Skills: ${userProfile.skills.join(", ")}`;
+        }
+      }
+      
+      // Add job context if available
+      if (relatedJob) {
+        systemPrompt += `\n\n### Related Job Context:`;
+        systemPrompt += `\n- Job Title: ${relatedJob.title}`;
+        systemPrompt += `\n- Job Requirements:\n${relatedJob.description}`;
+        if (relatedJob.questions && relatedJob.questions.length > 0) {
+          systemPrompt += `\n- Application Questions:`;
+          relatedJob.questions.forEach((question, index) => {
+            systemPrompt += `\n  ${index + 1}. ${question}`;
+          });
+        }
+      }
+
+      // Prepare conversation history for the model
+      const conversation = messageHistory.map(msg => ({
+        role: msg.role,
+        content: msg.content
+      }));
+      
+      // Add current user message
+      conversation.push({
+        role: "user",
+        content: args.message
+      });
+      
+      console.log("Calling OpenAI with context and history");
+      
+      // Stream response from OpenAI
+      const { textStream } = streamText({
+        model: openai("gpt-4o-mini"),
+        temperature: 0.7,
+        system: systemPrompt,
+        messages: conversation,
+      });
+      
+      let fullResponse = "";
+      
+      // Collect the complete response
+      for await (const delta of textStream) {
+        if (delta) {
+          fullResponse += delta;
+        }
+      }
+      
+      console.log("Received complete response from OpenAI");
+      
+      return fullResponse;
+    } catch (error) {
+      console.error("Error in chat handling:", error);
       throw error;
     }
   },

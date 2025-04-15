@@ -2,10 +2,11 @@ import { useState, useCallback } from 'react';
 import { useRouter } from '@/core/hooks/use-router';
 import { useAuth } from '@/linkedin/hooks/useAuth';
 import { useMutationChats } from './use-mutation-chats';
-import { useMutationMessages } from './use-mutation-messages';
 import { useQueryMessages } from './use-query-messages';
 import { Id } from 'convex/_generated/dataModel';
 import { toast } from 'sonner';
+import { useMutation } from 'convex/react';
+import { api } from '../../../convex/_generated/api';
 
 export function useChat() {
   const { user } = useAuth();
@@ -17,14 +18,14 @@ export function useChat() {
   // Get chat mutations
   const chatMutations = useMutationChats();
   
-  // Get message mutations if we have a chatId
-  const messageMutations = useMutationMessages(chatId || "");
+  // Get create message mutation
+  const createAndGenerateResponse = useMutation(api.messages.createAndGenerateResponse);
   
   // Get messages for the current chat
   const { data: messages, loading: messagesLoading } = useQueryMessages(chatId);
 
   // Create a new chat
-  const createChat = useCallback(async () => {
+  const createChat = useCallback(async (title: string, description?: string, relatedJobId?: string) => {
     if (!user) {
       toast.error("You must be logged in to create a chat");
       return null;
@@ -33,11 +34,13 @@ export function useChat() {
     setIsCreating(true);
     try {
       const newChatId = await chatMutations.add({
-        title: "New Conversation",
-        description: "Started on " + new Date().toLocaleString()
+        title: title || "New Conversation",
+        description,
+        ...(relatedJobId && { relatedJobId }),
       });
       
       if (newChatId) {
+        // Navigate to the new chat
         navigate("chat", { chatId: newChatId });
         return newChatId;
       }
@@ -52,21 +55,20 @@ export function useChat() {
   }, [user, chatMutations, navigate]);
 
   // Send a message in the current chat
-  const sendMessage = useCallback(async (content: string, additionalContext: string = "") => {
-    if (!chatId || !content.trim()) return false;
+  const sendMessage = useCallback(async (content: string) => {
+    if (!chatId || !content.trim() || !user) {
+      return false;
+    }
     
     setIsSending(true);
     try {
-      // Add context if provided
-      const messageWithContext = additionalContext 
-        ? `${content}${additionalContext}` 
-        : content;
-      
-      const messageId = await messageMutations.add({
-        content: messageWithContext,
+      await createAndGenerateResponse({
+        chatId,
+        content,
+        userId: user.id,
       });
       
-      return !!messageId;
+      return true;
     } catch (error) {
       console.error("Error sending message:", error);
       toast.error("Failed to send message");
@@ -74,7 +76,7 @@ export function useChat() {
     } finally {
       setIsSending(false);
     }
-  }, [chatId, messageMutations]);
+  }, [chatId, user, createAndGenerateResponse]);
 
   return {
     chatId,

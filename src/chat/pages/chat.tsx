@@ -7,20 +7,15 @@ import { Spinner } from "@/linkedin/components/spinner";
 import { SendIcon, PlusIcon } from "lucide-react";
 import { Id } from "convex/_generated/dataModel";
 import { useQueryChats } from "@/chat/hooks/use-query-chats";
-import { useMutationChats } from "@/chat/hooks/use-mutation-chats";
-import { useQueryMessages } from "@/chat/hooks/use-query-messages";
-import { useMutationMessages } from "@/chat/hooks/use-mutation-messages";
-import { useQueryProfile } from "@/profile/hooks/use-query-profile";
-import { formatProfileBackground } from "@/jobs/utils/profile";
+import { useChat } from "@/chat/hooks/use-chat"; // Import useChat hook
 import { MessageList } from "@/chat/components/message-list";
 import { Sidebar } from "@/chat/components/chat-sidebar";
 import CreateChatDialog from "@/chat/components/CreateChatDialog";
 
 const ChatPage = () => {
   const { isAuthenticated, user } = useAuth();
-  const { redirect, params, navigate } = useRouter();
+  const { redirect, params } = useRouter();
   const [input, setInput] = useState("");
-  const [sending, setSending] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -28,17 +23,27 @@ const ChatPage = () => {
   // Get chatId from URL
   const chatId = params.chatId as Id<"chats">;
   
-  // Queries
-  const { data: profile } = useQueryProfile(user?.id);
-  const { data: messages, loading: messagesLoading } = useQueryMessages(chatId);
+  // Use our enhanced chat hook
+  const { 
+    messages, 
+    messagesLoading, 
+    isSending,
+    sendMessage 
+  } = useChat();
+  
+  // Get chats for the sidebar
   const { data: chats } = useQueryChats();
   
   // Find selected chat for header title
   const selectedChat = chats?.find(chat => chat._id === chatId);
   
-  // Mutations
-  const messageMutations = useMutationMessages(chatId);
-  const chatMutations = useMutationChats();
+  // Auto-resize textarea based on content
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+    }
+  }, [input]);
   
   // Redirect if not authenticated
   useEffect(() => {
@@ -51,21 +56,13 @@ const ChatPage = () => {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
-  
-  // Auto-resize textarea based on content
-  useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
-    }
-  }, [input]);
 
   const handleNewChat = () => {
     setIsDialogOpen(true);
   };
 
   const handleChatCreated = (newChatId: Id<"chats">) => {
-    navigate("chat", { chatId: newChatId });
+    redirect("chat", { chatId: newChatId });
     setInput("");
   };
 
@@ -81,25 +78,15 @@ const ChatPage = () => {
   };
 
   const handleSendMessage = async () => {
-    if (sending || !input.trim() || !chatId) return;
+    if (isSending || !input.trim() || !chatId) return;
+    
+    const message = input;
+    setInput(""); // Clear input immediately for better UX
     
     try {
-      setSending(true);
-      
-      // Add user profile context to first message
-      const userContext = profile ? `\n\nUser Profile Context:\n${formatProfileBackground(profile)}` : "";
-      const shouldAddContext = messages?.length === 0;
-      const messageContent = shouldAddContext ? input + userContext : input;
-      
-      await messageMutations.add({
-        content: messageContent,
-      });
-      
-      setInput("");
+      await sendMessage(message);
     } catch (error) {
-      console.error("Error sending message:", error);
-    } finally {
-      setSending(false);
+      console.log(error);
     }
   };
 
@@ -166,15 +153,15 @@ const ChatPage = () => {
                 onKeyDown={handleKeyDown}
                 placeholder="Message JobSync AI..."
                 className="min-h-[52px] max-h-[200px] w-full pr-12 resize-none rounded-lg"
-                disabled={sending}
+                disabled={isSending}
               />
               <Button
                 type="submit"
                 size="icon"
-                disabled={sending || input.trim() === ""}
+                disabled={isSending || input.trim() === ""}
                 className="absolute right-2 bottom-2 h-9 w-9"
               >
-                {sending ? <Spinner size="sm" /> : <SendIcon className="w-4 h-4" />}
+                {isSending ? <Spinner size="sm" /> : <SendIcon className="w-4 h-4" />}
               </Button>
             </form>
             <div className="mt-2 text-xs text-center text-gray-400">
