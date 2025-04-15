@@ -27,6 +27,28 @@ const schema = defineSchema({
     lastLoginAt: v.string(),
     profileId: v.optional(v.id("profiles")),
   }).index("by_linkedInId", ["linkedInId"]),
+  
+  chats: defineTable({
+    userId: v.string(),
+    title: v.string(),
+    description: v.optional(v.string()),
+    relatedJobId: v.optional(v.string()),
+    createdAt: v.string(),
+    updatedAt: v.string(),
+    lastMessageAt: v.optional(v.string()),
+    messageCount: v.number(),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_relatedJobId", ["relatedJobId"]),
+  
+  messages: defineTable({
+    chatId: v.id("chats"),
+    content: v.string(),
+    role: v.union(v.literal("user"), v.literal("assistant")),
+    createdAt: v.string(),
+  })
+    .index("by_chat_id", ["chatId"])
+    .index("by_chat_id_and_created_at", ["chatId", "createdAt"]),
   ...jobTables,
   ...resumeTables,
 });
