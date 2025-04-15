@@ -25,6 +25,7 @@ import {
   Redo,
   Search,
   Replace,
+  RotateCcw,
 } from "lucide-react";
 import {
   Tooltip,
@@ -67,6 +68,7 @@ export const CodeEditor = ({
   const [improveLineNumber, setImproveLineNumber] = useState<number | null>(
     null,
   );
+  const [originalContent, setOriginalContent] = useState<string | null>(null);
 
   const handleScroll = () => {
     setButtonPosition(null);
@@ -191,6 +193,25 @@ export const CodeEditor = ({
         cursor.row,
         cursor.column - `\\end{${environment}}`.length,
       );
+    }
+  };
+
+  const handleRevertAIChanges = () => {
+    if (editorRef.current?.editor && improveLineNumber && originalContent) {
+      editorRef.current.editor.session.replace(
+        {
+          start: {
+            row: improveLineNumber - 1,
+            column: 0,
+          },
+          end: {
+            row: improveLineNumber - 1,
+            column: Number.MAX_VALUE,
+          },
+        },
+        originalContent,
+      );
+      setOriginalContent(null);
     }
   };
 
@@ -535,6 +556,26 @@ export const CodeEditor = ({
               <TooltipContent>Replace</TooltipContent>
             </Tooltip>
           </TooltipProvider>
+
+          {originalContent && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 px-2 text-amber-600 hover:text-amber-700 border-amber-200 hover:bg-amber-50 flex items-center gap-1"
+                    onClick={handleRevertAIChanges}
+                    disabled={readOnly}
+                  >
+                    <RotateCcw className="h-3 w-3" />
+                    <span className="text-xs">Revert AI</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Revert AI Changes</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
         </div>
       </div>
 
@@ -543,7 +584,10 @@ export const CodeEditor = ({
           ref={editorRef}
           mode="latex"
           theme="tomorrow"
-          onChange={onChange}
+          onChange={(value) => {
+            onChange?.(value);
+            setOriginalContent(null);
+          }}
           value={value}
           name="latex-editor"
           editorProps={{ $blockScrolling: true }}
@@ -584,7 +628,17 @@ export const CodeEditor = ({
                 Improve Line with AI
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent>
+            <DropdownMenuContent
+              onClick={(e) => {
+                e.stopPropagation();
+                if (editorRef.current && improveLineNumber) {
+                  const lineText = editorRef.current.editor.session.getLine(
+                    improveLineNumber - 1,
+                  );
+                  setOriginalContent(lineText);
+                }
+              }}
+            >
               <DropdownMenuItem
                 onClick={() => {
                   handleImproveWithAI(improveLineNumber, "shorten");
