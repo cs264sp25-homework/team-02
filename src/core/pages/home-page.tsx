@@ -12,7 +12,7 @@ import { Skeleton } from "@/core/components/skeleton";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { JobType } from "convex/jobs";
-import { PlusCircle, FileText, Download, Trash2 } from "lucide-react";
+import { PlusCircle, FileText, Trash2 } from "lucide-react";
 import { Id } from "convex/_generated/dataModel";
 import {
   AlertDialog,
@@ -25,8 +25,8 @@ import {
   AlertDialogTitle,
 } from "@/core/components/alert-dialog";
 import { toast } from "sonner";
-import { useMutationResume } from "@/resume/hooks/use-muatation-resume";
 import EditableJobTitle from "@/jobs/components/EditableJobTitle";
+import CustomizeResumeButton from "@/resume/components/customize-resume-button";
 
 // Extended type that includes Convex's _id field
 type JobWithId = JobType & { _id: Id<"jobs"> };
@@ -37,7 +37,6 @@ const HomePage = () => {
   const [jobs, setJobs] = useState<JobWithId[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [jobToDelete, setJobToDelete] = useState<Id<"jobs"> | null>(null);
-  const { startResumeGeneration } = useMutationResume();
   // Use a query hook to get all jobs for the current user
   const allJobs = useQuery(
     api.jobs.getAllJobs,
@@ -79,14 +78,6 @@ const HomePage = () => {
       // Close the dialog
       setJobToDelete(null);
     }
-  };
-
-  const handleCustomizeResume = async (jobId: Id<"jobs">) => {
-    const resumeId = await startResumeGeneration({
-      userId: user!.id,
-      jobId,
-    });
-    navigate("customize_resume_status", { resumeId });
   };
 
   // If user is not authenticated, show sign-in prompt
@@ -160,7 +151,10 @@ const HomePage = () => {
                         navigate("job_details", { jobId: job._id })
                       }
                     >
-                      <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                      <td
+                        className="px-4 py-3"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         <div className="flex items-center">
                           <Button
                             variant="ghost"
@@ -174,10 +168,10 @@ const HomePage = () => {
                             <Trash2 className="h-4 w-4" />
                           </Button>
                           <span className="ml-8">
-                            <EditableJobTitle 
-                              jobId={job._id} 
-                              userId={user!.id} 
-                              initialTitle={job.title} 
+                            <EditableJobTitle
+                              jobId={job._id}
+                              userId={user!.id}
+                              initialTitle={job.title}
                             />
                           </span>
                         </div>
@@ -197,17 +191,10 @@ const HomePage = () => {
                           <FileText className="mr-2 h-4 w-4" />
                           Job Application Questions
                         </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleCustomizeResume(job._id);
-                          }}
-                        >
-                          <Download className="mr-2 h-4 w-4" />
-                          Customize Resume
-                        </Button>
+                        <CustomizeResumeButton
+                          jobId={job._id}
+                          userId={user!.id}
+                        />
                       </td>
                     </tr>
                   ))}
