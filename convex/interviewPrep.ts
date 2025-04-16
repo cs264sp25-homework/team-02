@@ -2,12 +2,11 @@ import { action } from "./_generated/server";
 import { v } from "convex/values";
 import OpenAI from "openai";
 
-// Initialize OpenAI client using environment variable
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// Define the structure for the generated questions
+// Structure for the generated questions (technical and non-technical)
 interface GeneratedQuestions {
   technical: string[];
   nonTechnical: string[];
@@ -22,9 +21,6 @@ export const generateQuestions = action({
       throw new Error("Job details text cannot be empty.");
     }
 
-    // --- Prompt Engineering ---
-    // Craft a prompt asking the AI to generate distinct technical and non-technical questions
-    // based on the provided job description/details.
     const systemPrompt = `
 You are an expert career advisor and interviewer. Based on the following job details, generate a list of potential interview questions.
 Separate the questions into two distinct categories: "technical" and "nonTechnical".
@@ -44,14 +40,14 @@ ${args.jobDetailsText}`;
 
     try {
       const completion = await openai.chat.completions.create({
-        model: "gpt-4o-mini", // Or your preferred model
+        model: "gpt-4o-mini",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
         ],
-        response_format: { type: "json_object" }, // Enforce JSON output
-        temperature: 0.5, // Adjust creativity vs. determinism
-        max_tokens: 500, // Limit response length
+        response_format: { type: "json_object" },
+        temperature: 0.5,
+        max_tokens: 500,
       });
 
       const content = completion.choices[0]?.message?.content;
@@ -60,7 +56,7 @@ ${args.jobDetailsText}`;
         throw new Error("OpenAI response content is empty.");
       }
 
-      // Attempt to parse the JSON response
+      // Parse the JSON response
       let parsedQuestions: GeneratedQuestions;
       try {
         parsedQuestions = JSON.parse(content) as GeneratedQuestions;
@@ -86,7 +82,6 @@ ${args.jobDetailsText}`;
       return parsedQuestions;
     } catch (error) {
       console.error("Error generating interview questions:", error);
-      // Consider more specific error handling based on OpenAI errors
       if (error instanceof OpenAI.APIError) {
         throw new Error(`OpenAI API Error: ${error.status} ${error.message}`);
       }
