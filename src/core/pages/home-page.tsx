@@ -12,7 +12,7 @@ import { Skeleton } from "@/core/components/skeleton";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { JobType } from "convex/jobs";
-import { PlusCircle, FileText, Trash2 } from "lucide-react";
+import { PlusCircle, FileText, Trash2, HelpCircle } from "lucide-react";
 import { Id } from "convex/_generated/dataModel";
 import {
   AlertDialog,
@@ -195,6 +195,17 @@ const HomePage = () => {
                           jobId={job._id}
                           userId={user!.id}
                         />
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate("interview_prep");
+                          }}
+                        >
+                          <HelpCircle className="mr-2 h-4 w-4" />
+                          Prep Questions
+                        </Button>
                       </td>
                     </tr>
                   ))}
