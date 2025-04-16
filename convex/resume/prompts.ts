@@ -74,6 +74,7 @@ export function getPromptForImproveResumeLine(
   </line>
 
   Do not change the latex code, only improve the content.
+  Start with action verbs and remove subjects such as "I", "We", "Us", "Our", etc.
   Only output the improved line, do not include any other text.
 
   Your job is defined below:
