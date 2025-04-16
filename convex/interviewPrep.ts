@@ -16,7 +16,7 @@ export const generateQuestions = action({
   args: {
     jobDetailsText: v.string(),
   },
-  handler: async (ctx, args): Promise<GeneratedQuestions> => {
+  handler: async (_, args): Promise<GeneratedQuestions> => {
     if (!args.jobDetailsText) {
       throw new Error("Job details text cannot be empty.");
     }
