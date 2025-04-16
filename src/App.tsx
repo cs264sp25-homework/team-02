@@ -10,7 +10,9 @@ import LinkedInCallback from "./linkedin/components/LinkedInCallback";
 import NavBar from "@/core/components/navbar";
 import HomePage from "./core/pages/home-page";
 import { CustomizeResumeStatus } from "./resume/pages/customize-resume-status";
-import EditResume from "./resume/pages/edit-resume";import ChatPage from "./chat/pages/chat";
+import EditResume from "./resume/pages/edit-resume";
+import ChatPage from "./chat/pages/chat";
+import InterviewPrepPage from "./interview_prep/pages/InterviewPrepPage";
 
 function App() {
   const { currentRoute } = useRouter();
@@ -45,7 +47,9 @@ function App() {
       case "edit_resume":
         return <EditResume />;
       case "chat":
-        return <ChatPage />; 
+        return <ChatPage />;
+      case "interview_prep":
+        return <InterviewPrepPage />;
       default:
         return <NotFoundPage />;
     }
