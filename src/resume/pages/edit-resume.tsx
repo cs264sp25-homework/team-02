@@ -46,7 +46,6 @@ const EditResume = () => {
   const resumeId = params.resumeId as Id<"resumes">;
   const { resume, loading } = useQueryResume(resumeId, user!.id);
   const [latexContent, setLatexContent] = useState(resume?.latexContent || "");
-  const [clickedText, setClickedText] = useState<string | null>(null);
 
   useEffect(() => {
     if (resume && resume.generationStatus !== "completed") {
@@ -198,7 +197,6 @@ const EditResume = () => {
               readOnly={isGenerating}
               onSave={handleCompileAndSave}
               handleImproveWithAI={handleImproveWithAI}
-              clickedText={clickedText}
             />
           </div>
         </div>
@@ -263,7 +261,6 @@ const EditResume = () => {
             <PdfViewer
               pdfUrl={resume.compiledResumeUrl || null}
               generationStatus={resume.generationStatus}
-              setClickedText={setClickedText}
             />
           )}
         </>
