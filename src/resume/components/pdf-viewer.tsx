@@ -24,7 +24,7 @@ export const PdfViewer = ({
   generationStatus,
   setClickedText,
 }: PdfViewerProps) => {
-  const [numPages, setNumPages] = useState<number | null>(null);
+  const [numPages, setNumPages] = useState<number>(0);
   const [scale, setScale] = useState(1.0);
   const viewerRef = useRef<HTMLDivElement>(null);
   const [docReady, setDocReady] = useState(false);
@@ -79,7 +79,9 @@ export const PdfViewer = ({
 
   const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
     setNumPages(numPages);
-    setDocReady(true);
+    setTimeout(() => {
+      setDocReady(true);
+    }, 200);
   };
 
   const zoomIn = () => {
@@ -149,11 +151,22 @@ export const PdfViewer = ({
         </Button>
       </div>
       <div
-        className="flex-1 w-full h-full overflow-auto bg-gray-200 p-6"
+        className="flex-1 w-full h-full overflow-auto bg-gray-200 p-6 relative"
         ref={viewerRef}
       >
+        {!docReady && (
+          <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 z-10">
+            <div className="flex flex-col items-center gap-2">
+              <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+              <p className="text-sm text-gray-600">Loading PDF...</p>
+            </div>
+          </div>
+        )}
         <Document
           file={pdfUrl}
+          onLoad={() => {
+            setDocReady(false);
+          }}
           onLoadSuccess={onDocumentLoadSuccess}
           className="flex flex-col items-center"
           options={options}
