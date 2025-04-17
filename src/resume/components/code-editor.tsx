@@ -49,6 +49,7 @@ interface CodeEditorProps {
     lineNumber: number | null,
     action: ImproveResumeActionType,
   ) => void;
+  clickedText: string | null;
 }
 
 export const CodeEditor = ({
@@ -57,6 +58,7 @@ export const CodeEditor = ({
   readOnly = false,
   onSave,
   handleImproveWithAI,
+  clickedText,
 }: CodeEditorProps) => {
   const editorRef = useRef<AceEditor>(null);
   const editorWrapperRef = useRef<HTMLDivElement>(null);
@@ -73,6 +75,13 @@ export const CodeEditor = ({
   const handleScroll = () => {
     setButtonPosition(null);
   };
+
+  useEffect(() => {
+    if (clickedText && editorRef.current?.editor) {
+      const editor = editorRef.current.editor;
+      editor.find(clickedText);
+    }
+  }, [clickedText]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

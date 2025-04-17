@@ -4,18 +4,48 @@ import { pdfjs } from "react-pdf";
 import { Document, Page } from "react-pdf";
 import "react-pdf/dist/Page/TextLayer.css";
 import "react-pdf/dist/Page/AnnotationLayer.css";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 
 interface PdfViewerProps {
   pdfUrl: string | null;
   generationStatus: string;
+  setClickedText: (text: string) => void;
 }
 
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
-export const PdfViewer = ({ pdfUrl, generationStatus }: PdfViewerProps) => {
+export const PdfViewer = ({
+  pdfUrl,
+  generationStatus,
+  setClickedText,
+}: PdfViewerProps) => {
   const [numPages, setNumPages] = useState<number | null>(null);
   const [scale, setScale] = useState(1.0);
+  const viewerRef = useRef<HTMLDivElement>(null);
+  const [docReady, setDocReady] = useState(false);
+
+  useEffect(() => {
+    const handleTextLayerClick = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      const text = target.textContent;
+      if (text) {
+        setClickedText(text);
+      }
+    };
+    const ref = viewerRef.current;
+
+    // Add event listener to the document
+    if (ref) {
+      ref.addEventListener("dblclick", handleTextLayerClick);
+    }
+
+    // Cleanup
+    return () => {
+      if (ref) {
+        ref.removeEventListener("dblclick", handleTextLayerClick);
+      }
+    };
+  }, []);
 
   const handleDownloadPdf = async () => {
     if (!pdfUrl) {
@@ -44,6 +74,7 @@ export const PdfViewer = ({ pdfUrl, generationStatus }: PdfViewerProps) => {
 
   const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
     setNumPages(numPages);
+    setDocReady(true);
   };
 
   const zoomIn = () => {
@@ -112,26 +143,30 @@ export const PdfViewer = ({ pdfUrl, generationStatus }: PdfViewerProps) => {
           Download PDF
         </Button>
       </div>
-      <div className="flex-1 w-full h-full overflow-auto bg-gray-200 p-6">
+      <div
+        className="flex-1 w-full h-full overflow-auto bg-gray-200 p-6"
+        ref={viewerRef}
+      >
         <Document
           file={pdfUrl}
           onLoadSuccess={onDocumentLoadSuccess}
           className="flex flex-col items-center"
         >
-          {Array.from(new Array(numPages), (_, index) => (
-            <div
-              key={`page_${index + 1}`}
-              className="mb-8 shadow-lg overflow-hidden bg-white"
-            >
-              <Page
-                pageNumber={index + 1}
-                scale={scale}
-                renderTextLayer={true}
-                renderAnnotationLayer={true}
-                className="border border-gray-200"
-              />
-            </div>
-          ))}
+          {docReady &&
+            Array.from(new Array(numPages), (_, index) => (
+              <div
+                key={`page_${index + 1}`}
+                className="mb-8 shadow-lg overflow-hidden bg-white"
+              >
+                <Page
+                  pageNumber={index + 1}
+                  scale={scale}
+                  renderTextLayer={true}
+                  renderAnnotationLayer={true}
+                  className="border border-gray-200"
+                />
+              </div>
+            ))}
         </Document>
       </div>
     </div>
