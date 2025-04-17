@@ -12,6 +12,11 @@ interface PdfViewerProps {
   setClickedText: (text: string) => void;
 }
 
+const options = {
+  cMapUrl: "/cmaps/",
+  standardFontDataUrl: "/standard_fonts/",
+};
+
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
 export const PdfViewer = ({
@@ -45,7 +50,7 @@ export const PdfViewer = ({
         ref.removeEventListener("dblclick", handleTextLayerClick);
       }
     };
-  }, []);
+  }, [setClickedText]);
 
   const handleDownloadPdf = async () => {
     if (!pdfUrl) {
@@ -151,6 +156,7 @@ export const PdfViewer = ({
           file={pdfUrl}
           onLoadSuccess={onDocumentLoadSuccess}
           className="flex flex-col items-center"
+          options={options}
         >
           {docReady &&
             Array.from(new Array(numPages), (_, index) => (
