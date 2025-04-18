@@ -19,6 +19,7 @@ const pages = {
   chat: `${baseUrl}/chat/:chatId?`, // Chat interface page
   edit_resume: `${baseUrl}/edit-resume/:resumeId`, // Latex editor page
   interview_prep: `${baseUrl}/interview-prep`, // Interview question generator page
+  job_fit: `${baseUrl}/job-fit/:jobId`, // Job fit evaluation page
 };
 
 export type Page = keyof typeof pages;

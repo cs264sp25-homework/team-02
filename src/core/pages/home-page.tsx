@@ -12,7 +12,13 @@ import { Skeleton } from "@/core/components/skeleton";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { JobType } from "convex/jobs";
-import { PlusCircle, FileText, Trash2, HelpCircle } from "lucide-react";
+import {
+  PlusCircle,
+  FileText,
+  Trash2,
+  HelpCircle,
+  ThumbsUp,
+} from "lucide-react";
 import { Id } from "convex/_generated/dataModel";
 import {
   AlertDialog,
@@ -179,33 +185,46 @@ const HomePage = () => {
                       <td className="px-4 py-3">
                         {new Date(job.createdAt).toLocaleDateString()}
                       </td>
-                      <td className="px-4 py-3 text-right space-x-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate("job_details", { jobId: job._id });
-                          }}
-                        >
-                          <FileText className="mr-2 h-4 w-4" />
-                          Job Application Questions
-                        </Button>
-                        <CustomizeResumeButton
-                          jobId={job._id}
-                          userId={user!.id}
-                        />
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate("interview_prep");
-                          }}
-                        >
-                          <HelpCircle className="mr-2 h-4 w-4" />
-                          Prep Questions
-                        </Button>
+                      <td className="py-3 text-right">
+                        <div className="flex flex-col space-y-2 items-end">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate("job_details", { jobId: job._id });
+                            }}
+                          >
+                            <FileText className="mr-2 h-4 w-4" />
+                            Job Application Questions
+                          </Button>
+                          <CustomizeResumeButton
+                            jobId={job._id}
+                            userId={user!.id}
+                          />
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate("interview_prep");
+                            }}
+                          >
+                            <HelpCircle className="mr-2 h-4 w-4" />
+                            Prep Questions
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate("job_fit", { jobId: job._id });
+                            }}
+                          >
+                            <ThumbsUp className="mr-2 h-4 w-4" />
+                            Evaluate Job Fit
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   ))}
