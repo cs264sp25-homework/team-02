@@ -28,6 +28,7 @@ import {
 } from "@/core/components/alert-dialog";
 import JobDetails from "../components/job-details";
 import { ImproveResumeActionType } from "convex/resume/schema";
+import ResumeInsights from "../components/resume-insights";
 const EditResume = () => {
   const { isAuthenticated, user } = useAuth();
   const { redirect, params } = useRouter();
@@ -120,7 +121,7 @@ const EditResume = () => {
   return (
     <Layout
       rightPanelContent={
-        resume.jobId && <JobDetails jobId={resume.jobId} userId={user!.id} />
+        resume.jobId && <ResumeInsights userId={user!.id} resumeId={resumeId} />
       }
       leftPanelContent={
         <div className="flex flex-col h-full">

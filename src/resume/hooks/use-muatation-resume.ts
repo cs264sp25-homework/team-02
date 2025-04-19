@@ -17,11 +17,15 @@ export const useMutationResume = () => {
     api.resume.handlers.improveResumeLineWithAI,
   );
   const deleteResume = useMutation(api.resume.handlers.deleteResume);
+  const generateResumeInsights = useAction(
+    api.resume.handlers.generateResumeInsights,
+  );
   return {
     startResumeGeneration,
     restartResumeGeneration,
     compileAndSaveResume,
     deleteResume,
     improveResumeLineWithAI,
+    generateResumeInsights,
   };
 };

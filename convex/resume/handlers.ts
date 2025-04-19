@@ -20,11 +20,79 @@ import {
   getResumeEnhancementSystemPrompt,
   getTailoredProfilePrompt,
 } from "./prompts";
-import { generationStatus, improveResumeAction } from "./schema";
+import {
+  generationStatus,
+  improveResumeAction,
+  resumeInsightsSchema,
+  resumeInsightsZodSchema,
+} from "./schema";
 import { ConvexError } from "convex/values";
 import { generateJakesResume } from "./templates";
 import { ProfileType, zodProfileInSchema } from "../profiles";
 import { cleanTailoredProfile } from "./verifiers";
+import { getPromptForResumeInsights } from "./prompts";
+
+export const generateResumeInsights = action({
+  args: {
+    resumeId: v.id("resumes"),
+    userId: v.string(),
+  },
+  handler: async (ctx, { resumeId, userId }) => {
+    const resume = await ctx.runQuery(api.resume.handlers.getResumeById, {
+      userId,
+      resumeId,
+    });
+    if (!resume) {
+      throw new Error("Resume not found");
+    }
+    if (!resume.jobId) {
+      throw new Error("Resume has no job id");
+    }
+    const job = await ctx.runQuery(api.jobs.getJobById, {
+      jobId: resume.jobId as Id<"jobs">,
+      userId,
+    });
+    if (!job) {
+      throw new Error("Job not found");
+    }
+    const jobDescription = job.description;
+    const { object } = await generateObject({
+      model: openai("gpt-4o-mini"),
+      prompt: getPromptForResumeInsights(resume.latexContent, jobDescription),
+      schema: resumeInsightsZodSchema,
+    });
+    await ctx.runMutation(api.resume.handlers.updateResumeInsights, {
+      resumeId,
+      resumeInsights: object.insights,
+    });
+  },
+});
+
+export const getResumeInsights = query({
+  args: {
+    resumeId: v.id("resumes"),
+    userId: v.string(),
+  },
+  handler: async (ctx, { resumeId, userId }) => {
+    const resume = await ctx.db.get(resumeId);
+    if (!resume || resume.userId !== userId) {
+      throw new Error("Resume not found");
+    }
+    return resume.resumeInsights;
+  },
+});
+
+export const updateResumeInsights = mutation({
+  args: {
+    resumeId: v.id("resumes"),
+    resumeInsights: resumeInsightsSchema,
+  },
+  handler: async (ctx, { resumeId, resumeInsights }) => {
+    await ctx.db.patch(resumeId, {
+      resumeInsights,
+    });
+  },
+});
 
 export const startResumeGeneration = mutation({
   args: {
