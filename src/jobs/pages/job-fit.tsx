@@ -29,6 +29,8 @@ const JobFitPage = () => {
 
   const userSkills = profile?.skills || [];
   const requiredSkills = job?.requiredSkills || [];
+  console.log("User Skills:", userSkills);
+  console.log("Required Skills:", requiredSkills);
 
   if (userSkills.length === 0) {
     return (

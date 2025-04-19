@@ -347,14 +347,14 @@ export const getAllJobs = query({
   },
 });
 
-export const extractJobRequirements = action({
+export const extractRequiredSkills = action({
   args: {
     userId: v.string(),
-    jobId: v.id("jobs"),
+    jobId: v.string(),
     requirements: v.string(),
   },
   handler: async (ctx, args) => {
-    console.log("Starting extractJobRequirements");
+    console.log("Starting extractRequiredSkills");
     const systemPrompt = `You are good at extracting skills from a given string. Your role is to extract skills from a given text and put them into an array.
 
       Instructions:
@@ -363,7 +363,7 @@ export const extractJobRequirements = action({
       3. Ensure that the extracted requirements is 1-2 words long.
       3. Ensure that the extracted requirements are relevant to the job title and context.
 
-      Text:
+      Requirements:
       ${args.requirements}
 
       Examples:
@@ -467,7 +467,7 @@ Proficiency with CRM software and other sales tools preferred
 
       await ctx.runMutation(api.jobs.updateJob, {
         userId: args.userId,
-        jobId: args.jobId,
+        jobId: args.jobId as Id<"jobs">,
         requiredSkills: parsedSkillsArray || [],
       });
     } catch (error) {

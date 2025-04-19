@@ -17,6 +17,7 @@ export function useAddJob(userId: string) {
   const profile = useQuery(api.profiles.getProfileByUserId, {
     userId: userId,
   });
+  const extractRequiredSkills = useAction(api.jobs.extractRequiredSkills);
 
   const getAiGeneratedJobQuestions = useAction(api.openai.generateJobQuestions);
 
@@ -42,6 +43,12 @@ export function useAddJob(userId: string) {
         answers: answersFromAi,
         postingUrl,
         applicationUrl,
+      });
+
+      await extractRequiredSkills({
+        jobId: jobId,
+        userId,
+        requirements: jobData.description,
       });
 
       return jobId;
