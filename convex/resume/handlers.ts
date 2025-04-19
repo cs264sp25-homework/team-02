@@ -239,6 +239,11 @@ export const generateResume = internalAction({
         status: "completed",
       });
 
+      ctx.scheduler.runAfter(0, api.resume.handlers.generateResumeInsights, {
+        resumeId,
+        userId,
+      });
+
       return latexContent;
     } catch (error: unknown) {
       console.error("Failed to generate resume: " + error);
