@@ -1,8 +1,11 @@
 import { Infer, v } from "convex/values";
 import { defineTable } from "convex/server";
-import { mutation, query } from "./_generated/server";
+import { mutation, query, action } from "./_generated/server";
 import { Id } from "./_generated/dataModel";
 import { ConvexError } from "convex/values";
+import OpenAI from "openai";
+import { internal } from "./_generated/api";
+import { api } from "./_generated/api";
 
 /******************************************************************************
  * SCHEMA
@@ -34,6 +37,8 @@ export const jobInSchema = {
   // Timestamps
   createdAt: v.string(),
   updatedAt: v.string(),
+
+  requiredSkills: v.optional(v.array(v.string())),
 };
 
 // eslint-disable-next-line
@@ -52,6 +57,7 @@ export const jobUpdateSchema = {
   questionImageUrl: v.optional(v.string()),
   postingUrl: v.optional(v.string()),
   applicationUrl: v.optional(v.string()),
+  requiredSkills: v.optional(v.array(v.string())),
 };
 
 // eslint-disable-next-line
@@ -334,8 +340,147 @@ export const getAllJobs = query({
       .collect();
 
     // Sort by createdAt date, newest first
-    return jobs.sort((a, b) => 
-      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    return jobs.sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
     );
+  },
+});
+
+export const extractJobRequirements = action({
+  args: {
+    userId: v.string(),
+    jobId: v.id("jobs"),
+    requirements: v.string(),
+  },
+  handler: async (ctx, args) => {
+    console.log("Starting extractJobRequirements");
+    const systemPrompt = `You are good at extracting skills from a given string. Your role is to extract skills from a given text and put them into an array.
+
+      Instructions:
+      1. Review the provided text and identify the key job requirements.
+      2. Extract the requirements in a clear and concise manner. Don't add markdown or formatting. 
+      3. Ensure that the extracted requirements is 1-2 words long.
+      3. Ensure that the extracted requirements are relevant to the job title and context.
+
+      Text:
+      ${args.requirements}
+
+      Examples:
+      """
+      Requirements: Experience with Typescript, React, Node or other software development
+frameworks
+
++ Communication: You can clearly articulate what's going on to both technical
+and non-technical stakeholders
+
+» Cracked-ness: You're more cracked than the most cracked person on the team
+
+« Organization: You naturally gravitate toward building systems that stand the
+test of time
+
+« Startup Ready: You have a reason to be here and can make sacrifices for
+something uncertain
+
+» Founder Juice: New ideas come from you, you build it yourself or annoy
+everyone until it's done ;)
+
+      Output: '["Typescript", "React", "Node", "communication", "organization", "startup-ready", "founder-mindset"]'
+      """
+
+      """
+      Requirements:  Is very proficient in Typescript/React/Node.
+
+      - Can leverage GPT/Claude/Cursor to accelerate their work.
+
+      - Has built products 0 -> 1 with real users and revenue.
+
+      - Is OK with not having product and design support all the time.
+
+      - Is ALWAYS SHIPPING. We don't spend weeks planning features at Replo.
+
+      - Has a product and customer-focused mindset.
+
+      - Has experience being burned by deployment and maintenance issues. If you have a a
+strong opinion on how products should be built, that’s good.
+
+      - Values writing clean, maintainable software, including documentation (e.g. the code needs
+to be correct and run fast, but we're the ones that have to read it and understand it).
+
+      - Is comfortable with ambiguity and defining software architecture patterns to solve customer
+pain points.
+
+
+
+      Output: '["Typescript", "React", "Node", 
+      , "product-focused mindset", "clean code", "maintainable software", "documentation", "AI tools", "deployment"]'
+      """
+
+      """
+      Requirements: Cold calling experience preferred but open to someone hungry to start their sales career
+Grit, resilience, and desire to exceed sales goals
+Excellent communication and prioritization skills
+Self-motivated, disciplined, and organized
+A proven top performer in previous experiences, consistently hitting and exceeding goals
+Positive mindset with ability to navigate change and quickly adapt
+Proficiency with CRM software and other sales tools preferred
+
+      Output: '["cold calling", "grit", "resilience", "communication", "prioritization", "self-motivated", "disciplined", "organized", "top performer", "positive mindset", "CRM software"]'  
+
+      """
+
+      Output:
+      Return the output as a JSON array of strings. Do not include any explanation, markdown, or formatting — only the raw JSON array.      `;
+
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+
+    try {
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [{ role: "system", content: systemPrompt }],
+      });
+
+      const content = completion.choices[0]?.message.content;
+
+      if (!content) {
+        throw new Error("OpenAI response content is empty.");
+      }
+
+      let parsedSkillsArray: string[];
+      try {
+        parsedSkillsArray = JSON.parse(content);
+        if (!parsedSkillsArray || !Array.isArray(parsedSkillsArray)) {
+          throw new Error("Invalid JSON structure received from OpenAI.");
+        }
+      } catch (parseError) {
+        console.error(
+          "Failed to parse OpenAI JSON response:",
+          content,
+          parseError,
+        );
+        throw new Error("Failed to parse skills from AI response.");
+      }
+
+      console.log("Parsed skills array:", parsedSkillsArray);
+
+      await ctx.runMutation(api.jobs.updateJob, {
+        userId: args.userId,
+        jobId: args.jobId,
+        requiredSkills: parsedSkillsArray || [],
+      });
+    } catch (error) {
+      console.error(
+        "Error generating array of skills from requirements string:",
+        error,
+      );
+      if (error instanceof OpenAI.APIError) {
+        throw new Error(`OpenAI API Error: ${error.status} ${error.message}`);
+      }
+      throw new Error(
+        "Failed to generate array of skills due to an internal error.",
+      );
+    }
   },
 });

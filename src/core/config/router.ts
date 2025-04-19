@@ -20,6 +20,7 @@ const pages = {
   edit_resume: `${baseUrl}/edit-resume/:resumeId`, // Latex editor page
   interview_prep: `${baseUrl}/interview-prep`, // Interview question generator page
   job_fit: `${baseUrl}/job-fit/:jobId`, // Job fit evaluation page
+  profile_skills: `${baseUrl}/profile#skills`, // Profile skills section
 };
 
 export type Page = keyof typeof pages;

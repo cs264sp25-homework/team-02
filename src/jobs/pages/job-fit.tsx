@@ -1,4 +1,3 @@
-import React from "react";
 import {
   Card,
   CardContent,
@@ -6,33 +5,87 @@ import {
   CardTitle,
 } from "@/core/components/card";
 import { Progress } from "@/core/components/progress"; // Assuming you have a progress bar component
-import { useQuery } from "convex/react";
-import { api } from "../../../convex/_generated/api";
+import { useRouter } from "@/core/hooks/use-router";
+import { Id } from "../../../convex/_generated/dataModel";
+import { useQueryProfile } from "../../profile/hooks/use-query-profile";
+import { useAuth } from "@/linkedin/hooks/useAuth";
+import { useQueryJob } from "../hooks/use-query-job";
+import { Button } from "@/core/components/button";
+import SkillsCard from "../components/SkillsCard";
 
 const JobFitPage = () => {
-  let matchedSkills = ["JavaScript", "React", "Node.js"]; // Example matched skills
-  let missingSkills = ["TypeScript", "GraphQL"]; // Example missing skills
-  // const userSkills = useQuery(api.skills.getUserSkills); // Fetch user's skills
-  // const jobSkills = useQuery(api.jobs.getJobSkills, { jobId: "exampleJobId" }); // Fetch job's required skills
+  const { isAuthenticated, user } = useAuth();
+  const { redirect } = useRouter();
 
-  // if (!userSkills || !jobSkills) {
-  //   return <div>Loading...</div>;
-  // }
+  if (!isAuthenticated) {
+    redirect("login");
+  }
 
-  // Compare user skills with job skills
-  // const matchedSkills = jobSkills.filter((skill) => userSkills.includes(skill));
-  // const missingSkills = jobSkills.filter(
-  //   (skill) => !userSkills.includes(skill),
-  // );
+  const { params } = useRouter();
+  const jobId = params.jobId as Id<"jobs">;
 
-  // Determine fit level
-  // const fitPercentage = (matchedSkills.length / jobSkills.length) * 100;
-  let fitLevel = "Strong Fit";
-  // if (fitPercentage >= 75) {
-  //   fitLevel = "Strong Fit";
-  // } else if (fitPercentage >= 50) {
-  //   fitLevel = "Moderate Fit";
-  // }
+  const { data: profile, loading } = useQueryProfile(user!.id);
+  const { data: job, loading: jobLoading } = useQueryJob(jobId, user!.id);
+
+  const userSkills = profile?.skills || [];
+  const requiredSkills = job?.requiredSkills || [];
+
+  if (userSkills.length === 0) {
+    return (
+      <div className="container mx-auto max-w-5xl px-4 py-8">
+        <Card>
+          <CardHeader>
+            <CardTitle>Job Fit Analysis</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-gray-500">
+              You need to add skills to your profile before we can analyze your
+              fit for this job.
+            </p>
+            <Button
+              variant="outline"
+              className="mt-4"
+              onClick={() => {
+                redirect("profile_skills");
+              }}
+            >
+              Add Skills
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (loading || jobLoading) {
+    return (
+      <div className="container mx-auto max-w-5xl px-4 py-8">
+        <Card>
+          <CardContent>
+            <p className="text-gray-500">Loading...</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const matchedSkills = requiredSkills.filter((skill) =>
+    userSkills.includes(skill),
+  );
+  const missingSkills = requiredSkills.filter(
+    (skill) => !userSkills.includes(skill),
+  );
+
+  const fitPercentage = (matchedSkills.length / requiredSkills.length) * 100;
+  let fitLevel = "Unknown";
+
+  if (fitPercentage >= 75) {
+    fitLevel = "Strong Fit";
+  } else if (fitPercentage >= 50) {
+    fitLevel = "Moderate Fit";
+  } else {
+    fitLevel = "Weak Fit";
+  }
 
   return (
     <div className="container mx-auto max-w-5xl px-4 py-8">
@@ -42,27 +95,30 @@ const JobFitPage = () => {
         </CardHeader>
         <CardContent>
           <div className="mb-6">
-            <h2 className="text-xl font-semibold">Fit Level: {fitLevel}</h2>
-            <Progress value={100} />
-          </div>
-          <div className="mb-6">
-            <h3 className="text-lg font-semibold">Matched Skills</h3>
-            <ul className="list-disc list-inside">
-              {matchedSkills.map((skill) => (
-                <li key={skill}>{skill}</li>
-              ))}
-            </ul>
-          </div>
-          <div>
-            <h3 className="text-lg font-semibold">Missing Skills</h3>
-            <ul className="list-disc list-inside text-red-500">
-              {missingSkills.map((skill) => (
-                <li key={skill}>{skill}</li>
-              ))}
-            </ul>
+            <h2 className="text-xl font-semibold mb-5">
+              Fit Level: {fitLevel}
+            </h2>
+            <div className="relative w-full">
+              <Progress
+                value={fitPercentage}
+                className="h-4 rounded-full bg-gray-200"
+              />
+              <span className="absolute inset-0 flex items-center justify-center text-sm font-medium text-white">
+                {Math.round(fitPercentage)}%
+              </span>
+            </div>
           </div>
         </CardContent>
       </Card>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
+        <SkillsCard title="Matched Skills" skills={matchedSkills} />
+        <SkillsCard
+          title="Missing Skills"
+          skills={missingSkills}
+          textColor="text-red-500"
+        />
+      </div>
     </div>
   );
 };

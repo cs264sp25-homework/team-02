@@ -557,16 +557,16 @@ export const handleChatMessage = action({
   handler: async (ctx, args) => {
     try {
       console.log("Starting chat message processing");
-      
+
       // Get the current chat
       const chat = await ctx.runQuery(api.chat.getById, {
         chatId: args.chatId,
       });
-      
+
       if (!chat) {
         throw new Error("Chat not found");
       }
-      
+
       // Get user profile for context (only for first message)
       let userProfile = null;
       if (args.isFirstMessage) {
@@ -574,7 +574,7 @@ export const handleChatMessage = action({
           userId: args.userId,
         });
       }
-      
+
       // Get related job if one is specified
       let relatedJob = null;
       if (chat.relatedJobId) {
@@ -584,13 +584,13 @@ export const handleChatMessage = action({
           jobId: chat.relatedJobId as unknown as Id<"jobs">,
         });
       }
-      
+
       // Get message history (last 10 messages)
       const messageHistory = await ctx.runQuery(api.messages.getAll, {
         chatId: args.chatId,
         limit: 10,
       });
-      
+
       // Create system prompt based on context
       let systemPrompt = `You are JobSync AI, a career coach specializing in job applications, resume writing, and interview preparation. Your goal is to provide helpful, personalized advice to job seekers.
 
@@ -608,53 +608,56 @@ Guidelines:
       // Add user profile context if available and this is the first message
       if (userProfile && args.isFirstMessage) {
         systemPrompt += `\n\n### User Profile Context:`;
-        
+
         if (userProfile.education && userProfile.education.length > 0) {
           systemPrompt += `\n#### Education:`;
-          userProfile.education.forEach(edu => {
+          userProfile.education.forEach((edu) => {
             systemPrompt += `\n- ${edu.degree} in ${edu.field} from ${edu.institution}`;
             if (edu.startDate && edu.endDate) {
               systemPrompt += ` (${edu.startDate} - ${edu.endDate})`;
             }
           });
         }
-        
-        if (userProfile.workExperience && userProfile.workExperience.length > 0) {
+
+        if (
+          userProfile.workExperience &&
+          userProfile.workExperience.length > 0
+        ) {
           systemPrompt += `\n#### Work Experience:`;
-          userProfile.workExperience.forEach(work => {
+          userProfile.workExperience.forEach((work) => {
             systemPrompt += `\n- ${work.position} at ${work.company}`;
             if (work.startDate) {
               systemPrompt += ` (${work.startDate} - ${work.endDate || "Present"})`;
             }
             if (work.description && work.description.length > 0) {
-              work.description.slice(0, 2).forEach(desc => {
+              work.description.slice(0, 2).forEach((desc) => {
                 systemPrompt += `\n  * ${desc}`;
               });
             }
             if (work.technologies && work.technologies.length > 0) {
-              systemPrompt += `\n  * Technologies: ${work.technologies.join(', ')}`;
+              systemPrompt += `\n  * Technologies: ${work.technologies.join(", ")}`;
             }
           });
         }
-        
+
         if (userProfile.projects && userProfile.projects.length > 0) {
           systemPrompt += `\n#### Projects:`;
-          userProfile.projects.forEach(project => {
+          userProfile.projects.forEach((project) => {
             systemPrompt += `\n- ${project.name}`;
             if (project.startDate) {
               systemPrompt += ` (${project.startDate} - ${project.endDate || "Present"})`;
             }
             if (project.technologies && project.technologies.length > 0) {
-              systemPrompt += `\n  * Technologies: ${project.technologies.join(', ')}`;
+              systemPrompt += `\n  * Technologies: ${project.technologies.join(", ")}`;
             }
           });
         }
-        
+
         if (userProfile.skills && userProfile.skills.length > 0) {
           systemPrompt += `\n#### Skills: ${userProfile.skills.join(", ")}`;
         }
       }
-      
+
       // Add job context if available
       if (relatedJob) {
         systemPrompt += `\n\n### Related Job Context:`;
@@ -669,19 +672,19 @@ Guidelines:
       }
 
       // Prepare conversation history for the model
-      const conversation = messageHistory.map(msg => ({
+      const conversation = messageHistory.map((msg) => ({
         role: msg.role,
-        content: msg.content
+        content: msg.content,
       }));
-      
+
       // Add current user message
       conversation.push({
         role: "user",
-        content: args.message
+        content: args.message,
       });
-      
+
       console.log("Calling OpenAI with context and history");
-      
+
       // Stream response from OpenAI
       const { textStream } = streamText({
         model: openai("gpt-4o-mini"),
@@ -689,18 +692,18 @@ Guidelines:
         system: systemPrompt,
         messages: conversation,
       });
-      
+
       let fullResponse = "";
-      
+
       // Collect the complete response
       for await (const delta of textStream) {
         if (delta) {
           fullResponse += delta;
         }
       }
-      
+
       console.log("Received complete response from OpenAI");
-      
+
       return fullResponse;
     } catch (error) {
       console.error("Error in chat handling:", error);

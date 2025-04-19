@@ -19,6 +19,7 @@ import { Skills } from "../components/Skills";
 import { ProfileUpdateType } from "convex/profiles";
 import { useRouter } from "@/core/hooks/use-router";
 import { useAuth } from "@/linkedin/hooks/useAuth";
+import { useEffect } from "react";
 
 const ProfilePage = () => {
   const { isAuthenticated, user } = useAuth();
@@ -27,6 +28,15 @@ const ProfilePage = () => {
   if (!isAuthenticated) {
     redirect("login");
   }
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.location.hash === "#skills") {
+      const el = document.getElementById("skills");
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth" });
+      }
+    }
+  }, []);
 
   const { data: profile, loading: isLoading } = useGetOrCreateProfile(user!.id);
   const mutation = useMutationProfile(profile?._id, user!.id);
