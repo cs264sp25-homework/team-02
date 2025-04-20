@@ -2,6 +2,7 @@ import { Button } from "@/core/components/button";
 import { Download } from "lucide-react";
 import { pdfjs } from "react-pdf";
 import { Document, Page } from "react-pdf";
+import { ErrorBoundary } from "react-error-boundary";
 import "react-pdf/dist/Page/TextLayer.css";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import { useState, useEffect, useRef } from "react";
@@ -150,44 +151,68 @@ export const PdfViewer = ({
           Download PDF
         </Button>
       </div>
-      <div
-        className="flex-1 w-full h-full overflow-auto bg-gray-200 p-6 relative"
-        ref={viewerRef}
+      <ErrorBoundary
+        fallback={<ReactPDFErrorFallback pdfUrl={pdfUrl} />}
+        onError={(error, info) => {
+          console.error("Error loading PDF:", error);
+          console.log("Error info:", info);
+        }}
       >
-        {!docReady && (
-          <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 z-10">
-            <div className="flex flex-col items-center gap-2">
-              <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-              <p className="text-sm text-gray-600">Loading PDF...</p>
-            </div>
-          </div>
-        )}
-        <Document
-          file={pdfUrl}
-          onLoad={() => {
-            setDocReady(false);
-          }}
-          onLoadSuccess={onDocumentLoadSuccess}
-          className="flex flex-col items-center"
-          options={options}
+        <div
+          className="flex-1 w-full h-full overflow-auto bg-gray-200 p-6 relative"
+          ref={viewerRef}
         >
-          {docReady &&
-            Array.from(new Array(numPages), (_, index) => (
-              <div
-                key={`page_${index + 1}`}
-                className="mb-8 shadow-lg overflow-hidden bg-white"
-              >
-                <Page
-                  pageNumber={index + 1}
-                  scale={scale}
-                  renderTextLayer={true}
-                  renderAnnotationLayer={true}
-                  className="border border-gray-200"
-                />
+          {!docReady && (
+            <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 z-10">
+              <div className="flex flex-col items-center gap-2">
+                <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                <p className="text-sm text-gray-600">Loading PDF...</p>
               </div>
-            ))}
-        </Document>
-      </div>
+            </div>
+          )}
+          <Document
+            file={pdfUrl}
+            onLoad={() => {
+              setNumPages(0);
+              setDocReady(false);
+            }}
+            onLoadSuccess={onDocumentLoadSuccess}
+            className="flex flex-col items-center"
+            options={options}
+          >
+            {docReady &&
+              Array.from(new Array(numPages), (_, index) => (
+                <div
+                  key={`page_${index + 1}`}
+                  className="mb-8 shadow-lg overflow-hidden bg-white"
+                >
+                  <Page
+                    pageNumber={index + 1}
+                    scale={scale}
+                    renderTextLayer={true}
+                    renderAnnotationLayer={true}
+                    className="border border-gray-200"
+                  />
+                </div>
+              ))}
+          </Document>
+        </div>
+      </ErrorBoundary>
     </div>
   );
 };
+
+// if react-pdf fails to load, fallback to object tag
+function ReactPDFErrorFallback({ pdfUrl }: { pdfUrl: string }) {
+  return (
+    <div className="flex-1 w-full h-full overflow-hidden">
+      <object
+        data={`${pdfUrl}#toolbar=0&navpanes=0&scrollbar=0&view=FitH`}
+        type="application/pdf"
+        className="w-full h-full"
+        style={{ maxWidth: "100%", objectFit: "contain" }}
+        title="Resume PDF Preview"
+      />
+    </div>
+  );
+}

@@ -1,10 +1,16 @@
 import { useQueryJob } from "@/jobs/hooks/use-query-job";
+import { Spinner } from "@/linkedin/components/spinner";
 
 function JobDetails({ jobId, userId }: { jobId: string; userId: string }) {
   const { data: job, loading: jobLoading } = useQueryJob(jobId, userId);
 
   if (jobLoading) {
-    return <div className="p-4">Loading job details...</div>;
+    return (
+      <div className="flex flex-col items-center justify-center h-full p-8">
+        <Spinner size="lg" />
+        <p className="mt-4 text-sm text-gray-500">Loading job details...</p>
+      </div>
+    );
   }
 
   if (!job) {

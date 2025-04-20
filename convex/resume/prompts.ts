@@ -103,3 +103,22 @@ export function getPromptForImproveResumeLine(
   }
   return basePrompt;
 }
+
+export function getPromptForResumeInsights(
+  resume: string,
+  jobDescription: string,
+) {
+  return `
+  You are a resume writer. You are given a resume and a job description. You need to write insights about the resume related to the job description.
+  Conduct a Job Requirement Match Analysis
+
+  The resume is given as a latex string below:
+  ${resume}
+
+  The job description is given as a string below:
+  ${jobDescription}
+
+  Only output the insights, do not include any other text.
+  Use markdown formatting.
+  `;
+}
