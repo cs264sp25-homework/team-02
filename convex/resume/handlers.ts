@@ -78,14 +78,21 @@ export const getResumeInsights = query({
     if (!resume || resume.userId !== userId) {
       throw new Error("Resume not found");
     }
-    return resume.resumeInsights;
+    if (!resume.resumeInsights) {
+      return undefined;
+    }
+    return resume.resumeInsights.sort((a, b) => {
+      if (a.match === "match" && b.match === "gap") return 1;
+      if (a.match === "gap" && b.match === "match") return -1;
+      return 0;
+    });
   },
 });
 
 export const updateResumeInsights = mutation({
   args: {
     resumeId: v.id("resumes"),
-    resumeInsights: resumeInsightsSchema,
+    resumeInsights: v.optional(resumeInsightsSchema),
   },
   handler: async (ctx, { resumeId, resumeInsights }) => {
     await ctx.db.patch(resumeId, {

@@ -94,39 +94,37 @@ function ResumeInsights({
         </Button>
       </div>
       <div className="flex-1 overflow-auto p-4 space-y-4">
-        {resumeInsights
-          .sort((a) => (a.match === "match" ? 1 : -1))
-          .map((insight) => (
-            <div
-              key={insight.requirement}
-              className="bg-white rounded-lg border border-gray-200 p-4 hover:border-gray-300 transition-colors"
-            >
-              <div className="flex items-start gap-3">
-                <div className="flex-shrink-0 mt-1">
-                  {insight.match === "match" ? (
-                    <CheckCircle2 className="h-5 w-5 text-green-500" />
-                  ) : (
-                    <AlertCircle className="h-5 w-5 text-amber-500" />
-                  )}
+        {resumeInsights.map((insight) => (
+          <div
+            key={insight.requirement}
+            className="bg-white rounded-lg border border-gray-200 p-4 hover:border-gray-300 transition-colors"
+          >
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 mt-1">
+                {insight.match === "match" ? (
+                  <CheckCircle2 className="h-5 w-5 text-green-500" />
+                ) : (
+                  <AlertCircle className="h-5 w-5 text-amber-500" />
+                )}
+              </div>
+              <div className="flex-1 space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-gray-900">
+                    {insight.match === "match"
+                      ? "Match Found"
+                      : "Gap Identified"}
+                  </span>
                 </div>
-                <div className="flex-1 space-y-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-gray-900">
-                      {insight.match === "match"
-                        ? "Match Found"
-                        : "Gap Identified"}
-                    </span>
-                  </div>
-                  <p className="text-sm text-gray-600">{insight.requirement}</p>
-                  {insight.comments && (
-                    <p className="text-sm text-gray-500 italic">
-                      {insight.comments}
-                    </p>
-                  )}
-                </div>
+                <p className="text-sm text-gray-600">{insight.requirement}</p>
+                {insight.comments && (
+                  <p className="text-sm text-gray-500 italic">
+                    {insight.comments}
+                  </p>
+                )}
               </div>
             </div>
-          ))}
+          </div>
+        ))}
       </div>
     </div>
   );
