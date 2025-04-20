@@ -47,7 +47,6 @@ function ResumeInsights({
   if (!resumeInsights) {
     return (
       <div className="flex flex-col items-center justify-center h-full p-8">
-        <p className="text-sm text-gray-500 mb-4">No resume insights found</p>
         <Button
           variant="outline"
           size="sm"
@@ -74,7 +73,6 @@ function ResumeInsights({
   return (
     <div className="flex flex-col h-full">
       <div className="flex justify-between items-center p-4 border-b">
-        <h2 className="text-lg font-semibold">Resume Insights</h2>
         <Button
           variant="outline"
           size="sm"
@@ -97,7 +95,7 @@ function ResumeInsights({
       </div>
       <div className="flex-1 overflow-auto p-4 space-y-4">
         {resumeInsights
-          .sort((a, b) => (a.match === "match" ? 1 : -1))
+          .sort((a) => (a.match === "match" ? 1 : -1))
           .map((insight) => (
             <div
               key={insight.requirement}

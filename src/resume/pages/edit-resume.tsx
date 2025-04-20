@@ -29,6 +29,8 @@ import {
 import JobDetails from "../components/job-details";
 import { ImproveResumeActionType } from "convex/resume/schema";
 import ResumeInsights from "../components/resume-insights";
+import { Spinner } from "@/linkedin/components/spinner";
+
 const EditResume = () => {
   const { isAuthenticated, user } = useAuth();
   const { redirect, params } = useRouter();
@@ -39,6 +41,7 @@ const EditResume = () => {
     improveResumeLineWithAI,
   } = useMutationResume();
   const [isCompiling, setIsCompiling] = useState(false);
+  const [activeTab, setActiveTab] = useState<"insights" | "job">("insights");
 
   if (!isAuthenticated) {
     redirect("login");
@@ -60,11 +63,20 @@ const EditResume = () => {
   }, [resume?.latexContent]);
 
   if (loading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="flex flex-col items-center justify-center h-full p-8">
+        <Spinner size="lg" />
+        <p className="mt-4 text-sm text-gray-500">Loading resume...</p>
+      </div>
+    );
   }
 
   if (!resume) {
-    return <div>Resume not found</div>;
+    return (
+      <div className="flex flex-col items-center justify-center h-full p-8">
+        <p className="mt-4 text-sm text-red-500">Resume not found</p>
+      </div>
+    );
   }
 
   const isGenerating = resume.generationStatus !== "completed";
@@ -118,11 +130,47 @@ const EditResume = () => {
     }
   };
 
+  const renderRightPanelContent = () => {
+    if (!resume.jobId) return null;
+
+    return (
+      <div className="flex flex-col h-full">
+        <div className="flex border-b mt-2">
+          <button
+            className={`px-4 py-2 font-medium ${
+              activeTab === "insights"
+                ? "border-b-2 border-blue-500 text-blue-600"
+                : "text-gray-500 hover:text-gray-700"
+            }`}
+            onClick={() => setActiveTab("insights")}
+          >
+            Resume Insights
+          </button>
+          <button
+            className={`px-4 py-2 font-medium ${
+              activeTab === "job"
+                ? "border-b-2 border-blue-500 text-blue-600"
+                : "text-gray-500 hover:text-gray-700"
+            }`}
+            onClick={() => setActiveTab("job")}
+          >
+            Job Details
+          </button>
+        </div>
+        <div className="flex-1 overflow-auto">
+          {activeTab === "insights" ? (
+            <ResumeInsights userId={user!.id} resumeId={resumeId} />
+          ) : (
+            <JobDetails jobId={resume.jobId} userId={user!.id} />
+          )}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <Layout
-      rightPanelContent={
-        resume.jobId && <ResumeInsights userId={user!.id} resumeId={resumeId} />
-      }
+      rightPanelContent={renderRightPanelContent()}
       leftPanelContent={
         <div className="flex flex-col h-full">
           <div className="flex justify-end p-4 border-b gap-2">
