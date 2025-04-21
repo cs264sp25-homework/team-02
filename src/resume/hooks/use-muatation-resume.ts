@@ -20,6 +20,9 @@ export const useMutationResume = () => {
   const generateResumeInsights = useAction(
     api.resume.handlers.generateResumeInsights,
   );
+  const updateResumeLaTeXContent = useMutation(
+    api.resume.handlers.updateResumeLaTeXContent,
+  );
   return {
     startResumeGeneration,
     restartResumeGeneration,
@@ -27,5 +30,6 @@ export const useMutationResume = () => {
     deleteResume,
     improveResumeLineWithAI,
     generateResumeInsights,
+    updateResumeLaTeXContent,
   };
 };
