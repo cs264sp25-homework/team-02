@@ -6,7 +6,7 @@ import { ErrorBoundary } from "react-error-boundary";
 import "react-pdf/dist/Page/TextLayer.css";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import { useState, useEffect, useRef, useMemo, memo } from "react";
-
+import { usePdfScale } from "../hooks/use-pdf-scale";
 interface PdfViewerProps {
   pdfUrl: string | null;
   generationStatus: string;
@@ -19,7 +19,7 @@ const PdfViewer = ({
   setClickedText,
 }: PdfViewerProps) => {
   const [numPages, setNumPages] = useState<number | null>(null);
-  const [scale, setScale] = useState(1.0);
+  const { scale, setScale } = usePdfScale();
   const [useFallback, setUseFallback] = useState(false);
   const viewerRef = useRef<HTMLDivElement>(null);
   const timeoutRef = useRef<NodeJS.Timeout>(null);
