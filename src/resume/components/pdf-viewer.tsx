@@ -5,7 +5,7 @@ import { Document, Page } from "react-pdf";
 import { ErrorBoundary } from "react-error-boundary";
 import "react-pdf/dist/Page/TextLayer.css";
 import "react-pdf/dist/Page/AnnotationLayer.css";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 
 interface PdfViewerProps {
   pdfUrl: string | null;
@@ -13,22 +13,30 @@ interface PdfViewerProps {
   setClickedText: (text: string) => void;
 }
 
-const options = {
-  cMapUrl: "/cmaps/",
-  standardFontDataUrl: "/standard_fonts/",
-};
-
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
-
 export const PdfViewer = ({
   pdfUrl,
   generationStatus,
   setClickedText,
 }: PdfViewerProps) => {
-  const [numPages, setNumPages] = useState<number>(0);
+  const [numPages, setNumPages] = useState<number | null>(null);
   const [scale, setScale] = useState(1.0);
   const viewerRef = useRef<HTMLDivElement>(null);
-  const [docReady, setDocReady] = useState(false);
+
+  const options = useMemo(
+    () => ({
+      cMapUrl: "/cmaps/",
+      standardFontDataUrl: "/standard_fonts/",
+    }),
+    [],
+  );
+
+  useEffect(() => {
+    pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+  }, []);
+
+  useEffect(() => {
+    setNumPages(null);
+  }, [pdfUrl]);
 
   useEffect(() => {
     const handleTextLayerClick = (event: MouseEvent) => {
@@ -80,9 +88,6 @@ export const PdfViewer = ({
 
   const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
     setNumPages(numPages);
-    setTimeout(() => {
-      setDocReady(true);
-    }, 200);
   };
 
   const zoomIn = () => {
@@ -162,7 +167,7 @@ export const PdfViewer = ({
           className="flex-1 w-full h-full overflow-auto bg-gray-200 p-6 relative"
           ref={viewerRef}
         >
-          {!docReady && (
+          {!numPages && (
             <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 z-10">
               <div className="flex flex-col items-center gap-2">
                 <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
@@ -172,15 +177,12 @@ export const PdfViewer = ({
           )}
           <Document
             file={pdfUrl}
-            onLoad={() => {
-              setNumPages(0);
-              setDocReady(false);
-            }}
             onLoadSuccess={onDocumentLoadSuccess}
             className="flex flex-col items-center"
             options={options}
+            key={pdfUrl}
           >
-            {docReady &&
+            {numPages &&
               Array.from(new Array(numPages), (_, index) => (
                 <div
                   key={`page_${index + 1}`}
