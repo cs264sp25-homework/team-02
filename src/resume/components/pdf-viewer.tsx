@@ -20,7 +20,9 @@ export const PdfViewer = ({
 }: PdfViewerProps) => {
   const [numPages, setNumPages] = useState<number | null>(null);
   const [scale, setScale] = useState(1.0);
+  const [useFallback, setUseFallback] = useState(false);
   const viewerRef = useRef<HTMLDivElement>(null);
+  const timeoutRef = useRef<NodeJS.Timeout>(null);
 
   const options = useMemo(
     () => ({
@@ -36,7 +38,26 @@ export const PdfViewer = ({
 
   useEffect(() => {
     setNumPages(null);
-  }, [pdfUrl]);
+    setUseFallback(false);
+
+    // Clear any existing timeout
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+
+    // Set a new timeout
+    if (pdfUrl) {
+      timeoutRef.current = setTimeout(() => {
+        setUseFallback(true);
+      }, 3000);
+    }
+
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, [pdfUrl]); // Only depend on pdfUrl changes
 
   useEffect(() => {
     const handleTextLayerClick = (event: MouseEvent) => {
@@ -88,6 +109,10 @@ export const PdfViewer = ({
 
   const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
     setNumPages(numPages);
+    // Clear the timeout since PDF loaded successfully
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
   };
 
   const zoomIn = () => {
@@ -120,6 +145,25 @@ export const PdfViewer = ({
             ? "Your PDF is ready to view"
             : "Please wait for the generation to complete"}
         </p>
+      </div>
+    );
+  }
+
+  if (useFallback) {
+    return (
+      <div className="flex flex-col h-full">
+        <div className="flex justify-between items-center p-4 border-b bg-white">
+          <Button
+            onClick={handleDownloadPdf}
+            variant="outline"
+            size="sm"
+            className="flex items-center gap-2"
+          >
+            <Download className="h-4 w-4" />
+            Download PDF
+          </Button>
+        </div>
+        <ReactPDFErrorFallback pdfUrl={pdfUrl} />
       </div>
     );
   }
@@ -175,6 +219,7 @@ export const PdfViewer = ({
               </div>
             </div>
           )}
+
           <Document
             file={pdfUrl}
             onLoadSuccess={onDocumentLoadSuccess}
