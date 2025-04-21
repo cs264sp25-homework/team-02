@@ -5,7 +5,7 @@ import { Document, Page } from "react-pdf";
 import { ErrorBoundary } from "react-error-boundary";
 import "react-pdf/dist/Page/TextLayer.css";
 import "react-pdf/dist/Page/AnnotationLayer.css";
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, memo } from "react";
 
 interface PdfViewerProps {
   pdfUrl: string | null;
@@ -13,7 +13,7 @@ interface PdfViewerProps {
   setClickedText: (text: string) => void;
 }
 
-export const PdfViewer = ({
+const PdfViewer = ({
   pdfUrl,
   generationStatus,
   setClickedText,
@@ -263,3 +263,5 @@ function ReactPDFErrorFallback({ pdfUrl }: { pdfUrl: string }) {
     </div>
   );
 }
+
+export default memo(PdfViewer);

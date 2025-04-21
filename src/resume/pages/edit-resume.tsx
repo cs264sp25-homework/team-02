@@ -3,7 +3,7 @@ import { useAuth } from "@/linkedin/hooks/useAuth";
 import { useRouter } from "@/core/hooks/use-router";
 import { Id } from "convex/_generated/dataModel";
 import { useQueryResume } from "../hooks/use-query-resume";
-import { PdfViewer } from "../components/pdf-viewer";
+import PdfViewer from "../components/pdf-viewer";
 import { CodeEditor } from "../components/code-editor";
 import { useMutationResume } from "../hooks/use-muatation-resume";
 import { Button } from "@/core/components/button";
