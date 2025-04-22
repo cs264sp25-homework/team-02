@@ -205,7 +205,7 @@ const EditResume = () => {
           <div className="flex justify-between p-4 border-b">
             <div className="flex items-center gap-2">
               {isSaving ? (
-                <div className="flex items-center text-sm text-gray-500">
+                <div className="flex items-center text-sm text-gray-500 mt-2">
                   <Loader2 className="h-4 w-4 animate-spin mr-2" />
                   Saving...
                 </div>
