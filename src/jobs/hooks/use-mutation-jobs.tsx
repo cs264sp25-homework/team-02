@@ -45,11 +45,18 @@ export function useAddJob(userId: string) {
         applicationUrl,
       });
 
-      await extractRequiredSkills({
-        jobId: jobId,
-        userId,
-        requirements: jobData.description,
-      });
+      console.log("description", jobData.description);
+
+      if (
+        jobData.description &&
+        jobData.description !== "No requirements found"
+      ) {
+        await extractRequiredSkills({
+          jobId: jobId,
+          userId,
+          requirements: jobData.description,
+        });
+      }
 
       return jobId;
     } catch (error) {

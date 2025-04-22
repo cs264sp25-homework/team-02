@@ -12,6 +12,10 @@ import { useAuth } from "@/linkedin/hooks/useAuth";
 import { useQueryJob } from "../hooks/use-query-job";
 import { Button } from "@/core/components/button";
 import SkillsCard from "../components/SkillsCard";
+import SummaryCard from "../components/SummaryCard";
+import { api } from "../../../convex/_generated/api";
+import { useAction } from "convex/react";
+import { useEffect, useState } from "react";
 
 const JobFitPage = () => {
   const { isAuthenticated, user } = useAuth();
@@ -29,16 +33,53 @@ const JobFitPage = () => {
 
   const userSkills = profile?.skills || [];
   const requiredSkills = job?.requiredSkills || [];
-  console.log("User Skills:", userSkills);
-  console.log("Required Skills:", requiredSkills);
+
+  const [summary, setSummary] = useState<string>("");
+
+  const getJobFitSummary = useAction(api.jobFitSummary.generateJobFitSummary);
+
+  useEffect(() => {
+    // Don't run until job, profile, and user are all available
+    if (!job || !profile || !user) return;
+
+    // Don't regenerate if the summary already exists
+    if (job.jobFitSummary && job.jobFitSummary !== "") {
+      setSummary(job.jobFitSummary);
+      return;
+    }
+
+    // Only fetch the summary if it's empty
+    const fetchJobFitSummary = async () => {
+      try {
+        const jobFitSummary = await getJobFitSummary({
+          jobId,
+          userId: user.id,
+        });
+        setSummary(jobFitSummary);
+      } catch (error) {
+        console.error("Error fetching job fit summary:", error);
+      }
+    };
+
+    fetchJobFitSummary();
+  }, [job, profile, user, getJobFitSummary, jobId]);
+
+  if (loading || jobLoading || !profile || !job) {
+    return (
+      <div className="container mx-auto max-w-5xl px-4 py-8">
+        <Card>
+          <CardContent>
+            <p className="text-gray-500">Loading...</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   if (userSkills.length === 0) {
     return (
       <div className="container mx-auto max-w-5xl px-4 py-8">
         <Card>
-          <CardHeader>
-            <CardTitle>Job Fit Analysis</CardTitle>
-          </CardHeader>
           <CardContent>
             <p className="text-gray-500">
               You need to add skills to your profile before we can analyze your
@@ -91,15 +132,13 @@ const JobFitPage = () => {
 
   return (
     <div className="container mx-auto max-w-5xl px-4 py-8">
-      <Card>
-        <CardHeader>
-          <CardTitle>Job Fit Analysis</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="mb-6">
-            <h2 className="text-xl font-semibold mb-5">
-              Fit Level: {fitLevel}
-            </h2>
+      <h1 className="text-4xl font-bold mb-5">Job Fit Analysis</h1>
+      <div className="flex flex-col space-y-8">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-xl">Fit Level: {fitLevel}</CardTitle>
+          </CardHeader>
+          <CardContent>
             <div className="relative w-full">
               <Progress
                 value={fitPercentage}
@@ -109,17 +148,19 @@ const JobFitPage = () => {
                 {Math.round(fitPercentage)}%
               </span>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
-        <SkillsCard title="Matched Skills" skills={matchedSkills} />
-        <SkillsCard
-          title="Missing Skills"
-          skills={missingSkills}
-          textColor="text-red-500"
-        />
+        <SummaryCard title="Analysis Summary" summary={summary}></SummaryCard>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <SkillsCard title="Matched Skills" skills={matchedSkills} />
+          <SkillsCard
+            title="Missing Skills"
+            skills={missingSkills}
+            textColor="text-red-500"
+          />
+        </div>
       </div>
     </div>
   );

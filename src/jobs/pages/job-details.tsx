@@ -37,6 +37,7 @@ const JobDetailsPage = () => {
     userId: user!.id,
   });
   const getAiGeneratedJobQuestions = useAction(api.openai.generateJobQuestions);
+  const extractRequiredSkills = useAction(api.jobs.extractRequiredSkills);
 
   const refineResponse = useAction(api.openai.refineResponse);
   const regenerateResponse = useAction(api.openai.regenerateResponse);
@@ -46,7 +47,6 @@ const JobDetailsPage = () => {
   // Initialize and update answers when job data changes
   useEffect(() => {
     if (job?.answers) {
-      console.log("Updating answers from job:", job.answers);
       setAnswers(job.answers);
     }
   }, [job?.answers]);
@@ -62,7 +62,6 @@ const JobDetailsPage = () => {
         file,
         "eng", // Language (English in this case)
       );
-      console.log(text);
 
       let jobUpdated: boolean;
 
@@ -73,6 +72,12 @@ const JobDetailsPage = () => {
           jobId: job!._id,
           description: text,
         });
+
+        await extractRequiredSkills({
+          jobId: jobId,
+          userId: user!.id,
+          requirements: text,
+        });
       } else {
         // update the job questions
         jobUpdated = await updateJob({
@@ -82,10 +87,7 @@ const JobDetailsPage = () => {
         });
       }
 
-      console.log("Updated job:", jobUpdated);
-
       if (jobUpdated) {
-        console.log("Image parsed and job updated successfully");
         toast.success("Image parsed and job updated successfully");
         const answersFromAi = await getAiGeneratedJobQuestions({
           jobTitle: job!.title,
@@ -99,7 +101,6 @@ const JobDetailsPage = () => {
           answers: answersFromAi,
         });
         if (jobUpdated) {
-          console.log("Setting AI-generated answers:", answersFromAi);
           setAnswers(answersFromAi);
           toast.success("AI-generated answers updated successfully");
         }
@@ -112,7 +113,6 @@ const JobDetailsPage = () => {
 
   const saveAnswer = async (index: number, answer: string) => {
     try {
-      console.log("Saving answer at index:", index, "Answer:", answer);
       const saved = await updateAnswer(user!.id, jobId, index, answer);
       if (saved) {
         // Update local state immediately for better UX
@@ -193,11 +193,9 @@ const JobDetailsPage = () => {
 
     if (newResponse) {
       // Update the specific answer in the state
-      console.log("new response:", newResponse);
       // Update the answer in the database
       const updated = await updateAnswer(user!.id, jobId, index, newResponse);
       if (updated) {
-        console.log("Answer updated successfully");
         toast.success("Response updated successfully in db");
       } else {
         console.error("Failed to update answer");

@@ -4,7 +4,6 @@ import { mutation, query, action } from "./_generated/server";
 import { Id } from "./_generated/dataModel";
 import { ConvexError } from "convex/values";
 import OpenAI from "openai";
-import { internal } from "./_generated/api";
 import { api } from "./_generated/api";
 
 /******************************************************************************
@@ -39,6 +38,8 @@ export const jobInSchema = {
   updatedAt: v.string(),
 
   requiredSkills: v.optional(v.array(v.string())),
+
+  jobFitSummary: v.optional(v.string()),
 };
 
 // eslint-disable-next-line
@@ -58,6 +59,7 @@ export const jobUpdateSchema = {
   postingUrl: v.optional(v.string()),
   applicationUrl: v.optional(v.string()),
   requiredSkills: v.optional(v.array(v.string())),
+  jobFitSummary: v.optional(v.string()),
 };
 
 // eslint-disable-next-line
@@ -131,6 +133,7 @@ export const addJob = mutation({
       applicationUrl: applicationUrl,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
+      jobFitSummary: "",
     });
 
     return jobId;
@@ -355,13 +358,16 @@ export const extractRequiredSkills = action({
   },
   handler: async (ctx, args) => {
     console.log("Starting extractRequiredSkills");
+    console.log("requirements", args.requirements);
+
     const systemPrompt = `You are good at extracting skills from a given string. Your role is to extract skills from a given text and put them into an array.
 
       Instructions:
-      1. Review the provided text and identify the key job requirements.
-      2. Extract the requirements in a clear and concise manner. Don't add markdown or formatting. 
-      3. Ensure that the extracted requirements is 1-2 words long.
-      3. Ensure that the extracted requirements are relevant to the job title and context.
+      1. Review the provided requirements and identify the critical skills relevant to the job.
+      2. Extract the skills in a clear and concise manner. Don't add markdown or formatting. 
+      3. Ensure that the extracted skills is 1-2 words long.
+      3. Ensure that the extracted skills are relevant to the job title and context. For example, if the job title is "Software Engineer", skills like "JavaScript" or "React" would be relevant.
+      If the job title is "Product Manager", skills like "Agile methodology" or "Product management" or "SQL" or "data analysis" would be relevant.
 
       Requirements:
       ${args.requirements}
@@ -385,7 +391,7 @@ something uncertain
 » Founder Juice: New ideas come from you, you build it yourself or annoy
 everyone until it's done ;)
 
-      Output: '["Typescript", "React", "Node", "communication", "organization", "startup-ready", "founder-mindset"]'
+      Output: '["Typescript", "React", "Node", "communication"]'
       """
 
       """
@@ -410,10 +416,7 @@ to be correct and run fast, but we're the ones that have to read it and understa
       - Is comfortable with ambiguity and defining software architecture patterns to solve customer
 pain points.
 
-
-
-      Output: '["Typescript", "React", "Node", 
-      , "product-focused mindset", "clean code", "maintainable software", "documentation", "AI tools", "deployment"]'
+      Output: '["Typescript", "React", "Node", "AI"]'
       """
 
       """
@@ -425,7 +428,7 @@ A proven top performer in previous experiences, consistently hitting and exceedi
 Positive mindset with ability to navigate change and quickly adapt
 Proficiency with CRM software and other sales tools preferred
 
-      Output: '["cold calling", "grit", "resilience", "communication", "prioritization", "self-motivated", "disciplined", "organized", "top performer", "positive mindset", "CRM software"]'  
+      Output: '["cold calling", "communication", "CRM software", "sales toools"]'  
 
       """
 
@@ -454,6 +457,10 @@ Proficiency with CRM software and other sales tools preferred
         if (!parsedSkillsArray || !Array.isArray(parsedSkillsArray)) {
           throw new Error("Invalid JSON structure received from OpenAI.");
         }
+
+        if (parsedSkillsArray.length === 0) {
+          throw new Error("Failed to extract skills from requirements.");
+        }
       } catch (parseError) {
         console.error(
           "Failed to parse OpenAI JSON response:",
@@ -468,7 +475,7 @@ Proficiency with CRM software and other sales tools preferred
       await ctx.runMutation(api.jobs.updateJob, {
         userId: args.userId,
         jobId: args.jobId as Id<"jobs">,
-        requiredSkills: parsedSkillsArray || [],
+        requiredSkills: parsedSkillsArray,
       });
     } catch (error) {
       console.error(
