@@ -20,6 +20,7 @@ export const generationStatus = v.union(
   v.literal("generating tailored profile"), // (AI) use generateObject to generate a profile that is tailored to the job description
   v.literal("generating tailored resume"), // fit the profile to the resume latex template
   v.literal("enhancing resume with AI"), // (AI) use streamText to enhance the resume with AI and any user instructions
+  v.literal("providing resume insights"), // (AI) provide insights about the resume job fit
   v.literal("compiling resume"), // use compileLatex to compile the resume
   v.literal("completed"), // resume is ready to be viewed
   v.literal("failed"), // generation failed
