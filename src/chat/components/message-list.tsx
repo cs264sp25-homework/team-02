@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import React from "react";
 import { cn } from "@/core/lib/utils";
 import { MessageType } from "@/chat/types/messages";
@@ -82,6 +83,7 @@ export const MessageList: React.FC<MessageListProps> = ({
                               </pre>
                             )
                           },
+                          // eslint-disable-next-line @typescript-eslint/no-unused-vars
                           table: ({node, ...props}) => <div className="overflow-x-auto my-4"><table className="min-w-full border-collapse border border-gray-300" {...props} /></div>,
                           thead: ({node, ...props}) => <thead className={`${isUser ? "bg-blue-600" : "bg-gray-200"}`} {...props} />,
                           tbody: ({node, ...props}) => <tbody {...props} />,
