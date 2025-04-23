@@ -18,7 +18,6 @@ import {
   HelpCircle,
   MoreHorizontal,
   ClipboardList,
-  FileEdit,
 } from "lucide-react";
 import { Id } from "convex/_generated/dataModel";
 import {
