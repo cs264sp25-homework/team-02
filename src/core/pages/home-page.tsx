@@ -230,7 +230,7 @@ const HomePage = () => {
                               size="sm"
                               className="w-full justify-start"
                               onClick={() => {
-                                navigate("interview_prep");
+                                navigate("interview_prep", { jobId: job._id });
                               }}
                             >
                               <HelpCircle className="mr-2 h-4 w-4" />

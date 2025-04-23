@@ -1,8 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAction, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Button } from "@/core/components/button";
-import { Label } from "@/core/components/label";
 import { toast } from "sonner";
 import {
   Card,
@@ -12,13 +11,7 @@ import {
 } from "@/core/components/card";
 import { Loader2 } from "lucide-react";
 import { Id } from "../../../convex/_generated/dataModel";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/core/components/select";
+import { useRouter } from "@/core/hooks/use-router";
 import { useAuth } from "@/linkedin/hooks/useAuth";
 
 interface GeneratedQuestions {
@@ -27,28 +20,36 @@ interface GeneratedQuestions {
 }
 
 export default function InterviewPrepPage() {
-  const [selectedJobId, setSelectedJobId] = useState<Id<"jobs"> | null>(null);
+  const { params } = useRouter();
+  const jobId = params.jobId as Id<"jobs"> | undefined;
+  const { user } = useAuth();
+  const userId = user?.id;
+
   const [generatedQuestions, setGeneratedQuestions] =
     useState<GeneratedQuestions | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  const { user } = useAuth();
-  const userId = user?.id;
-
-  const jobs = useQuery(api.jobs.getAllJobs, !userId ? "skip" : { userId });
+  const job = useQuery(
+    api.jobs.getJobById,
+    jobId && userId ? { jobId, userId } : "skip",
+  );
 
   const generateInterviewQuestions = useAction(
     api.interviewPrep.generateQuestions,
   );
 
+  useEffect(() => {
+    setGeneratedQuestions(null);
+  }, [jobId]);
+
   const handleGenerate = async () => {
-    if (!selectedJobId) {
-      toast.error("Please select a job first.");
+    if (!jobId) {
+      toast.error("Job ID not found in parameters.");
       return;
     }
 
     if (!userId) {
-      toast.error("User ID not found. Please ensure you are logged in.");
+      toast.error("User not authenticated. Please log in.");
       return;
     }
 
@@ -57,7 +58,7 @@ export default function InterviewPrepPage() {
 
     try {
       const result = await generateInterviewQuestions({
-        jobId: selectedJobId,
+        jobId: jobId,
         userId: userId,
       });
       setGeneratedQuestions(result);
@@ -80,13 +81,20 @@ export default function InterviewPrepPage() {
     }
   };
 
-  if (!userId) {
+  if (!userId || !jobId) {
     return (
       <div className="container mx-auto p-4 md:p-6 lg:p-8 max-w-4xl text-center">
-        <p>Please log in to use the Interview Question Generator.</p>
+        <p>
+          {!jobId
+            ? "Missing Job ID. Please navigate from the job list."
+            : "User not authenticated. Please log in."}
+        </p>
       </div>
     );
   }
+
+  const jobIsLoading = job === undefined;
+  const jobTitle = job ? job.title : "Loading job details...";
 
   return (
     <div className="container mx-auto p-4 md:p-6 lg:p-8 max-w-4xl space-y-6">
@@ -94,46 +102,19 @@ export default function InterviewPrepPage() {
         Interview Question Generator
       </h1>
       <p className="text-muted-foreground">
-        Select a job from your list to generate potential technical and
-        non-technical interview questions based on its details.
+        Generating potential interview questions for job:
+        <span className="font-medium ml-1">{jobTitle}</span>
+        {job ? ` (ID: ${job._id.substring(0, 6)}...)` : ""}
       </p>
 
-      <div className="space-y-2">
-        <Label htmlFor="job-select">Select Job</Label>
-        <Select
-          value={selectedJobId ?? undefined}
-          onValueChange={(value) => setSelectedJobId(value as Id<"jobs">)}
-          disabled={isLoading || !jobs}
-        >
-          <SelectTrigger id="job-select" className="w-full">
-            <SelectValue placeholder="Select a job..." />
-          </SelectTrigger>
-          <SelectContent>
-            {!jobs ? (
-              <SelectItem value="" disabled>
-                Loading jobs...
-              </SelectItem>
-            ) : jobs.length === 0 ? (
-              <SelectItem value="" disabled>
-                No jobs found. Please add a job first.
-              </SelectItem>
-            ) : (
-              jobs.map((job) => (
-                <SelectItem key={job._id} value={job._id}>
-                  {job.title} (ID: {job._id.substring(0, 6)}...)
-                </SelectItem>
-              ))
-            )}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <Button onClick={handleGenerate} disabled={isLoading || !selectedJobId}>
+      <Button onClick={handleGenerate} disabled={isLoading || jobIsLoading}>
         {isLoading ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             Generating...
           </>
+        ) : jobIsLoading ? (
+          "Loading Job Details..."
         ) : (
           "Generate Questions"
         )}
