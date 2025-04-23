@@ -17,10 +17,13 @@ export function useChat() {
   const [isCreating, setIsCreating] = useState(false);
   const [aiMessageId, setAiMessageId] = useState<string | null>(null);
   const [streamingContent, setStreamingContent] = useState<string>("");
+  const [isStreamingDone, setIsStreamingDone] = useState(true);
   
   // Polling interval reference
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const prevContentLengthRef = useRef<number>(0);
+  const streamingContentRef = useRef<string>("");
+  const aiMessageRef = useRef<typeof aiMessage>(null);
   
   // Get chat mutations
   const chatMutations = useMutationChats();
@@ -36,6 +39,14 @@ export function useChat() {
     api.messages.getMessageById,
     aiMessageId ? { messageId: aiMessageId as Id<"messages"> } : "skip"
   );
+
+  // Keep refs in sync with state
+  useEffect(() => {
+    streamingContentRef.current = streamingContent;
+  }, [streamingContent]);
+  useEffect(() => {
+    aiMessageRef.current = aiMessage;
+  }, [aiMessage]);
 
   // Clean up polling interval on unmount
   useEffect(() => {
@@ -87,41 +98,52 @@ export function useChat() {
       clearInterval(pollingIntervalRef.current);
     }
     
-    // Reset streaming content
+    // Reset streaming content and streaming done state
     setStreamingContent("");
     prevContentLengthRef.current = 0;
+    setIsStreamingDone(false);
+    let unchangedCount = 0;
     
     // Start polling for updates to the AI message
     const interval = setInterval(() => {
+      const currentAiMessage = aiMessageRef.current;
+      const currentStreamingContent = streamingContentRef.current;
       // Check if we have the AI message content
-      if (aiMessage) {
-        if (aiMessage.content && aiMessage.content !== streamingContent) {
-          const newContent = aiMessage.content;
+      if (currentAiMessage) {
+        if (currentAiMessage.content && currentAiMessage.content !== currentStreamingContent) {
+          const newContent = currentAiMessage.content;
           
           // Only get the new part of the message since last update
           if (newContent.length > prevContentLengthRef.current) {
             // Update streaming content with the full content
             setStreamingContent(newContent);
             prevContentLengthRef.current = newContent.length;
+            unchangedCount = 0;
           }
+        } else if (currentAiMessage.content && currentStreamingContent === currentAiMessage.content && currentStreamingContent.length > 0) {
+          // If content hasn't changed, increment unchanged count
+          unchangedCount++;
         }
         
         // If the message seems complete (hasn't changed in a while), stop polling
-        if (aiMessage.content && 
-            aiMessage.content.length > 0 && 
-            streamingContent === aiMessage.content && 
-            streamingContent.length > 10) {
+        if (currentAiMessage.content && 
+            currentAiMessage.content.length > 0 && 
+            currentStreamingContent === currentAiMessage.content && 
+            currentStreamingContent.length > 10 &&
+            unchangedCount > 2 // ~900ms of no change
+        ) {
           // If the message is complete, stop polling
           clearInterval(interval);
           pollingIntervalRef.current = null;
           setIsSending(false);
           setAiMessageId(null);
+          setIsStreamingDone(true);
         }
       }
     }, 300); // Poll frequently for smoother streaming
     
     pollingIntervalRef.current = interval;
-  }, [aiMessage, streamingContent]);
+  }, []);
 
   // Effect to start polling when AI message ID changes
   useEffect(() => {
@@ -138,6 +160,7 @@ export function useChat() {
     
     // Set sending state - will disable the input
     setIsSending(true);
+    setIsStreamingDone(false);
     
     try {
       // Send the message and get the result
@@ -157,6 +180,7 @@ export function useChat() {
       console.error("Error sending message:", error);
       toast.error("Failed to send message");
       setIsSending(false);
+      setIsStreamingDone(true);
       return false;
     }
   }, [chatId, user, createAndGenerateResponse]);
@@ -170,6 +194,7 @@ export function useChat() {
     createChat,
     sendMessage,
     aiMessageId,
-    aiMessageContent: streamingContent || (aiMessage?.content || "")
+    aiMessageContent: streamingContent || (aiMessage?.content || ""),
+    isStreamingDone
   };
 }
