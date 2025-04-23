@@ -116,8 +116,8 @@ const ChatPage = () => {
         "fixed top-0 left-0 h-screen border-r bg-white z-30 transition-all duration-300",
         sidebarCollapsed ? "w-16" : "w-64"
       )}>
-        <div className="pt-12 flex flex-col h-full"> {/* pt-12 = 48px for navbar height */}
-          <div className="flex items-center justify-between px-6 py-3 border-b"> {/* px-6/py-4 to match chat header */}
+        <div className="pt-12 flex flex-col h-full bg-white"> {/* Ensure sidebar content is white */}
+          <div className="flex items-center justify-between px-6 py-3 border-b bg-white"> {/* Sidebar header bg white */}
             <span className="font-bold text-lg text-gray-700">{!sidebarCollapsed && "Chats"}</span>
             <Button variant="ghost" size="icon" onClick={toggleSidebarCollapsed}>
               {sidebarCollapsed ? <MenuIcon className="h-5 w-5" /> : <XIcon className="h-5 w-5" />}
@@ -132,13 +132,18 @@ const ChatPage = () => {
         sidebarCollapsed ? "md:ml-16" : "md:ml-64",
         "pt-12" // 48px for navbar
       )}>
-        {/* Header: fixed below navbar, flush with sidebar */}
+        {/* Header: fixed below navbar, always visible, 64px height */}
         <header
-          className="fixed z-40 flex items-center px-6 py-4 border-b bg-white/90 backdrop-blur-md w-full"
+          className="fixed z-40 flex items-center px-6 border-b bg-white w-full backdrop-blur-md"
           style={{
             left: sidebarCollapsed ? 64 : 256,
             top: 48, // navbar height
-            width: `calc(100% - ${(sidebarCollapsed ? 64 : 256)}px)`
+            width: `calc(100% - ${(sidebarCollapsed ? 64 : 256)}px)`,
+            height: 64,
+            minHeight: 64,
+            maxHeight: 64,
+            paddingTop: 0,
+            paddingBottom: 0
           }}
         >
           <Button
@@ -153,13 +158,13 @@ const ChatPage = () => {
             {chatId ? selectedChat?.title || "Chat" : "JobSync Assistant"}
           </h1>
         </header>
-        {/* Messages: margin top for header */}
+        {/* Messages: margin top for header (64px) */}
         <div
-          className="flex-1 overflow-y-auto px-0 md:px-0 bg-gray-50 scrollbar-none"
+          className="flex-1 overflow-y-auto px-0 md:px-0 bg-white custom-scrollbar"
           ref={messagesEndRef}
-          style={{ minHeight: 0, marginTop: 72 }} // 48px navbar + 24px header
+          style={{ minHeight: 0, marginTop: 64 + 8, paddingBottom: 120 }} // 64px header + 8px gap
         >
-          <div className="max-w-2xl mx-auto pt-6 pb-8">
+          <div className="max-w-2xl mx-auto pt-6 pb-4">
             {!chatId ? (
               <div className="flex flex-col items-center justify-center h-full p-4 text-center">
                 <h1 className="text-2xl font-semibold mb-2">JobSync Assistant</h1>

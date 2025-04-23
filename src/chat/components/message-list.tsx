@@ -19,7 +19,7 @@ export const MessageList: React.FC<MessageListProps> = ({
   aiMessageContent 
 }) => {
   return (
-    <div className="space-y-4 py-3">
+    <div className="space-y-4 py-3 w-full max-w-3xl mx-auto pb-4">
       {messages.map((message) => {
         const isUser = message.role === "user";
         const isCurrentlyGenerating = message.role === "assistant" && message._id === aiMessageId;
