@@ -132,18 +132,13 @@ const ChatPage = () => {
         sidebarCollapsed ? "md:ml-16" : "md:ml-64",
         "pt-12" // 48px for navbar
       )}>
-        {/* Header: fixed below navbar, always visible, 64px height */}
+        {/* Header: fixed below navbar, flush with sidebar */}
         <header
-          className="fixed z-40 flex items-center px-6 border-b bg-white w-full backdrop-blur-md"
+          className="fixed z-40 flex items-center px-6 py-4 border-b bg-white w-full backdrop-blur-md"
           style={{
             left: sidebarCollapsed ? 64 : 256,
             top: 48, // navbar height
-            width: `calc(100% - ${(sidebarCollapsed ? 64 : 256)}px)`,
-            height: 64,
-            minHeight: 64,
-            maxHeight: 64,
-            paddingTop: 0,
-            paddingBottom: 0
+            width: `calc(100% - ${(sidebarCollapsed ? 64 : 256)}px)`
           }}
         >
           <Button
@@ -158,11 +153,11 @@ const ChatPage = () => {
             {chatId ? selectedChat?.title || "Chat" : "JobSync Assistant"}
           </h1>
         </header>
-        {/* Messages: margin top for header (64px) */}
+        {/* Messages: margin top for header */}
         <div
           className="flex-1 overflow-y-auto px-0 md:px-0 bg-white custom-scrollbar"
           ref={messagesEndRef}
-          style={{ minHeight: 0, marginTop: 64 + 8, paddingBottom: 120 }} // 64px header + 8px gap
+          style={{ minHeight: 0, marginTop: 72, paddingBottom: 120 }} // 120px bottom padding to keep messages above input
         >
           <div className="max-w-2xl mx-auto pt-6 pb-4">
             {!chatId ? (
