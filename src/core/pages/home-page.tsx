@@ -12,7 +12,13 @@ import { Skeleton } from "@/core/components/skeleton";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { JobType } from "convex/jobs";
-import { PlusCircle, FileText, Trash2, HelpCircle } from "lucide-react";
+import {
+  PlusCircle,
+  Trash2,
+  HelpCircle,
+  MoreHorizontal,
+  ClipboardList,
+} from "lucide-react";
 import { Id } from "convex/_generated/dataModel";
 import {
   AlertDialog,
@@ -24,6 +30,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/core/components/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/core/components/dropdown-menu";
 import { toast } from "sonner";
 import EditableJobTitle from "@/jobs/components/EditableJobTitle";
 import CustomizeResumeButton from "@/resume/components/customize-resume-button";
@@ -179,33 +190,54 @@ const HomePage = () => {
                       <td className="px-4 py-3">
                         {new Date(job.createdAt).toLocaleDateString()}
                       </td>
-                      <td className="px-4 py-3 text-right space-x-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate("job_details", { jobId: job._id });
-                          }}
-                        >
-                          <FileText className="mr-2 h-4 w-4" />
-                          Job Application Questions
-                        </Button>
-                        <CustomizeResumeButton
-                          jobId={job._id}
-                          userId={user!.id}
-                        />
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate("interview_prep");
-                          }}
-                        >
-                          <HelpCircle className="mr-2 h-4 w-4" />
-                          Prep Questions
-                        </Button>
+                      <td className="px-4 py-3 text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 w-8 p-0 data-[state=open]:bg-muted"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <MoreHorizontal className="h-4 w-4" />
+                              <span className="sr-only">Open menu</span>
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent
+                            align="end"
+                            className="w-auto p-2 space-y-1"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="w-full justify-start"
+                              onClick={() => {
+                                navigate("job_details", { jobId: job._id });
+                              }}
+                            >
+                              <ClipboardList className="mr-2 h-4 w-4" />
+                              Job Application Questions
+                            </Button>
+                            <div onClick={(e) => e.stopPropagation()}>
+                              <CustomizeResumeButton
+                                jobId={job._id}
+                                userId={user!.id}
+                              />
+                            </div>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="w-full justify-start"
+                              onClick={() => {
+                                navigate("interview_prep", { jobId: job._id });
+                              }}
+                            >
+                              <HelpCircle className="mr-2 h-4 w-4" />
+                              Interview Prep
+                            </Button>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </td>
                     </tr>
                   ))}
