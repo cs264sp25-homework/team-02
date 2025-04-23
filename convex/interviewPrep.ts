@@ -1,6 +1,9 @@
 import { action } from "./_generated/server";
 import { v } from "convex/values";
 import OpenAI from "openai";
+import { Id } from "./_generated/dataModel";
+import { ActionCtx } from "./_generated/server";
+import { api } from "./_generated/api";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -14,10 +17,27 @@ interface GeneratedQuestions {
 
 export const generateQuestions = action({
   args: {
-    jobDetailsText: v.string(),
+    jobId: v.id("jobs"),
+    userId: v.string(),
   },
-  handler: async (_, args): Promise<GeneratedQuestions> => {
-    if (!args.jobDetailsText) {
+  handler: async (
+    ctx: ActionCtx,
+    args: { jobId: Id<"jobs">; userId: string },
+  ): Promise<GeneratedQuestions> => {
+    const job = await ctx.runQuery(api.jobs.getJobById, {
+      userId: args.userId,
+      jobId: args.jobId,
+    });
+
+    if (!job) {
+      throw new Error(
+        `Job with ID ${args.jobId} not found or not accessible by user ${args.userId}.`,
+      );
+    }
+
+    const jobDetailsText = job.description;
+
+    if (!jobDetailsText) {
       throw new Error("Job details text cannot be empty.");
     }
 
@@ -36,7 +56,7 @@ Do not include any introductory text, explanations, or markdown formatting outsi
 `;
 
     const userPrompt = `Job Details:
-${args.jobDetailsText}`;
+${jobDetailsText}`;
 
     try {
       const completion = await openai.chat.completions.create({

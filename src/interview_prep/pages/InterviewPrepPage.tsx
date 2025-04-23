@@ -1,8 +1,7 @@
 import { useState } from "react";
-import { useAction } from "convex/react";
+import { useAction, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Button } from "@/core/components/button";
-import { Textarea } from "@/core/components/textarea";
 import { Label } from "@/core/components/label";
 import { toast } from "sonner";
 import {
@@ -12,6 +11,15 @@ import {
   CardTitle,
 } from "@/core/components/card";
 import { Loader2 } from "lucide-react";
+import { Id } from "../../../convex/_generated/dataModel";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/core/components/select";
+import { useAuth } from "@/linkedin/hooks/useAuth";
 
 interface GeneratedQuestions {
   technical: string[];
@@ -19,18 +27,28 @@ interface GeneratedQuestions {
 }
 
 export default function InterviewPrepPage() {
-  const [jobDetailsText, setJobDetailsText] = useState<string>("");
+  const [selectedJobId, setSelectedJobId] = useState<Id<"jobs"> | null>(null);
   const [generatedQuestions, setGeneratedQuestions] =
     useState<GeneratedQuestions | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+
+  const { user } = useAuth();
+  const userId = user?.id;
+
+  const jobs = useQuery(api.jobs.getAllJobs, !userId ? "skip" : { userId });
 
   const generateInterviewQuestions = useAction(
     api.interviewPrep.generateQuestions,
   );
 
   const handleGenerate = async () => {
-    if (!jobDetailsText.trim()) {
-      toast.error("Please paste the job details first.");
+    if (!selectedJobId) {
+      toast.error("Please select a job first.");
+      return;
+    }
+
+    if (!userId) {
+      toast.error("User ID not found. Please ensure you are logged in.");
       return;
     }
 
@@ -38,7 +56,10 @@ export default function InterviewPrepPage() {
     setGeneratedQuestions(null);
 
     try {
-      const result = await generateInterviewQuestions({ jobDetailsText });
+      const result = await generateInterviewQuestions({
+        jobId: selectedJobId,
+        userId: userId,
+      });
       setGeneratedQuestions(result);
       toast.success("Interview questions generated!");
     } catch (error: unknown) {
@@ -53,11 +74,19 @@ export default function InterviewPrepPage() {
         errorMessage = error.message;
       }
       toast.error(errorMessage);
-      setGeneratedQuestions(null); // Ensure clearing on error
+      setGeneratedQuestions(null);
     } finally {
       setIsLoading(false);
     }
   };
+
+  if (!userId) {
+    return (
+      <div className="container mx-auto p-4 md:p-6 lg:p-8 max-w-4xl text-center">
+        <p>Please log in to use the Interview Question Generator.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto p-4 md:p-6 lg:p-8 max-w-4xl space-y-6">
@@ -65,26 +94,41 @@ export default function InterviewPrepPage() {
         Interview Question Generator
       </h1>
       <p className="text-muted-foreground">
-        Paste the job description or relevant details below to generate
-        potential technical and non-technical interview questions.
+        Select a job from your list to generate potential technical and
+        non-technical interview questions based on its details.
       </p>
 
       <div className="space-y-2">
-        <Label htmlFor="job-details">Job Details</Label>
-        <Textarea
-          id="job-details"
-          placeholder="Paste job description, responsibilities, required skills, etc. here..."
-          value={jobDetailsText}
-          onChange={(e) => setJobDetailsText(e.target.value)}
-          rows={10}
-          disabled={isLoading}
-        />
+        <Label htmlFor="job-select">Select Job</Label>
+        <Select
+          value={selectedJobId ?? undefined}
+          onValueChange={(value) => setSelectedJobId(value as Id<"jobs">)}
+          disabled={isLoading || !jobs}
+        >
+          <SelectTrigger id="job-select" className="w-full">
+            <SelectValue placeholder="Select a job..." />
+          </SelectTrigger>
+          <SelectContent>
+            {!jobs ? (
+              <SelectItem value="" disabled>
+                Loading jobs...
+              </SelectItem>
+            ) : jobs.length === 0 ? (
+              <SelectItem value="" disabled>
+                No jobs found. Please add a job first.
+              </SelectItem>
+            ) : (
+              jobs.map((job) => (
+                <SelectItem key={job._id} value={job._id}>
+                  {job.title} (ID: {job._id.substring(0, 6)}...)
+                </SelectItem>
+              ))
+            )}
+          </SelectContent>
+        </Select>
       </div>
 
-      <Button
-        onClick={handleGenerate}
-        disabled={isLoading || !jobDetailsText.trim()}
-      >
+      <Button onClick={handleGenerate} disabled={isLoading || !selectedJobId}>
         {isLoading ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
