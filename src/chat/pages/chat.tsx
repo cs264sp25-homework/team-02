@@ -19,7 +19,8 @@ const ChatPage = () => {
   const { redirect, params } = useRouter();
   const [input, setInput] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 768);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
@@ -30,8 +31,9 @@ const ChatPage = () => {
     messagesLoading, 
     isSending,
     sendMessage,
-    streamingMessageId,
-    streamContent 
+    aiMessageId,
+    aiMessageContent,
+    isStreamingDone
   } = useChat();
   
   const { data: chats } = useQueryChats();
@@ -51,8 +53,11 @@ const ChatPage = () => {
   }, [isAuthenticated, redirect]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, streamContent]);
+    const node = messagesEndRef.current;
+    if (node) {
+      node.scrollTop = node.scrollHeight;
+    }
+  }, [messages, aiMessageContent]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -68,9 +73,8 @@ const ChatPage = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const toggleSidebar = () => {
-    setSidebarOpen(!sidebarOpen);
-  };
+  const toggleSidebar = () => setSidebarOpen((open) => !open);
+  const toggleSidebarCollapsed = () => setSidebarCollapsed((c) => !c);
 
   const handleNewChat = () => {
     setIsDialogOpen(true);
@@ -106,124 +110,131 @@ const ChatPage = () => {
   };
 
   return (
-    <div className="flex h-screen w-screen">
-      {sidebarOpen && (
-        <div 
-          className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-20"
-          onClick={toggleSidebar}
-        />
-      )}
-
-      <aside 
-        className={cn(
-          "fixed md:relative h-full overflow-y-auto bg-white border-r z-30 transition-all duration-300 ease-in-out",
-          sidebarOpen 
-            ? "w-64 translate-x-0" 
-            : "w-0 -translate-x-full md:w-0 md:-translate-x-full"
-        )}
-      >
-        <Sidebar onNewChat={handleNewChat} currentChatId={chatId} />
+    <>
+      {/* Sidebar: fixed to left, content starts below navbar */}
+      <aside className={cn(
+        "fixed top-0 left-0 h-screen border-r bg-white z-30 transition-all duration-300",
+        sidebarCollapsed ? "w-16" : "w-64"
+      )}>
+        <div className="pt-12 flex flex-col h-full bg-white"> {/* Ensure sidebar content is white */}
+          <div className="flex items-center justify-between px-6 py-3 border-b bg-white"> {/* Sidebar header bg white */}
+            <span className="font-bold text-lg text-gray-700">{!sidebarCollapsed && "Chats"}</span>
+            <Button variant="ghost" size="icon" onClick={toggleSidebarCollapsed}>
+              {sidebarCollapsed ? <MenuIcon className="h-5 w-5" /> : <XIcon className="h-5 w-5" />}
+            </Button>
+          </div>
+          {!sidebarCollapsed && <Sidebar onNewChat={handleNewChat} currentChatId={chatId} />}
+        </div>
       </aside>
-
-      {/* Main Chat Container - Fixed Layout Structure */}
-      <main className="flex flex-col flex-1 h-screen">
-        {/* Fixed Header */}
-        <header className="flex items-center px-4 py-2 border-b bg-white h-12 shadow-sm z-10">
+      {/* Main Chat Area: margin left for sidebar, margin top for navbar */}
+      <div className={cn(
+        "flex flex-col h-screen bg-gray-50",
+        sidebarCollapsed ? "md:ml-16" : "md:ml-64",
+        "pt-12" // 48px for navbar
+      )}>
+        {/* Header: fixed below navbar, flush with sidebar */}
+        <header
+          className="fixed z-40 flex items-center px-6 py-4 border-b bg-white w-full backdrop-blur-md"
+          style={{
+            left: sidebarCollapsed ? 64 : 256,
+            top: 48, // navbar height
+            width: `calc(100% - ${(sidebarCollapsed ? 64 : 256)}px)`
+          }}
+        >
           <Button
             variant="ghost"
-            size="sm"
+            size="icon"
             onClick={toggleSidebar}
-            className="p-1 mr-2"
+            className="mr-2 md:hidden"
           >
             {sidebarOpen ? <XIcon className="h-5 w-5" /> : <MenuIcon className="h-5 w-5" />}
           </Button>
-            
-          <h1 className="text-lg font-semibold truncate max-w-[250px]">
+          <h1 className="text-xl font-bold tracking-tight text-gray-900 truncate text-left w-full">
             {chatId ? selectedChat?.title || "Chat" : "JobSync Assistant"}
           </h1>
         </header>
-
-        {/* Main Content Area - Single Scrollable Container */}
-        <div className="flex-1 overflow-y-auto"> 
-          {!chatId ? (
-            <div className="flex flex-col items-center justify-center h-full p-4 text-center">
-              <div className="max-w-md">
-                <h1 className="text-xl font-semibold mb-2">JobSync Assistant</h1>
+        {/* Messages: margin top for header */}
+        <div
+          className="flex-1 overflow-y-auto px-0 md:px-0 bg-white custom-scrollbar"
+          ref={messagesEndRef}
+          style={{ minHeight: 0, marginTop: 72, paddingBottom: 120 }} // 120px bottom padding to keep messages above input
+        >
+          <div className="w-full max-w-3xl mx-auto pt-4 pb-4">
+            {!chatId ? (
+              <div className="flex flex-col items-center justify-center h-full p-4 text-center">
+                <h1 className="text-2xl font-semibold mb-2">JobSync Assistant</h1>
                 <p className="text-gray-500 mb-4">
                   Start a new conversation to get job application guidance.
                 </p>
                 <Button onClick={handleNewChat}>New Chat</Button>
               </div>
-            </div>
-          ) : messagesLoading ? (
-            <div className="flex justify-center py-8">
-              <Spinner />
-            </div>
-          ) : messages?.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full p-4 text-center">
-              <div className="max-w-md">
-                <p className="text-gray-500">
+            ) : messagesLoading ? (
+              <div className="flex justify-center py-8">
+                <Spinner />
+              </div>
+            ) : messages?.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full p-4 text-center">
+                <p className="text-gray-400">
                   Ask about job applications, resume tips, or interview prep.
                 </p>
               </div>
-            </div>
-          ) : (
-            <div>
+            ) : (
               <MessageList 
                 messages={messages || []} 
                 user={user}
-                streamingMessageId={streamingMessageId || undefined}
-                streamContent={streamContent}
+                aiMessageId={aiMessageId || undefined}
+                aiMessageContent={aiMessageContent}
               />
-              <div ref={messagesEndRef} />
-            </div>
-          )}
+            )}
+          </div>
         </div>
-
-        {/* Fixed Input Area */}
+        {/* Input: fixed to bottom, aligned with chat area only */}
         {chatId && (
-          <div className="border-t bg-white px-4 py-2">
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                handleSendMessage();
-              }}
-              className="relative"
-            >
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleSendMessage();
+            }}
+            className={cn(
+              "fixed bottom-0 border-t bg-white/95 backdrop-blur-md px-4 py-3 z-20 transition-all duration-300",
+              sidebarCollapsed ? "md:left-16 md:w-[calc(100%-4rem)]" : "md:left-64 md:w-[calc(100%-16rem)]"
+            )}
+            style={{ left: sidebarCollapsed ? 64 : 256, width: `calc(100% - ${(sidebarCollapsed ? 64 : 256)}px)` }}
+          >
+            <div className="max-w-2xl mx-auto flex items-end gap-2">
               <Textarea
                 ref={textareaRef}
                 value={input}
                 onChange={handleInputChange}
                 onKeyDown={handleKeyDown}
-                placeholder={isSending ? "Waiting for response..." : "Message JobSync AI..."}
-                className={`min-h-[40px] max-h-[100px] w-full pr-10 resize-none rounded-lg 
-                  border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 
-                  focus:ring-opacity-50 transition-shadow text-sm
-                  ${isSending ? 'bg-gray-50 text-gray-500' : 'bg-white'}`}
-                disabled={isSending}
+                placeholder={isSending && !isStreamingDone ? "Waiting for response..." : "Message JobSync AI..."}
+                className={cn(
+                  "flex-1 resize-none rounded-full border border-gray-200 bg-gray-50 px-4 py-2 text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all min-h-[40px] max-h-[120px]",
+                  isSending && !isStreamingDone ? "bg-gray-100 text-gray-400" : "bg-gray-50 text-gray-900"
+                )}
+                disabled={isSending && !isStreamingDone}
               />
               <Button
                 type="submit"
                 size="icon"
-                disabled={isSending || input.trim() === ""}
-                className={`absolute right-2 bottom-2 h-8 w-8 transition-colors
-                  ${isSending 
-                    ? 'bg-gray-400 cursor-not-allowed' 
-                    : 'bg-blue-500 hover:bg-blue-600'}`}
+                disabled={isSending && !isStreamingDone || input.trim() === ""}
+                className={cn(
+                  "rounded-full h-10 w-10 flex items-center justify-center bg-blue-500 hover:bg-blue-600 text-white transition-colors shadow-md",
+                  isSending && !isStreamingDone && "bg-gray-300 cursor-not-allowed hover:bg-gray-300"
+                )}
               >
-                {isSending ? <Spinner size="sm" /> : <SendIcon className="w-4 h-4" />}
+                {isSending ? <Spinner size="sm" /> : <SendIcon className="w-5 h-5" />}
               </Button>
-            </form>
-          </div>
+            </div>
+          </form>
         )}
-      </main>
-
-      <CreateChatDialog
-        isOpen={isDialogOpen}
-        onClose={() => setIsDialogOpen(false)}
-        onChatCreated={handleChatCreated}
-      />
-    </div>
+        <CreateChatDialog
+          isOpen={isDialogOpen}
+          onClose={() => setIsDialogOpen(false)}
+          onChatCreated={handleChatCreated}
+        />
+      </div>
+    </>
   );
 };
 

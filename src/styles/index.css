@@ -174,7 +174,10 @@
     opacity: 0;
   }
 }
-
-.animate-blink {
-  animation: blink 1s infinite;
+.custom-scrollbar {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE 10+ */
+}
+.custom-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
 }

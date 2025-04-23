@@ -6,6 +6,7 @@ import { parseResume } from "./resumeParser";
 import { api } from "./_generated/api";
 import { Id } from "./_generated/dataModel";
 
+
 export const openai = createOpenAI({
   apiKey: process.env.OPENAI_API_KEY,
   compatibility: "strict", // This ensures strict mode for the OpenAI API
@@ -567,113 +568,50 @@ export const handleChatMessage = action({
         throw new Error("Chat not found");
       }
       
-      // Get user profile for context (only for first message)
-      let userProfile = null;
-      if (args.isFirstMessage) {
-        userProfile = await ctx.runQuery(api.profiles.getProfileByUserId, {
-          userId: args.userId,
-        });
-      }
-      
-      // Get related job if one is specified
-      let relatedJob = null;
-      if (chat.relatedJobId) {
-        // Get job with proper type casting
-        relatedJob = await ctx.runQuery(api.jobs.getJobById, {
-          userId: args.userId,
-          jobId: chat.relatedJobId as unknown as Id<"jobs">,
-        });
-      }
-      
-      // Get message history (last 10 messages)
+      // Get message history
       const messageHistory = await ctx.runQuery(api.messages.getAll, {
         chatId: args.chatId,
         limit: 10,
       });
       
-      // Create system prompt based on context
-      let systemPrompt = `You are JobSync AI, a career coach specializing in job applications, resume writing, and interview preparation. Your goal is to provide helpful, personalized advice to job seekers.
-
-Guidelines:
-- Be concise, clear, and actionable in your responses.
-- Be honest about limitations - if you don't know something, say so.
-- Be supportive but realistic - don't make false promises about job prospects.
-- Provide specific, practical advice based on the user's background and goals.
-- Focus on helping the user improve their job application materials and interview skills.
-- When appropriate, use the STAR (Situation, Task, Action, Result) method to help structure responses.
-- Analyze and provide constructive criticism on user's application materials, resumes, and responses.
-- Always make recommendations grounded in the user's actual background - don't make up experiences or skills.
-- Be particularly attentive to skills alignment and look for opportunities to suggest improvements.
-- Make sure the user is actually a good candidate for the job.`;
-
-      // Add user profile context if available and this is the first message
-      if (userProfile && args.isFirstMessage) {
-        systemPrompt += `\n\n### User Profile Context:`;
+      // Build the system prompt
+      let systemPrompt = getBaseSystemPrompt();
+      
+      // Add user profile context if this is the first message
+      if (args.isFirstMessage) {
+        const userProfile = await ctx.runQuery(api.profiles.getProfileByUserId, {
+          userId: args.userId,
+        });
         
-        if (userProfile.education && userProfile.education.length > 0) {
-          systemPrompt += `\n#### Education:`;
-          userProfile.education.forEach(edu => {
-            systemPrompt += `\n- ${edu.degree} in ${edu.field} from ${edu.institution}`;
-            if (edu.startDate && edu.endDate) {
-              systemPrompt += ` (${edu.startDate} - ${edu.endDate})`;
-            }
-          });
-        }
-        
-        if (userProfile.workExperience && userProfile.workExperience.length > 0) {
-          systemPrompt += `\n#### Work Experience:`;
-          userProfile.workExperience.forEach(work => {
-            systemPrompt += `\n- ${work.position} at ${work.company}`;
-            if (work.startDate) {
-              systemPrompt += ` (${work.startDate} - ${work.endDate || "Present"})`;
-            }
-            if (work.description && work.description.length > 0) {
-              work.description.slice(0, 2).forEach(desc => {
-                systemPrompt += `\n  * ${desc}`;
-              });
-            }
-            if (work.technologies && work.technologies.length > 0) {
-              systemPrompt += `\n  * Technologies: ${work.technologies.join(', ')}`;
-            }
-          });
-        }
-        
-        if (userProfile.projects && userProfile.projects.length > 0) {
-          systemPrompt += `\n#### Projects:`;
-          userProfile.projects.forEach(project => {
-            systemPrompt += `\n- ${project.name}`;
-            if (project.startDate) {
-              systemPrompt += ` (${project.startDate} - ${project.endDate || "Present"})`;
-            }
-            if (project.technologies && project.technologies.length > 0) {
-              systemPrompt += `\n  * Technologies: ${project.technologies.join(', ')}`;
-            }
-          });
-        }
-        
-        if (userProfile.skills && userProfile.skills.length > 0) {
-          systemPrompt += `\n#### Skills: ${userProfile.skills.join(", ")}`;
+        if (userProfile) {
+          systemPrompt += getUserProfileContext(userProfile);
         }
       }
       
       // Add job context if available
-      if (relatedJob) {
-        systemPrompt += `\n\n### Related Job Context:`;
-        systemPrompt += `\n- Job Title: ${relatedJob.title}`;
-        systemPrompt += `\n- Job Requirements:\n${relatedJob.description}`;
-        if (relatedJob.questions && relatedJob.questions.length > 0) {
-          systemPrompt += `\n- Application Questions:`;
-          relatedJob.questions.forEach((question, index) => {
-            systemPrompt += `\n  ${index + 1}. ${question}`;
+      if (chat.relatedJobId) {
+        try {
+          const relatedJob = await ctx.runQuery(api.jobs.getJobById, {
+            userId: args.userId,
+            jobId: chat.relatedJobId as Id<"jobs">,
           });
+          
+          if (relatedJob) {
+            systemPrompt += getJobContext(relatedJob);
+          }
+        } catch (error) {
+          console.error("Error fetching related job:", error);
+          // Continue without job context if there's an error
         }
       }
-
+      
       // Prepare conversation history for the model
-      const conversation = messageHistory.map(msg => ({
-        role: msg.role,
-        content: msg.content
-      }));
+      const conversation = messageHistory
+        .filter(msg => msg.content.trim() !== "") // Filter out empty messages
+        .map(msg => ({
+          role: msg.role,
+          content: msg.content
+        }));
       
       // Add current user message
       conversation.push({
@@ -683,7 +621,7 @@ Guidelines:
       
       console.log("Calling OpenAI with context and history");
       
-      // Stream response from OpenAI
+      // Generate response from OpenAI
       const { textStream } = streamText({
         model: openai("gpt-4o-mini"),
         temperature: 0.7,
@@ -709,5 +647,76 @@ Guidelines:
     }
   },
 });
+
+// Helper function for the base system prompt
+function getBaseSystemPrompt(): string {
+  return `You are JobSync AI, a career coach specializing in job applications, resume writing, and interview preparation. Your goal is to provide helpful, personalized advice to job seekers.
+
+Guidelines:
+- Be concise, clear, and actionable in your responses.
+- Be honest about limitations - if you don't know something, say so.
+- Be supportive but realistic - don't make false promises about job prospects.
+- Provide specific, practical advice based on the user's background and goals.
+- Focus on helping the user improve their job application materials and interview skills.
+- When appropriate, use the STAR (Situation, Task, Action, Result) method to help structure responses.
+- Analyze and provide constructive criticism on user's application materials, resumes, and responses.
+- Always make recommendations grounded in the user's actual background - don't make up experiences or skills.
+- Be particularly attentive to skills alignment and look for opportunities to suggest improvements.`;
+}
+
+// Helper function to get user profile context
+function getUserProfileContext(userProfile: any): string {
+  let contextPrompt = `\n\n### User Profile Context:`;
+  
+  if (userProfile.education && userProfile.education.length > 0) {
+    contextPrompt += `\n#### Education:`;
+    userProfile.education.forEach((edu: any) => {
+      contextPrompt += `\n- ${edu.degree} in ${edu.field} from ${edu.institution}`;
+      if (edu.startDate && edu.endDate) {
+        contextPrompt += ` (${edu.startDate} - ${edu.endDate})`;
+      }
+    });
+  }
+  
+  if (userProfile.workExperience && userProfile.workExperience.length > 0) {
+    contextPrompt += `\n#### Work Experience:`;
+    userProfile.workExperience.forEach((work: any) => {
+      contextPrompt += `\n- ${work.position} at ${work.company}`;
+      if (work.startDate) {
+        contextPrompt += ` (${work.startDate} - ${work.endDate || "Present"})`;
+      }
+      if (work.description && work.description.length > 0) {
+        work.description.slice(0, 2).forEach((desc: string) => {
+          contextPrompt += `\n  * ${desc}`;
+        });
+      }
+      if (work.technologies && work.technologies.length > 0) {
+        contextPrompt += `\n  * Technologies: ${work.technologies.join(', ')}`;
+      }
+    });
+  }
+  
+  if (userProfile.skills && userProfile.skills.length > 0) {
+    contextPrompt += `\n#### Skills: ${userProfile.skills.join(", ")}`;
+  }
+  
+  return contextPrompt;
+}
+
+// Helper function to get job context
+function getJobContext(relatedJob: any): string {
+  let contextPrompt = `\n\n### Related Job Context:`;
+  contextPrompt += `\n- Job Title: ${relatedJob.title}`;
+  contextPrompt += `\n- Job Requirements:\n${relatedJob.description}`;
+  
+  if (relatedJob.questions && relatedJob.questions.length > 0) {
+    contextPrompt += `\n- Application Questions:`;
+    relatedJob.questions.forEach((question: string, index: number) => {
+      contextPrompt += `\n  ${index + 1}. ${question}`;
+    });
+  }
+  
+  return contextPrompt;
+}
 
 export { parseResume };
