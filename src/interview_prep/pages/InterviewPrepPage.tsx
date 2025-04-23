@@ -9,7 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/core/components/card";
-import { Loader2 } from "lucide-react";
+import { Loader2, Brain, MessageSquareQuote } from "lucide-react";
 import { Id } from "../../../convex/_generated/dataModel";
 import { useRouter } from "@/core/hooks/use-router";
 import { useAuth } from "@/linkedin/hooks/useAuth";
@@ -82,6 +82,16 @@ export default function InterviewPrepPage() {
     }
   };
 
+  const handleGetFeedback = (questionIndex: string) => {
+    console.log(`TODO: Get feedback for question ${questionIndex}`);
+    toast.info("Feedback functionality not yet implemented.");
+  };
+
+  const handleGenerateSample = (questionIndex: string) => {
+    console.log(`TODO: Generate sample for question ${questionIndex}`);
+    toast.info("Sample answer generation not yet implemented.");
+  };
+
   if (!userId || !jobId) {
     return (
       <div className="container mx-auto p-4 md:p-6 lg:p-8 max-w-4xl text-center">
@@ -127,20 +137,49 @@ export default function InterviewPrepPage() {
             <CardHeader>
               <CardTitle>Technical Questions</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-6">
               {generatedQuestions.technical.length > 0 ? (
-                generatedQuestions.technical.map((q, index) => (
-                  <div key={`tech-${index}`} className="space-y-2">
-                    <p className="font-medium text-sm">
-                      {index + 1}. {q}
-                    </p>
-                    <Textarea
-                      placeholder={`Type your answer for question ${index + 1}...`}
-                      className="w-full text-sm"
-                      rows={3}
-                    />
-                  </div>
-                ))
+                generatedQuestions.technical.map((q, index) => {
+                  const questionId = `tech-${index}`;
+                  return (
+                    <div
+                      key={questionId}
+                      className="space-y-3 border-b pb-4 last:border-b-0 last:pb-0"
+                    >
+                      <p className="font-medium text-sm">
+                        {index + 1}. {q}
+                      </p>
+                      <Textarea
+                        placeholder={`Type your answer here...`}
+                        className="w-full text-sm"
+                        rows={4}
+                      />
+                      <Textarea
+                        placeholder="AI feedback or sample answer will appear here..."
+                        className="w-full text-sm bg-muted/50"
+                        rows={4}
+                        readOnly
+                      />
+                      <div className="flex space-x-2 justify-end">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleGetFeedback(questionId)}
+                        >
+                          <Brain className="mr-1.5 h-3.5 w-3.5" /> Get Feedback
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleGenerateSample(questionId)}
+                        >
+                          <MessageSquareQuote className="mr-1.5 h-3.5 w-3.5" />{" "}
+                          Generate Sample
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })
               ) : (
                 <p className="text-sm text-muted-foreground">
                   No technical questions generated.
@@ -153,20 +192,49 @@ export default function InterviewPrepPage() {
             <CardHeader>
               <CardTitle>Non-Technical Questions</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-6">
               {generatedQuestions.nonTechnical.length > 0 ? (
-                generatedQuestions.nonTechnical.map((q, index) => (
-                  <div key={`nontech-${index}`} className="space-y-2">
-                    <p className="font-medium text-sm">
-                      {index + 1}. {q}
-                    </p>
-                    <Textarea
-                      placeholder={`Type your answer for question ${index + 1}...`}
-                      className="w-full text-sm"
-                      rows={3}
-                    />
-                  </div>
-                ))
+                generatedQuestions.nonTechnical.map((q, index) => {
+                  const questionId = `nontech-${index}`;
+                  return (
+                    <div
+                      key={questionId}
+                      className="space-y-3 border-b pb-4 last:border-b-0 last:pb-0"
+                    >
+                      <p className="font-medium text-sm">
+                        {index + 1}. {q}
+                      </p>
+                      <Textarea
+                        placeholder={`Type your answer here...`}
+                        className="w-full text-sm"
+                        rows={4}
+                      />
+                      <Textarea
+                        placeholder="AI feedback or sample answer will appear here..."
+                        className="w-full text-sm bg-muted/50"
+                        rows={4}
+                        readOnly
+                      />
+                      <div className="flex space-x-2 justify-end">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleGetFeedback(questionId)}
+                        >
+                          <Brain className="mr-1.5 h-3.5 w-3.5" /> Get Feedback
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleGenerateSample(questionId)}
+                        >
+                          <MessageSquareQuote className="mr-1.5 h-3.5 w-3.5" />{" "}
+                          Generate Sample
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })
               ) : (
                 <p className="text-sm text-muted-foreground">
                   No non-technical questions generated.

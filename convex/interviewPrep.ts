@@ -46,6 +46,7 @@ You are an expert career advisor and interviewer. Based on the following job det
 Separate the questions into two distinct categories: "technical" and "nonTechnical".
 Provide 5 technical questions relevant to the skills and responsibilities mentioned.
 Provide 5 non-technical (behavioral, situational, cultural fit) questions relevant to the role and company context if available.
+If you are familiar with the company, you can incorporate company-specific questions or information.
 Format your response ONLY as a JSON object with two keys: "technical" (an array of strings) and "nonTechnical" (an array of strings).
 Example JSON format:
 {
