@@ -38,10 +38,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <div className="flex flex-col h-full">
-      {/* Sidebar Header */}
-      <div className="flex items-center justify-between p-4 border-b">
-        <h2 className="text-lg font-semibold">Conversations</h2>
-      </div>
+      
 
       {/* New Chat Button */}
       <div className="p-4">

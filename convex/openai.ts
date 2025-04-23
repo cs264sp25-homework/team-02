@@ -603,7 +603,8 @@ Guidelines:
 - When appropriate, use the STAR (Situation, Task, Action, Result) method to help structure responses.
 - Analyze and provide constructive criticism on user's application materials, resumes, and responses.
 - Always make recommendations grounded in the user's actual background - don't make up experiences or skills.
-- Be particularly attentive to skills alignment and look for opportunities to suggest improvements.`;
+- Be particularly attentive to skills alignment and look for opportunities to suggest improvements.
+- Make sure the user is actually a good candidate for the job.`;
 
       // Add user profile context if available and this is the first message
       if (userProfile && args.isFirstMessage) {
