@@ -367,6 +367,11 @@ export const extractRequiredSkills = action({
       2. Extract the skills in a clear and concise manner. Don't add markdown or formatting. 
       3. Ensure that the extracted skills is 1-2 words long.
       3. Ensure that the extracted skills are relevant to the job title and context. For example, if the job title is "Software Engineer", skills like "JavaScript" or "React" would be relevant.
+      4. Only extract skills that are mentioned in the requirements. Do not add any additional skills or information.
+      5. Only extract skills, not qualifications or experiences like "5 years of experience" or "Bachelor's degree". Don't extract vague terms like "good communication" or "team player" or "organization".
+      6. If the job title is "Data Scientist", skills like "Python" or "Machine Learning" or "SQL" would be relevant.
+      7. If the job title is "Software Engineer", skills like "JavaScript" or "React" or "Node.js" would be relevant.
+      8. If the job title is "Sales Manager", skills like "Sales strategy" or "CRM software" or "lead generation" would be relevant.
       If the job title is "Product Manager", skills like "Agile methodology" or "Product management" or "SQL" or "data analysis" would be relevant.
 
       Requirements:
@@ -391,7 +396,7 @@ something uncertain
 » Founder Juice: New ideas come from you, you build it yourself or annoy
 everyone until it's done ;)
 
-      Output: '["Typescript", "React", "Node", "communication"]'
+      Output: '["Typescript", "React", "Node"]'
       """
 
       """

@@ -5,19 +5,29 @@ import {
   CardTitle,
   CardContent,
 } from "@/core/components/card";
+import { Button } from "@/core/components/button";
 
 interface SummaryProps {
   title: string;
   summary: string;
+  onRegenerate: () => void;
 }
 
-const SummaryCard: React.FC<SummaryProps> = ({ title, summary }) => {
+const SummaryCard: React.FC<SummaryProps> = ({
+  title,
+  summary,
+  onRegenerate,
+}) => {
   return (
     <Card>
       <CardHeader>
         <CardTitle className="text-xl">{title}</CardTitle>
       </CardHeader>
+
       <CardContent>
+        <Button className="w-auto mb-4" onClick={onRegenerate}>
+          Regenerate Summary
+        </Button>
         {summary ? (
           <p className="text-gray-700 text-lg">{summary}</p>
         ) : (

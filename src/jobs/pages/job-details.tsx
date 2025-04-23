@@ -20,6 +20,7 @@ import { useAuth } from "@/linkedin/hooks/useAuth";
 import Tesseract from "tesseract.js";
 import { formatProfileBackground } from "../utils/profile";
 import { extractQuestions } from "../utils/clean";
+import { Pencil } from "lucide-react";
 
 const JobDetailsPage = () => {
   const { isAuthenticated, user } = useAuth();
@@ -28,6 +29,36 @@ const JobDetailsPage = () => {
   if (!isAuthenticated) {
     redirect("login");
   }
+
+  const [isEditingTitle, setIsEditingTitle] = useState(false); // Edit mode state
+  const [editedTitle, setEditedTitle] = useState(""); // Updated title state
+
+  const handleEditClick = () => {
+    setIsEditingTitle(true); // Enable edit mode
+    setEditedTitle(job?.title || ""); // Set the current title as the initial value
+  };
+
+  const handleSaveTitle = async () => {
+    try {
+      // Update the title in the backend
+      const updated = await updateJob({
+        userId: user!.id,
+        jobId: jobId,
+        title: editedTitle,
+      });
+
+      if (updated) {
+        toast.success("Job title updated successfully!");
+        setIsEditingTitle(false); // Exit edit mode
+      } else {
+        toast.error("Failed to update job title.");
+      }
+    } catch (error) {
+      console.error("Error updating job title:", error);
+      toast.error("Error updating job title.");
+    }
+  };
+
   const jobId = params.jobId as Id<"jobs">;
   const job = useQuery(api.jobs.getJobById, { jobId, userId: user!.id });
   const [answers, setAnswers] = useState<string[]>([]);
@@ -87,7 +118,9 @@ const JobDetailsPage = () => {
         });
       }
 
-      if (jobUpdated) {
+      // need to fix this, don't geenerated AI answers if there are not questions, if the questions array is empty
+
+      if (jobUpdated && job!.questions.length > 0) {
         toast.success("Image parsed and job updated successfully");
         const answersFromAi = await getAiGeneratedJobQuestions({
           jobTitle: job!.title,
@@ -192,8 +225,6 @@ const JobDetailsPage = () => {
     }
 
     if (newResponse) {
-      // Update the specific answer in the state
-      // Update the answer in the database
       const updated = await updateAnswer(user!.id, jobId, index, newResponse);
       if (updated) {
         toast.success("Response updated successfully in db");
@@ -229,9 +260,37 @@ const JobDetailsPage = () => {
       </Button>
 
       <Card>
-        <CardHeader>
-          <CardTitle>{job.title}</CardTitle>
-        </CardHeader>
+        <div className="flex items-center justify-between px-4 py-2">
+          {isEditingTitle ? (
+            <div className="flex items-center gap-2 flex-1">
+              <input
+                type="text"
+                value={editedTitle}
+                onChange={(e) => setEditedTitle(e.target.value)}
+                className="border border-gray-300 rounded px-2 py-1 w-full"
+                autoFocus
+              />
+              <Button variant="outline" size="sm" onClick={handleSaveTitle}>
+                <Save className="mr-2 h-4 w-4" />
+                Save
+              </Button>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center w-full gap-2">
+              <CardTitle className="whitespace-nowrap overflow-hidden text-ellipsis">
+                {job.title}
+              </CardTitle>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0"
+                onClick={handleEditClick}
+              >
+                <Pencil className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+        </div>
         <CardContent className="space-y-6">
           <div>
             <h3 className="text-lg font-semibold mb-2">Requirements</h3>

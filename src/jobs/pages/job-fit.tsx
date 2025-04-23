@@ -15,7 +15,7 @@ import SkillsCard from "../components/SkillsCard";
 import SummaryCard from "../components/SummaryCard";
 import { api } from "../../../convex/_generated/api";
 import { useAction } from "convex/react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 
 const JobFitPage = () => {
   const { isAuthenticated, user } = useAuth();
@@ -38,6 +38,20 @@ const JobFitPage = () => {
 
   const getJobFitSummary = useAction(api.jobFitSummary.generateJobFitSummary);
 
+  const fetchJobFitSummary = useCallback(async () => {
+    if (!job || !profile || !user) return;
+
+    try {
+      const jobFitSummary = await getJobFitSummary({
+        jobId,
+        userId: user.id,
+      });
+      setSummary(jobFitSummary);
+    } catch (error) {
+      console.error("Error fetching job fit summary:", error);
+    }
+  }, [job, profile, user, getJobFitSummary, jobId]);
+
   useEffect(() => {
     // Don't run until job, profile, and user are all available
     if (!job || !profile || !user) return;
@@ -48,21 +62,8 @@ const JobFitPage = () => {
       return;
     }
 
-    // Only fetch the summary if it's empty
-    const fetchJobFitSummary = async () => {
-      try {
-        const jobFitSummary = await getJobFitSummary({
-          jobId,
-          userId: user.id,
-        });
-        setSummary(jobFitSummary);
-      } catch (error) {
-        console.error("Error fetching job fit summary:", error);
-      }
-    };
-
     fetchJobFitSummary();
-  }, [job, profile, user, getJobFitSummary, jobId]);
+  }, [job, profile, user, getJobFitSummary, jobId, fetchJobFitSummary]);
 
   if (loading || jobLoading || !profile || !job) {
     return (
@@ -100,18 +101,6 @@ const JobFitPage = () => {
     );
   }
 
-  if (loading || jobLoading) {
-    return (
-      <div className="container mx-auto max-w-5xl px-4 py-8">
-        <Card>
-          <CardContent>
-            <p className="text-gray-500">Loading...</p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   const matchedSkills = requiredSkills.filter((skill) =>
     userSkills.includes(skill),
   );
@@ -120,6 +109,7 @@ const JobFitPage = () => {
   );
 
   const fitPercentage = (matchedSkills.length / requiredSkills.length) * 100;
+
   let fitLevel = "Unknown";
 
   if (fitPercentage >= 75) {
@@ -127,16 +117,24 @@ const JobFitPage = () => {
   } else if (fitPercentage >= 50) {
     fitLevel = "Moderate Fit";
   } else {
-    fitLevel = "Weak Fit";
+    fitLevel = "Need to Gain More Skills";
   }
 
   return (
     <div className="container mx-auto max-w-5xl px-4 py-8">
       <h1 className="text-4xl font-bold mb-5">Job Fit Analysis</h1>
       <div className="flex flex-col space-y-8">
+        <SummaryCard
+          title="Summary"
+          summary={summary}
+          onRegenerate={fetchJobFitSummary}
+        ></SummaryCard>
+
         <Card>
           <CardHeader>
-            <CardTitle className="text-xl">Fit Level: {fitLevel}</CardTitle>
+            <CardTitle className="text-xl">
+              Skills Fit Level: {fitLevel}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="relative w-full">
@@ -150,8 +148,6 @@ const JobFitPage = () => {
             </div>
           </CardContent>
         </Card>
-
-        <SummaryCard title="Analysis Summary" summary={summary}></SummaryCard>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <SkillsCard title="Matched Skills" skills={matchedSkills} />
