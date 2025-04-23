@@ -18,7 +18,7 @@ const pages = {
   customize_resume_status: `${baseUrl}/customize-resume-status/:resumeId`, // Customize resume status page
   chat: `${baseUrl}/chat/:chatId?`, // Chat interface page
   edit_resume: `${baseUrl}/edit-resume/:resumeId`, // Latex editor page
-  interview_prep: `${baseUrl}/interview-prep`, // Interview question generator page
+  interview_prep: `${baseUrl}/interview-prep/:jobId`, // Interview question generator page with job ID
 };
 
 export type Page = keyof typeof pages;
