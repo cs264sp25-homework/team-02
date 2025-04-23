@@ -1,40 +1,39 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { cn } from "@/core/lib/utils";
 import { MessageType } from "@/chat/types/messages";
 import { Spinner } from "@/linkedin/components/spinner";
 import ReactMarkdown from "react-markdown";
-import remarkGfm from 'remark-gfm'; // For tables, strikethrough, etc.
+import remarkGfm from 'remark-gfm';
 
 interface MessageListProps {
   messages: MessageType[];
   user: unknown;
-  streamingMessageId?: string;
-  streamContent?: string;
+  aiMessageId?: string;
+  aiMessageContent?: string;
 }
-
-// No need for the CodeComponent import if we're simplifying
 
 export const MessageList: React.FC<MessageListProps> = ({ 
   messages, 
-  streamingMessageId,
-  streamContent 
+  aiMessageId,
+  aiMessageContent 
 }) => {
   return (
     <div className="space-y-4 py-3">
       {messages.map((message) => {
         const isUser = message.role === "user";
-        const isThinking = message.role === "assistant" && message.content === "Thinking...";
-        const isStreaming = message.role === "assistant" && message._id === streamingMessageId;
+        const isCurrentlyGenerating = message.role === "assistant" && message._id === aiMessageId;
         
+        // Use aiMessageContent if this message is currently being generated
+        const displayContent = isCurrentlyGenerating ? 
+          aiMessageContent || "" : 
+          message.content;
         
-        // Use streaming content if this message is currently streaming
-        const displayContent = isStreaming ? streamContent : message.content;
+        // Show loading state if the message is empty
+        const isLoading = isCurrentlyGenerating && !displayContent;
         
         return (
           <div key={message._id} className="flex flex-col">
-            
-            
             <div className={cn(
               "flex", 
               isUser ? "justify-end" : "justify-start",
@@ -49,9 +48,9 @@ export const MessageList: React.FC<MessageListProps> = ({
                   isUser 
                     ? "bg-blue-500 text-white rounded-tr-none" 
                     : "bg-gray-100 text-gray-800 rounded-tl-none",
-                  isThinking && "animate-pulse"
+                  isLoading && "animate-pulse"
                 )}>
-                  {isThinking ? (
+                  {isLoading ? (
                     <div className="flex items-center gap-2">
                       <span>Thinking</span>
                       <Spinner size="sm" />
@@ -75,11 +74,9 @@ export const MessageList: React.FC<MessageListProps> = ({
                           li: ({node, ...props}) => <li className="mb-1" {...props} />,
                           blockquote: ({node, ...props}) => <blockquote className="border-l-4 pl-4 italic my-4" {...props} />,
                           hr: ({node, ...props}) => <hr className="my-4" {...props} />,
-                          // Simple code component without the inline check
                           code: ({className, children, ...props}) => (
                             <code className={`${isUser ? "bg-blue-600" : "bg-gray-200"} px-1 py-0.5 rounded text-sm`} {...props}>{children}</code>
                           ),
-                          // eslint-disable-next-line @typescript-eslint/no-unused-vars
                           table: ({node, ...props}) => <div className="overflow-x-auto my-4"><table className="min-w-full border-collapse border border-gray-300" {...props} /></div>,
                           thead: ({node, ...props}) => <thead className={`${isUser ? "bg-blue-600" : "bg-gray-200"}`} {...props} />,
                           tbody: ({node, ...props}) => <tbody {...props} />,

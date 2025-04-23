@@ -1,6 +1,7 @@
 import { ConvexError, v } from "convex/values";
 import { query, mutation, action } from "./_generated/server";
 import { api } from "./_generated/api";
+import { Id } from "./_generated/dataModel";
 
 // Get messages for a chat
 export const getAll = query({
@@ -178,9 +179,6 @@ export const createAndGenerateResponse = mutation({
       createdAt: now,
     });
     
-    // Check if this is the first message in the chat
-    const isFirstMessage = chat.messageCount === 0;
-    
     // Update chat stats for user message
     await ctx.db.patch(args.chatId, {
       updatedAt: now,
@@ -188,10 +186,10 @@ export const createAndGenerateResponse = mutation({
       messageCount: chat.messageCount + 1,
     });
     
-    // Create a placeholder for AI response
+    // Create assistant message (empty initially)
     const aiMessageId = await ctx.db.insert("messages", {
       chatId: args.chatId,
-      content: "Thinking...",
+      content: "", // Empty content initially
       role: "assistant",
       createdAt: new Date(Date.now() + 1).toISOString(), // Just after user message
     });
@@ -206,12 +204,25 @@ export const createAndGenerateResponse = mutation({
       chatId: args.chatId,
       userId: args.userId,
       aiMessageId,
-      isFirstMessage,
+      isFirstMessage: chat.messageCount === 0,
     });
     
     return { messageId, aiMessageId };
   },
 });
+
+const getMessageHistory = async (
+  ctx: any, 
+  chatId: Id<"chats">, 
+  limit = 10
+) => {
+  const messages = await ctx.runQuery(api.messages.getAll, {
+    chatId,
+    limit,
+  });
+  
+  return messages || [];
+};
 
 // Function to generate AI response (scheduled by createAndGenerateResponse)
 export const generateAiResponse = action({
@@ -222,7 +233,6 @@ export const generateAiResponse = action({
     isFirstMessage: v.boolean(),
   },
   handler: async (ctx, args) => {
-    // Add debugging at start of function
     console.log("🔍 generateAiResponse STARTED", {
       chatId: args.chatId.toString(),
       userId: args.userId,
@@ -236,37 +246,20 @@ export const generateAiResponse = action({
         chatId: args.chatId,
       });
       
-      console.log("🔍 Chat retrieved:", chat ? "Found" : "Not found");
-      
       if (!chat) {
         throw new Error("Chat not found");
       }
       
-      // Get the message history to get the latest user message
-      const messages = await ctx.runQuery(api.messages.getAll, {
-        chatId: args.chatId,
-        limit: 11, // Get enough to include the placeholder and the latest user message
-      });
+      // Get message history
+      const messages = await getMessageHistory(ctx, args.chatId);
       
-      console.log("🔍 Retrieved message history, count:", messages?.length || 0);
-      
-      // The user message should be the second-to-last message (last one is our placeholder)
-      const userMessages = messages.filter(msg => msg.role === "user");
+      // Get the latest user message
+      const userMessages = messages.filter((msg: { role: string; }) => msg.role === "user");
       const latestUserMessage = userMessages[userMessages.length - 1]?.content;
-      
-      console.log("🔍 Latest user message:", latestUserMessage ? `"${latestUserMessage.substring(0, 50)}${latestUserMessage.length > 50 ? '...' : ''}"` : "Not found");
       
       if (!latestUserMessage) {
         throw new Error("No user message found to respond to");
       }
-      
-      // Log before calling OpenAI
-      console.log("🔍 About to call handleChatMessage with:", {
-        chatId: args.chatId.toString(),
-        userId: args.userId,
-        messageLength: latestUserMessage.length,
-        isFirstMessage: args.isFirstMessage
-      });
       
       // Generate AI response
       const aiResponse = await ctx.runAction(api.openai.handleChatMessage, {
@@ -276,30 +269,43 @@ export const generateAiResponse = action({
         isFirstMessage: args.isFirstMessage,
       });
       
-      // Log the response
-      console.log("🔍 OpenAI response received:", aiResponse ? `"${aiResponse.substring(0, 50)}${aiResponse.length > 50 ? '...' : ''}"` : "null or empty");
-      
-      // Update the placeholder message with the actual response
-      console.log("🔍 About to update message with ID:", args.aiMessageId.toString());
-      
+      // Initialize with empty content
       await ctx.runMutation(api.messages.update, {
         messageId: args.aiMessageId,
-        content: aiResponse || "Sorry, I couldn't generate a response at this time."
+        content: ""
       });
       
-      console.log("🔍 Message updated successfully");
+      // Stream the response in chunks
+      const chunkSize = 20; // Characters per update
+      let currentPos = 0;
+      
+      while (currentPos < aiResponse.length) {
+        const endPos = Math.min(currentPos + chunkSize, aiResponse.length);
+        const chunk = aiResponse.substring(0, endPos);  // Send accumulated content
+        
+        await ctx.runMutation(api.messages.update, {
+          messageId: args.aiMessageId,
+          content: chunk
+        });
+        
+        currentPos = endPos;
+        
+        // Add a small delay between updates to simulate typing
+        if (currentPos < aiResponse.length) {
+          await new Promise(resolve => setTimeout(resolve, 50));
+        }
+      }
       
       return true;
     } catch (error) {
       console.error("❌ Error in generateAiResponse:", error);
       
-      // Update the placeholder with an error message directly
+      // Update the message with an error message
       try {
         await ctx.runMutation(api.messages.update, {
           messageId: args.aiMessageId,
           content: "I'm sorry, I encountered an error while processing your request. Please try again."
         });
-        console.log("🔍 Error message updated");
       } catch (patchError) {
         console.error("❌ Failed to update error message:", patchError);
       }
@@ -308,7 +314,6 @@ export const generateAiResponse = action({
     }
   },
 });
-
 // Get a specific message by ID
 export const getMessageById = query({
   args: {

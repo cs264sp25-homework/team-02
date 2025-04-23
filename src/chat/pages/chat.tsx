@@ -30,8 +30,8 @@ const ChatPage = () => {
     messagesLoading, 
     isSending,
     sendMessage,
-    streamingMessageId,
-    streamContent 
+    aiMessageId,
+    aiMessageContent
   } = useChat();
   
   const { data: chats } = useQueryChats();
@@ -52,7 +52,7 @@ const ChatPage = () => {
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, streamContent]);
+  }, [messages, aiMessageContent]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -172,8 +172,8 @@ const ChatPage = () => {
               <MessageList 
                 messages={messages || []} 
                 user={user}
-                streamingMessageId={streamingMessageId || undefined}
-                streamContent={streamContent}
+                aiMessageId={aiMessageId || undefined}
+                aiMessageContent={aiMessageContent}
               />
               <div ref={messagesEndRef} />
             </div>
