@@ -13,6 +13,8 @@ interface MessageListProps {
   streamContent?: string;
 }
 
+// No need for the CodeComponent import if we're simplifying
+
 export const MessageList: React.FC<MessageListProps> = ({ 
   messages, 
   streamingMessageId,
@@ -73,16 +75,10 @@ export const MessageList: React.FC<MessageListProps> = ({
                           li: ({node, ...props}) => <li className="mb-1" {...props} />,
                           blockquote: ({node, ...props}) => <blockquote className="border-l-4 pl-4 italic my-4" {...props} />,
                           hr: ({node, ...props}) => <hr className="my-4" {...props} />,
-                          code: ({node, inline, className, children, ...props}) => {
-                            if (inline) {
-                              return <code className={`${isUser ? "bg-blue-600" : "bg-gray-200"} px-1 py-0.5 rounded text-sm`} {...props}>{children}</code>
-                            }
-                            return (
-                              <pre className="bg-gray-800 text-gray-100 rounded-md p-3 overflow-x-auto my-4 text-sm">
-                                <code {...props}>{children}</code>
-                              </pre>
-                            )
-                          },
+                          // Simple code component without the inline check
+                          code: ({className, children, ...props}) => (
+                            <code className={`${isUser ? "bg-blue-600" : "bg-gray-200"} px-1 py-0.5 rounded text-sm`} {...props}>{children}</code>
+                          ),
                           // eslint-disable-next-line @typescript-eslint/no-unused-vars
                           table: ({node, ...props}) => <div className="overflow-x-auto my-4"><table className="min-w-full border-collapse border border-gray-300" {...props} /></div>,
                           thead: ({node, ...props}) => <thead className={`${isUser ? "bg-blue-600" : "bg-gray-200"}`} {...props} />,
