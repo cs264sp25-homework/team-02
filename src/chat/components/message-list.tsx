@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import React, { useEffect, useRef } from "react";
+import React from "react";
 import { cn } from "@/core/lib/utils";
 import { MessageType } from "@/chat/types/messages";
 import { Spinner } from "@/linkedin/components/spinner";

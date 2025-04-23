@@ -92,7 +92,7 @@ export function useChat() {
   }, [user, chatMutations, navigate]);
 
   // Start polling for updates to the AI message
-  const startPollingForUpdates = useCallback((messageId: string) => {
+  const startPollingForUpdates = useCallback(() => {
     // Clear any existing polling interval
     if (pollingIntervalRef.current) {
       clearInterval(pollingIntervalRef.current);
@@ -148,7 +148,7 @@ export function useChat() {
   // Effect to start polling when AI message ID changes
   useEffect(() => {
     if (aiMessageId) {
-      startPollingForUpdates(aiMessageId);
+      startPollingForUpdates();
     }
   }, [aiMessageId, startPollingForUpdates]);
 

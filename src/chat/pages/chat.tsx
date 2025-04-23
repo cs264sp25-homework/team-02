@@ -159,7 +159,7 @@ const ChatPage = () => {
           ref={messagesEndRef}
           style={{ minHeight: 0, marginTop: 72, paddingBottom: 120 }} // 120px bottom padding to keep messages above input
         >
-          <div className="max-w-2xl mx-auto pt-6 pb-4">
+          <div className="w-full max-w-3xl mx-auto pt-4 pb-4">
             {!chatId ? (
               <div className="flex flex-col items-center justify-center h-full p-4 text-center">
                 <h1 className="text-2xl font-semibold mb-2">JobSync Assistant</h1>
