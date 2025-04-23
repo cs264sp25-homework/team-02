@@ -13,6 +13,7 @@ import { Loader2 } from "lucide-react";
 import { Id } from "../../../convex/_generated/dataModel";
 import { useRouter } from "@/core/hooks/use-router";
 import { useAuth } from "@/linkedin/hooks/useAuth";
+import { Textarea } from "@/core/components/textarea";
 
 interface GeneratedQuestions {
   technical: string[];
@@ -116,23 +117,30 @@ export default function InterviewPrepPage() {
         ) : jobIsLoading ? (
           "Loading Job Details..."
         ) : (
-          "Generate Questions"
+          "Generate New Questions"
         )}
       </Button>
 
       {generatedQuestions && (
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid gap-6 md:grid-cols-1">
           <Card>
             <CardHeader>
               <CardTitle>Technical Questions</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
               {generatedQuestions.technical.length > 0 ? (
-                <ul className="list-disc space-y-2 pl-5 text-sm">
-                  {generatedQuestions.technical.map((q, index) => (
-                    <li key={`tech-${index}`}>{q}</li>
-                  ))}
-                </ul>
+                generatedQuestions.technical.map((q, index) => (
+                  <div key={`tech-${index}`} className="space-y-2">
+                    <p className="font-medium text-sm">
+                      {index + 1}. {q}
+                    </p>
+                    <Textarea
+                      placeholder={`Type your answer for question ${index + 1}...`}
+                      className="w-full text-sm"
+                      rows={3}
+                    />
+                  </div>
+                ))
               ) : (
                 <p className="text-sm text-muted-foreground">
                   No technical questions generated.
@@ -145,13 +153,20 @@ export default function InterviewPrepPage() {
             <CardHeader>
               <CardTitle>Non-Technical Questions</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
               {generatedQuestions.nonTechnical.length > 0 ? (
-                <ul className="list-disc space-y-2 pl-5 text-sm">
-                  {generatedQuestions.nonTechnical.map((q, index) => (
-                    <li key={`nontech-${index}`}>{q}</li>
-                  ))}
-                </ul>
+                generatedQuestions.nonTechnical.map((q, index) => (
+                  <div key={`nontech-${index}`} className="space-y-2">
+                    <p className="font-medium text-sm">
+                      {index + 1}. {q}
+                    </p>
+                    <Textarea
+                      placeholder={`Type your answer for question ${index + 1}...`}
+                      className="w-full text-sm"
+                      rows={3}
+                    />
+                  </div>
+                ))
               ) : (
                 <p className="text-sm text-muted-foreground">
                   No non-technical questions generated.
