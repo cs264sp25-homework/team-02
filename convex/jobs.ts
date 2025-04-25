@@ -3,6 +3,8 @@ import { defineTable } from "convex/server";
 import { mutation, query } from "./_generated/server";
 import { Id } from "./_generated/dataModel";
 import { ConvexError } from "convex/values";
+import { internal } from "./_generated/api";
+import { api } from "./_generated/api";
 
 /******************************************************************************
  * SCHEMA
@@ -112,6 +114,19 @@ export const addJob = mutation({
 
     if (!user) {
       throw new Error("Not authenticated!");
+    }
+
+    if (questions.length > 0) {
+      const answersGeneratedByAi = await ctx.scheduler.runAfter(
+        0,
+        api.jobApplicationAnswers.generateJobApplicationAnswers,
+        {
+          userId,
+          jobTitle: title,
+          jobRequirements: description,
+          jobQuestions: questions,
+        },
+      );
     }
 
     // Create the job data
