@@ -14,7 +14,6 @@ import { useAuth } from "@/linkedin/hooks/useAuth";
 import ImportJobForm from "../components/ImportJobForm";
 import JobEntryToggle from "../components/JobEntryToggle";
 import ManualEntryForm from "../components/ManualEntryForm";
-import { useAddJob } from "../hooks/use-mutation-jobs";
 
 const ImportJobPage = () => {
   const { isAuthenticated, user } = useAuth();
@@ -24,7 +23,6 @@ const ImportJobPage = () => {
     redirect("login");
   }
 
-  const { importJob } = useAddJob(user!.id);
   const [mode, setMode] = useState<"import" | "manual">("import");
 
   const handleSuccess = (jobId: string) => {

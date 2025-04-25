@@ -69,7 +69,7 @@ export const jobSchema = {
 // eslint-disable-next-line
 const jobSchemaObject = v.object(jobSchema);
 export type JobType = Infer<typeof jobSchemaObject>;
-export type QuestionType = JobType["questions"][number];
+export type QuestionType = JobType["questions"] extends (infer T)[] ? T : never;
 
 /**
  * Job table schema definition
@@ -90,8 +90,8 @@ export const addJob = mutation({
     description: v.string(),
     questions: v.array(v.string()),
     answers: v.array(v.string()),
-    postingUrl: v.string(),
-    applicationUrl: v.string(),
+    postingUrl: v.optional(v.string()),
+    applicationUrl: v.optional(v.string()),
   },
   handler: async (ctx, args): Promise<Id<"jobs">> => {
     const {
@@ -121,8 +121,8 @@ export const addJob = mutation({
       description: description,
       questions: questions,
       answers: answers,
-      postingUrl: postingUrl,
-      applicationUrl: applicationUrl,
+      postingUrl: postingUrl || "",
+      applicationUrl: applicationUrl || "",
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     });
@@ -267,12 +267,12 @@ export const updateAnswerAtIndex = mutation({
     const currentAnswers = existingJob.answers;
 
     // Validate index
-    if (index < 0 || index >= currentAnswers.length) {
+    if (index < 0 || index >= currentAnswers!.length) {
       throw new Error("Invalid answer index");
     }
 
     // Create new answers array with updated value
-    const updatedAnswers = [...currentAnswers];
+    const updatedAnswers = [...(currentAnswers || [])];
     updatedAnswers[index] = answer;
 
     // Update the job with new answers
