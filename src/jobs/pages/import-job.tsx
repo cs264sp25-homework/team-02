@@ -1,13 +1,4 @@
 import { useState } from "react";
-import { Button } from "@/core/components/button";
-import { Input } from "@/core/components/input";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/core/components/card";
-import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "@/core/hooks/use-router";
 import { useAuth } from "@/linkedin/hooks/useAuth";

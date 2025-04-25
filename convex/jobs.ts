@@ -3,7 +3,6 @@ import { defineTable } from "convex/server";
 import { mutation, query } from "./_generated/server";
 import { Id } from "./_generated/dataModel";
 import { ConvexError } from "convex/values";
-import { internal } from "./_generated/api";
 import { api } from "./_generated/api";
 
 /******************************************************************************
@@ -27,6 +26,7 @@ export const jobInSchema = {
   // Application Questions and Answers
   questions: v.optional(v.array(v.string())),
   answers: v.optional(v.array(v.string())),
+  aiAnswersGenerated: v.optional(v.boolean()),
 
   // Urls
   postingUrl: v.optional(v.string()),
@@ -51,6 +51,7 @@ export const jobUpdateSchema = {
   description: v.optional(v.string()),
   questions: v.optional(v.array(v.string())),
   answers: v.optional(v.array(v.string())),
+  aiAnswersGenerated: v.optional(v.boolean()),
   questionImageUrl: v.optional(v.string()),
   postingUrl: v.optional(v.string()),
   applicationUrl: v.optional(v.string()),
@@ -91,7 +92,6 @@ export const addJob = mutation({
     title: v.string(),
     description: v.string(),
     questions: v.array(v.string()),
-    answers: v.array(v.string()),
     postingUrl: v.optional(v.string()),
     applicationUrl: v.optional(v.string()),
   },
@@ -101,7 +101,6 @@ export const addJob = mutation({
       title,
       description,
       questions,
-      answers,
       postingUrl,
       applicationUrl,
     } = args;
@@ -116,31 +115,32 @@ export const addJob = mutation({
       throw new Error("Not authenticated!");
     }
 
-    if (questions.length > 0) {
-      const answersGeneratedByAi = await ctx.scheduler.runAfter(
+    // Create the job data
+    const jobId = await ctx.db.insert("jobs", {
+      userId,
+      title: title,
+      description: description,
+      questions: questions || [],
+      postingUrl: postingUrl || "",
+      applicationUrl: applicationUrl || "",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      aiAnswersGenerated: false,
+    });
+
+    if (Array.isArray(questions) && questions.length > 0) {
+      await ctx.scheduler.runAfter(
         0,
         api.jobApplicationAnswers.generateJobApplicationAnswers,
         {
           userId,
+          jobId,
           jobTitle: title,
           jobRequirements: description,
           jobQuestions: questions,
         },
       );
     }
-
-    // Create the job data
-    const jobId = await ctx.db.insert("jobs", {
-      userId,
-      title: title,
-      description: description,
-      questions: questions,
-      answers: answers,
-      postingUrl: postingUrl || "",
-      applicationUrl: applicationUrl || "",
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    });
 
     return jobId;
   },

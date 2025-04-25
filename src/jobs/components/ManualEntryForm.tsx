@@ -26,7 +26,7 @@ const ManualEntryForm: React.FC<ManualEntryFormProps> = ({
 
   const [jobTitle, setJobTitle] = useState("");
   const [jobRequirements, setJobRequirements] = useState("");
-  const [questions, setQuestions] = useState<string[]>([""]);
+  const [questions, setQuestions] = useState<string[]>([]);
 
   const handleAddQuestion = () => setQuestions([...questions, ""]);
 
@@ -55,7 +55,7 @@ const ManualEntryForm: React.FC<ManualEntryFormProps> = ({
     } finally {
       setJobTitle("");
       setJobRequirements("");
-      setQuestions([""]);
+      setQuestions([]);
     }
   };
 
@@ -129,7 +129,7 @@ const ManualEntryForm: React.FC<ManualEntryFormProps> = ({
               ))}
             </div>
             <Button type="button" className="mt-4" onClick={handleAddQuestion}>
-              Add Job Application Question
+              Add Question
             </Button>
           </div>
           <div className="flex justify-end">

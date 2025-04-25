@@ -1,9 +1,9 @@
 import OpenAI from "openai";
-import { internalAction, action } from "./_generated/server";
+import { action } from "./_generated/server";
 import { v } from "convex/values";
 import { api } from "./_generated/api";
 import { getUserProfileContext } from "./openai";
-import { ActionCtx } from "./_generated/server";
+import { Id } from "./_generated/dataModel";
 
 interface GeneratedAnswers {
   response: string[];
@@ -16,11 +16,12 @@ const openai = new OpenAI({
 export const generateJobApplicationAnswers = action({
   args: {
     userId: v.string(),
+    jobId: v.string(),
     jobTitle: v.string(),
     jobRequirements: v.string(),
     jobQuestions: v.array(v.string()),
   },
-  handler: async (ctx, args): Promise<GeneratedAnswers> => {
+  handler: async (ctx, args) => {
     const userProfile = await ctx.runQuery(api.profiles.getProfileByUserId, {
       userId: args.userId,
     });
@@ -45,7 +46,7 @@ export const generateJobApplicationAnswers = action({
     5. **Optimize for ATS (Applicant Tracking System)** by naturally incorporating key industry-specific keywords.
     6. **Where applicable, use the STAR (Situation, Task, Action, Result) method** to structure responses effectively.
 
-    Format your response ONLY as a JSON object with two keys: "technical" (an array of strings) and "nonTechnical" (an array of strings).
+    Format your response ONLY as a JSON object with one key: "response" (an array of strings).
     Example JSON format:
     {
       "response": ["Answer 1", "Answer 2", ...]
@@ -102,7 +103,12 @@ export const generateJobApplicationAnswers = action({
         );
       }
 
-      return parsedAnswers;
+      await ctx.runMutation(api.jobs.updateJob, {
+        jobId: args.jobId as Id<"jobs">,
+        userId: args.userId,
+        answers: parsedAnswers.response,
+        aiAnswersGenerated: true,
+      });
     } catch (error) {
       console.error("Error generating application answers:", error);
       if (error instanceof OpenAI.APIError) {

@@ -1,6 +1,6 @@
 import { toast } from "sonner";
 import { api } from "../../../convex/_generated/api";
-import { useMutation, useAction, useQuery } from "convex/react";
+import { useMutation, useAction } from "convex/react";
 
 export interface JobData {
   title: string;
@@ -20,8 +20,6 @@ export function useAddJob(userId: string) {
   const addJob = useMutation(api.jobs.addJob);
   const scrapeJob = useAction(api.scrape.scrapeJob);
 
-  const getAiGeneratedJobQuestions = useAction(api.openai.generateJobQuestions);
-
   const inputJobData = async (
     jobTitle: string,
     jobRequirements: string,
@@ -33,7 +31,6 @@ export function useAddJob(userId: string) {
         title: jobTitle,
         description: jobRequirements,
         questions: questions,
-        answers: [],
       });
 
       return jobId;
@@ -50,19 +47,11 @@ export function useAddJob(userId: string) {
         applicationUrl,
       });
 
-      // const answersFromAi = await getAiGeneratedJobQuestions({
-      //   jobTitle: jobData.title,
-      //   jobRequirements: jobData.description,
-      //   jobQuestions: jobData.questions,
-      //   userBackground: formatProfileBackground(profile),
-      // });
-
       const jobId = await addJob({
         userId,
         title: jobData.title,
         description: jobData.description,
-        questions: jobData.questions,
-        answers: [], // need to fix this, move the AI generated answers to backend
+        questions: jobData.questions || [],
         postingUrl,
         applicationUrl,
       });
