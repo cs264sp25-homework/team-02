@@ -23,12 +23,12 @@ export const jobInSchema = {
   description: v.string(),
 
   // Application Questions and Answers
-  questions: v.array(v.string()),
-  answers: v.array(v.string()),
+  questions: v.optional(v.array(v.string())),
+  answers: v.optional(v.array(v.string())),
 
   // Urls
-  postingUrl: v.string(),
-  applicationUrl: v.string(),
+  postingUrl: v.optional(v.string()),
+  applicationUrl: v.optional(v.string()),
   questionImageUrl: v.optional(v.string()),
 
   // Timestamps
@@ -334,8 +334,9 @@ export const getAllJobs = query({
       .collect();
 
     // Sort by createdAt date, newest first
-    return jobs.sort((a, b) => 
-      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    return jobs.sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
     );
   },
 });
