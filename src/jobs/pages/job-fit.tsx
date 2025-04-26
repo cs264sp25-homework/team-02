@@ -53,9 +53,10 @@ const JobFitPage = () => {
     // Don't regenerate if the summary already exists
     if (job.jobFitSummary && job.jobFitSummary !== "") {
       setSummary(job.jobFitSummary);
-      return;
+    } else {
+      fetchJobFitSummary();
     }
-  }, [job, profile, user]);
+  }, [job, profile, user, fetchJobFitSummary]);
 
   if (loading || jobLoading || !profile || !job) {
     return (
