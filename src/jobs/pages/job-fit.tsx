@@ -91,8 +91,8 @@ const JobFitPage = () => {
             <Card>
               <CardContent>
                 <p className="text-gray-500">
-                  You need to add skills to your profile before we can analyze
-                  your fit for this job.
+                  You need to add skills to your profile to see matched and
+                  missing skills.
                 </p>
                 <Button
                   variant="outline"
