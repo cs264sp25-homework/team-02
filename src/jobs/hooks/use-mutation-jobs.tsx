@@ -51,7 +51,7 @@ export function useAddJob(userId: string) {
         userId,
         title: jobData.title,
         description: jobData.description,
-        questions: jobData.questions || [],
+        questions: jobData.questions,
         postingUrl,
         applicationUrl,
       });

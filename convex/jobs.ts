@@ -128,7 +128,10 @@ export const addJob = mutation({
       aiAnswersGenerated: false,
     });
 
+    console.log("questions", questions);
+
     if (Array.isArray(questions) && questions.length > 0) {
+      console.log("Generating job application answers in addJob...");
       await ctx.scheduler.runAfter(
         0,
         api.jobApplicationAnswers.generateJobApplicationAnswers,
@@ -180,35 +183,41 @@ export const updateJob = mutation({
     ...jobUpdateSchema,
   },
   handler: async (ctx, { userId, jobId, ...update }) => {
-    // get user from auth
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_id", (q) => q.eq("_id", userId as Id<"users">))
-      .first();
+    try {
+      // get user from auth
+      const user = await ctx.db
+        .query("users")
+        .withIndex("by_id", (q) => q.eq("_id", userId as Id<"users">))
+        .first();
 
-    if (!user) {
-      throw new Error("Not authenticated!");
+      if (!user) {
+        throw new Error("Not authenticated!");
+      }
+
+      const existingJob = await ctx.db.get(jobId);
+
+      if (!existingJob) {
+        throw new Error("Job not found");
+      }
+
+      if (existingJob.userId !== userId) {
+        throw new Error("Not authorized to update this job!");
+      }
+
+      // Add updatedAt timestamp
+      const jobUpdate = {
+        ...update,
+        updatedAt: new Date().toISOString(),
+      };
+
+      await ctx.db.patch(jobId, jobUpdate);
+
+      return true;
+    } catch (error) {
+      console.error("Error updating job:", error);
+      return false;
+      throw new Error("Failed to update job");
     }
-
-    const existingJob = await ctx.db.get(jobId);
-
-    if (!existingJob) {
-      throw new Error("Job not found");
-    }
-
-    if (existingJob.userId !== userId) {
-      throw new Error("Not authorized to update this job!");
-    }
-
-    // Add updatedAt timestamp
-    const jobUpdate = {
-      ...update,
-      updatedAt: new Date().toISOString(),
-    };
-
-    await ctx.db.patch(jobId, jobUpdate);
-
-    return true;
   },
 });
 
