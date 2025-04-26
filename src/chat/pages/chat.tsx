@@ -4,58 +4,77 @@ import { useAuth } from "@/linkedin/hooks/useAuth";
 import { Button } from "@/core/components/button";
 import { Textarea } from "@/core/components/textarea";
 import { Spinner } from "@/linkedin/components/spinner";
-import { SendIcon, PlusIcon } from "lucide-react";
+import { SendIcon, MenuIcon, XIcon } from "lucide-react";
 import { Id } from "convex/_generated/dataModel";
 import { useQueryChats } from "@/chat/hooks/use-query-chats";
-import { useChat } from "@/chat/hooks/use-chat"; // Import useChat hook
+import { useChat } from "@/chat/hooks/use-chat";
 import { MessageList } from "@/chat/components/message-list";
 import { Sidebar } from "@/chat/components/chat-sidebar";
 import CreateChatDialog from "@/chat/components/CreateChatDialog";
+import { useAutosizeTextArea } from "@/chat/hooks/use-autosize-textarea";
+import { cn } from "@/core/lib/utils";
 
 const ChatPage = () => {
   const { isAuthenticated, user } = useAuth();
   const { redirect, params } = useRouter();
   const [input, setInput] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 768);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
-  // Get chatId from URL
   const chatId = params.chatId as Id<"chats">;
   
-  // Use our enhanced chat hook
   const { 
     messages, 
     messagesLoading, 
     isSending,
-    sendMessage 
+    sendMessage,
+    aiMessageId,
+    aiMessageContent,
+    isStreamingDone
   } = useChat();
   
-  // Get chats for the sidebar
   const { data: chats } = useQueryChats();
-  
-  // Find selected chat for header title
   const selectedChat = chats?.find(chat => chat._id === chatId);
   
-  // Auto-resize textarea based on content
-  useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
-    }
-  }, [input]);
+  useAutosizeTextArea({
+    textAreaRef: textareaRef,
+    triggerAutoSize: input,
+    minHeight: 24,
+    maxHeight: 100
+  });
   
-  // Redirect if not authenticated
   useEffect(() => {
     if (!isAuthenticated) {
       redirect("login");
     }
   }, [isAuthenticated, redirect]);
 
-  // Scroll to bottom when messages update
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+    const node = messagesEndRef.current;
+    if (node) {
+      node.scrollTop = node.scrollHeight;
+    }
+  }, [messages, aiMessageContent]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 768) {
+        setSidebarOpen(false);
+      } else {
+        setSidebarOpen(true);
+      }
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const toggleSidebar = () => setSidebarOpen((open) => !open);
+  const toggleSidebarCollapsed = () => setSidebarCollapsed((c) => !c);
 
   const handleNewChat = () => {
     setIsDialogOpen(true);
@@ -71,7 +90,7 @@ const ChatPage = () => {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey && !isSending) {
       e.preventDefault();
       handleSendMessage();
     }
@@ -81,7 +100,7 @@ const ChatPage = () => {
     if (isSending || !input.trim() || !chatId) return;
     
     const message = input;
-    setInput(""); // Clear input immediately for better UX
+    setInput("");
     
     try {
       await sendMessage(message);
@@ -91,93 +110,131 @@ const ChatPage = () => {
   };
 
   return (
-    <div className="flex h-screen w-screen">
-      {/* Sidebar with its own scroll */}
-      <aside className="w-64 border-r bg-white h-full overflow-y-auto">
-        <Sidebar onNewChat={handleNewChat} currentChatId={chatId} />
+    <>
+      {/* Sidebar: fixed to left, content starts below navbar */}
+      <aside className={cn(
+        "fixed top-0 left-0 h-screen border-r bg-white z-30 transition-all duration-300",
+        sidebarCollapsed ? "w-16" : "w-64"
+      )}>
+        <div className="pt-12 flex flex-col h-full bg-white"> {/* Ensure sidebar content is white */}
+          <div className="flex items-center justify-between px-6 py-3 border-b bg-white"> {/* Sidebar header bg white */}
+            <span className="font-bold text-lg text-gray-700">{!sidebarCollapsed && "Chats"}</span>
+            <Button variant="ghost" size="icon" onClick={toggleSidebarCollapsed}>
+              {sidebarCollapsed ? <MenuIcon className="h-5 w-5" /> : <XIcon className="h-5 w-5" />}
+            </Button>
+          </div>
+          {!sidebarCollapsed && <Sidebar onNewChat={handleNewChat} currentChatId={chatId} />}
+        </div>
       </aside>
-
-      {/* Main Chat Area */}
-      <main className="flex flex-col flex-1 h-full overflow-hidden">
-        {/* Header with chat title */}
-        <header className="flex items-center px-4 py-2 border-b bg-white h-14">
-          <h1 className="text-lg font-semibold">
+      {/* Main Chat Area: margin left for sidebar, margin top for navbar */}
+      <div className={cn(
+        "flex flex-col h-screen bg-gray-50",
+        sidebarCollapsed ? "md:ml-16" : "md:ml-64",
+        "pt-12" // 48px for navbar
+      )}>
+        {/* Header: fixed below navbar, flush with sidebar */}
+        <header
+          className="fixed z-40 flex items-center px-6 py-4 border-b bg-white w-full backdrop-blur-md"
+          style={{
+            left: sidebarCollapsed ? 64 : 256,
+            top: 48, // navbar height
+            width: `calc(100% - ${(sidebarCollapsed ? 64 : 256)}px)`
+          }}
+        >
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleSidebar}
+            className="mr-2 md:hidden"
+          >
+            {sidebarOpen ? <XIcon className="h-5 w-5" /> : <MenuIcon className="h-5 w-5" />}
+          </Button>
+          <h1 className="text-xl font-bold tracking-tight text-gray-900 truncate text-left w-full">
             {chatId ? selectedChat?.title || "Chat" : "JobSync Assistant"}
           </h1>
         </header>
-
-        {/* Messages Container */}
-        <div className="flex-1 overflow-y-auto px-4 py-2">
-          {!chatId ? (
-            <div className="flex flex-col items-center justify-center h-full">
-              <h1 className="text-xl font-semibold mb-2">JobSync Assistant</h1>
-              <p className="text-center text-gray-500 max-w-md">
-                Start a new conversation to get personalized guidance on job applications,
-                resume tips, and career advice.
-              </p>
-              <Button onClick={handleNewChat} className="mt-4">
-                <PlusIcon className="w-4 h-4 mr-2" />
-                New Chat
-              </Button>
-            </div>
-          ) : messagesLoading ? (
-            <div className="flex justify-center py-8">
-              <Spinner />
-            </div>
-          ) : messages?.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full">
-              <p className="text-center text-gray-500">
-                Ask me about job applications, resume tips, interview prep, or career advice.
-              </p>
-            </div>
-          ) : (
-            <MessageList messages={messages || []} user={user} />
-          )}
-          <div ref={messagesEndRef} />
+        {/* Messages: margin top for header */}
+        <div
+          className="flex-1 overflow-y-auto px-0 md:px-0 bg-white custom-scrollbar"
+          ref={messagesEndRef}
+          style={{ minHeight: 0, marginTop: 72, paddingBottom: 120 }} // 120px bottom padding to keep messages above input
+        >
+          <div className="w-full max-w-3xl mx-auto pt-4 pb-4">
+            {!chatId ? (
+              <div className="flex flex-col items-center justify-center h-full p-4 text-center">
+                <h1 className="text-2xl font-semibold mb-2">JobSync Assistant</h1>
+                <p className="text-gray-500 mb-4">
+                  Start a new conversation to get job application guidance.
+                </p>
+                <Button onClick={handleNewChat}>New Chat</Button>
+              </div>
+            ) : messagesLoading ? (
+              <div className="flex justify-center py-8">
+                <Spinner />
+              </div>
+            ) : messages?.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full p-4 text-center">
+                <p className="text-gray-400">
+                  Ask about job applications, resume tips, or interview prep.
+                </p>
+              </div>
+            ) : (
+              <MessageList 
+                messages={messages || []} 
+                user={user}
+                aiMessageId={aiMessageId || undefined}
+                aiMessageContent={aiMessageContent}
+              />
+            )}
+          </div>
         </div>
-
-        {/* Message Input */}
+        {/* Input: fixed to bottom, aligned with chat area only */}
         {chatId && (
-          <div className="border-t bg-white px-4 py-2">
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                handleSendMessage();
-              }}
-              className="relative"
-            >
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleSendMessage();
+            }}
+            className={cn(
+              "fixed bottom-0 border-t bg-white/95 backdrop-blur-md px-4 py-3 z-20 transition-all duration-300",
+              sidebarCollapsed ? "md:left-16 md:w-[calc(100%-4rem)]" : "md:left-64 md:w-[calc(100%-16rem)]"
+            )}
+            style={{ left: sidebarCollapsed ? 64 : 256, width: `calc(100% - ${(sidebarCollapsed ? 64 : 256)}px)` }}
+          >
+            <div className="max-w-2xl mx-auto flex items-end gap-2">
               <Textarea
                 ref={textareaRef}
                 value={input}
                 onChange={handleInputChange}
                 onKeyDown={handleKeyDown}
-                placeholder="Message JobSync AI..."
-                className="min-h-[52px] max-h-[200px] w-full pr-12 resize-none rounded-lg"
-                disabled={isSending}
+                placeholder={isSending && !isStreamingDone ? "Waiting for response..." : "Message JobSync AI..."}
+                className={cn(
+                  "flex-1 resize-none rounded-full border border-gray-200 bg-gray-50 px-4 py-2 text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all min-h-[40px] max-h-[120px]",
+                  isSending && !isStreamingDone ? "bg-gray-100 text-gray-400" : "bg-gray-50 text-gray-900"
+                )}
+                disabled={isSending && !isStreamingDone}
               />
               <Button
                 type="submit"
                 size="icon"
-                disabled={isSending || input.trim() === ""}
-                className="absolute right-2 bottom-2 h-9 w-9"
+                disabled={isSending && !isStreamingDone || input.trim() === ""}
+                className={cn(
+                  "rounded-full h-10 w-10 flex items-center justify-center bg-blue-500 hover:bg-blue-600 text-white transition-colors shadow-md",
+                  isSending && !isStreamingDone && "bg-gray-300 cursor-not-allowed hover:bg-gray-300"
+                )}
               >
-                {isSending ? <Spinner size="sm" /> : <SendIcon className="w-4 h-4" />}
+                {isSending ? <Spinner size="sm" /> : <SendIcon className="w-5 h-5" />}
               </Button>
-            </form>
-            <div className="mt-2 text-xs text-center text-gray-400">
-              JobSync AI can make mistakes. Verify important information.
             </div>
-          </div>
+          </form>
         )}
-      </main>
-
-      {/* New Chat Dialog */}
-      <CreateChatDialog
-        isOpen={isDialogOpen}
-        onClose={() => setIsDialogOpen(false)}
-        onChatCreated={handleChatCreated}
-      />
-    </div>
+        <CreateChatDialog
+          isOpen={isDialogOpen}
+          onClose={() => setIsDialogOpen(false)}
+          onChatCreated={handleChatCreated}
+        />
+      </div>
+    </>
   );
 };
 

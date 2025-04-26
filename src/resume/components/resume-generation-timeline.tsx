@@ -28,6 +28,7 @@ export const ResumeGenerationTimeline = ({
       label: "Generating Tailored Resume",
     },
     { status: "enhancing resume with AI", label: "Enhancing Resume with AI" },
+    { status: "providing resume insights", label: "Providing Resume Insights" },
     { status: "compiling resume", label: "Compiling Resume" },
     { status: "completed", label: "Completed" },
   ];
@@ -69,9 +70,11 @@ export const ResumeGenerationTimeline = ({
                 {/* Status indicator */}
                 <div
                   className={cn(
-                    "absolute left-4 -translate-x-1/2 w-4 h-4 rounded-full border-2",
+                    "absolute left-4 -translate-x-1/2 w-4 h-4 rounded-full border-2 transition-colors duration-300",
                     isCompleted && "bg-green-500 border-green-500",
-                    isCurrent && !isFailed && "bg-blue-500 border-blue-500",
+                    isCurrent &&
+                      !isFailed &&
+                      "bg-blue-500 border-blue-500 animate-pulse",
                     isFailed && "bg-red-500 border-red-500",
                     !isCompleted &&
                       !isCurrent &&

@@ -1,5 +1,5 @@
 import { Button } from "@/core/components/button";
-import { Download } from "lucide-react";
+import { FileEdit } from "lucide-react";
 import { useRouter } from "@/core/hooks/use-router";
 import { Id } from "convex/_generated/dataModel";
 import { useMutationResume } from "../hooks/use-muatation-resume";
@@ -40,8 +40,9 @@ function CustomizeResumeButton({ jobId, userId }: CustomizeResumeButtonProps) {
         e.stopPropagation();
         handleCustomizeResume(jobId);
       }}
+      className="w-full justify-start"
     >
-      <Download className="mr-2 h-4 w-4" />
+      <FileEdit className="mr-2 h-4 w-4" />
       Customize Resume
     </Button>
   );

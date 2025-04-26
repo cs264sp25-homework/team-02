@@ -67,20 +67,46 @@ const JobDetailsPage = () => {
   const profile = useQuery(api.profiles.getProfileByUserId, {
     userId: user!.id,
   });
-  const getAiGeneratedJobQuestions = useAction(api.openai.generateJobQuestions);
   const extractRequiredSkills = useAction(api.jobs.extractRequiredSkills);
 
+  // Convex actions
+  const getAiGeneratedAnswers = useAction(
+    api.jobApplicationAnswers.generateJobApplicationAnswers,
+  );
   const refineResponse = useAction(api.openai.refineResponse);
   const regenerateResponse = useAction(api.openai.regenerateResponse);
   const optimizeResponse = useAction(api.openai.optimizeResponse);
   const adjustTone = useAction(api.openai.adjustTone);
 
-  // Initialize and update answers when job data changes
   useEffect(() => {
-    if (job?.answers) {
-      setAnswers(job.answers);
+    if (job?.answers && job.answers.length > 0) {
+      setAnswers(job.answers); // ✅ sync to local state
     }
   }, [job?.answers]);
+
+  const formatExtractedRequirements = (text: string): string[] => {
+    if (!text) return [];
+
+    // Normalize line endings
+    const lines = text
+      .split(/\r?\n/) // split by line breaks
+      .map((line) => line.trim()) // remove extra spaces
+      .filter((line) => line.length > 0); // filter out empty lines
+
+    const bullets: string[] = [];
+
+    for (let line of lines) {
+      // Remove any weird leading bullet-like characters (e, o, *, -, etc.)
+      line = line.replace(/^[-•*eóo0\s]+/, "").trim();
+
+      if (line.length > 0) {
+        line = `• ${line}`; // Add a bullet point
+        bullets.push(line);
+      }
+    }
+
+    return bullets;
+  };
 
   const handleImageUpload = async (
     file: File,
@@ -95,13 +121,14 @@ const JobDetailsPage = () => {
       );
 
       let jobUpdated: boolean;
+      const jobQuestions = extractQuestions(text);
 
       if (imageContentType === "requirements") {
         // update the job description
         jobUpdated = await updateJob({
           userId: user!.id,
           jobId: job!._id,
-          description: text,
+          description: formatExtractedRequirements(text).join("\n"),
         });
 
         await extractRequiredSkills({
@@ -110,37 +137,41 @@ const JobDetailsPage = () => {
           requirements: text,
         });
       } else {
+        if (job?.description === "No requirements found") {
+          toast.error(
+            "Please upload screenshot of job requirements before adding image of questions.",
+          );
+          return;
+        }
+
         // update the job questions
         jobUpdated = await updateJob({
           userId: user!.id,
           jobId: job!._id,
-          questions: extractQuestions(text),
+          questions: jobQuestions,
         });
       }
 
-      // need to fix this, don't geenerated AI answers if there are not questions, if the questions array is empty
+      toast.success("Image uploaded and job updated successfully!");
 
-      if (jobUpdated && job!.questions.length > 0) {
-        toast.success("Image parsed and job updated successfully");
-        const answersFromAi = await getAiGeneratedJobQuestions({
-          jobTitle: job!.title,
-          jobRequirements: job!.description,
-          jobQuestions: job!.questions,
-          userBackground: formatProfileBackground(profile),
-        });
-        jobUpdated = await updateJob({
+      if (
+        jobUpdated &&
+        imageContentType === "questions" &&
+        jobQuestions.length > 0
+      ) {
+        console.log(
+          "Generating AI answers for questions in handleImageUpload...",
+        );
+        await getAiGeneratedAnswers({
           userId: user!.id,
           jobId: job!._id,
-          answers: answersFromAi,
+          jobTitle: job!.title,
+          jobRequirements: job!.description,
+          jobQuestions: jobQuestions,
         });
-        if (jobUpdated) {
-          setAnswers(answersFromAi);
-          toast.success("AI-generated answers updated successfully");
-        }
       }
     } catch (error) {
-      toast.error("Failed to parse image or update job");
-      console.error("Error:", error);
+      toast.error("Failed to parse image or update job: " + error);
     }
   };
 
@@ -295,13 +326,14 @@ const JobDetailsPage = () => {
           <div>
             <h3 className="text-lg font-semibold mb-2">Requirements</h3>
             {job.description && job.description !== "No requirements found" && (
-              <p className="whitespace-pre-wrap">{job.description}</p>
+              <p className="whitespace-pre-wrap text-left">{job.description}</p>
             )}
             {job.description === "No requirements found" && (
-              <div>
-                <p className="text-sm text-gray-600 mb-4">
+              <div className="flex flex-col items-start gap-2 mb-6">
+                <p className="text-sm text-gray-600 mb-4 text-left">
                   Unable to extract job requirements from provided link. Please
-                  upload screenshot of the job requirements.
+                  upload screenshot of the job requirements. Only take
+                  screenshot of the bulleted list.
                 </p>
                 <ImageUpload
                   onImageUpload={(file) =>
@@ -312,8 +344,8 @@ const JobDetailsPage = () => {
             )}
           </div>
 
-          {job.questions.length == 0 && (
-            <div>
+          {job.questions && job.questions.length == 0 && (
+            <div className="flex flex-col items-start gap-2 mb-6">
               <h3 className="text-lg font-semibold mb-2">
                 Application Questions
               </h3>
@@ -327,8 +359,8 @@ const JobDetailsPage = () => {
             </div>
           )}
 
-          {job.questions.length > 0 && (
-            <div>
+          {job.questions && job.questions.length > 0 && (
+            <div className="flex flex-col items-start gap-2 mb-6">
               <h3 className="text-lg font-semibold mb-2">
                 Application Questions
               </h3>
@@ -368,7 +400,7 @@ const JobDetailsPage = () => {
                           return newAnswers;
                         })
                       }
-                      placeholder="This will contain auto-generated answers. Loading..."
+                      placeholder="This will contain AI-generated answer. Loading..."
                       className="mt-2"
                     />
                   </li>

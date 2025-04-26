@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 
 import { Infer } from "convex/values";
-
+import { z } from "zod";
 import { defineTable } from "convex/server";
 
 export const improveResumeAction = v.union(
@@ -20,12 +20,31 @@ export const generationStatus = v.union(
   v.literal("generating tailored profile"), // (AI) use generateObject to generate a profile that is tailored to the job description
   v.literal("generating tailored resume"), // fit the profile to the resume latex template
   v.literal("enhancing resume with AI"), // (AI) use streamText to enhance the resume with AI and any user instructions
+  v.literal("providing resume insights"), // (AI) provide insights about the resume job fit
   v.literal("compiling resume"), // use compileLatex to compile the resume
   v.literal("completed"), // resume is ready to be viewed
   v.literal("failed"), // generation failed
 );
 
 export type GenerationStatusType = Infer<typeof generationStatus>;
+
+export const resumeInsightsZodSchema = z.object({
+  insights: z.array(
+    z.object({
+      requirement: z.string(),
+      match: z.union([z.literal("match"), z.literal("gap")]),
+      comments: z.string(),
+    }),
+  ),
+});
+
+export const resumeInsightsSchema = v.array(
+  v.object({
+    requirement: v.string(),
+    match: v.union(v.literal("match"), v.literal("gap")),
+    comments: v.string(),
+  }),
+);
 
 export const resumeInSchema = {
   latexContent: v.string(), // latex content of the resume
@@ -37,6 +56,7 @@ export const resumeInSchema = {
   compiledResumeStorageId: v.optional(v.id("_storage")), // storage id of the compiled resume
   compiledResumeUrl: v.optional(v.string()), // url of the compiled resume
   userResumeCompilationErrorMessage: v.optional(v.string()), // error message if user compilation failed
+  resumeInsights: v.optional(resumeInsightsSchema), // insights about the resume related to the job description
 };
 
 export const resumeSchema = {

@@ -1,5 +1,6 @@
 import React from "react";
 import { cn } from "@/core/lib/utils";
+import { User, Bot } from "lucide-react";
 
 type AvatarRole = "user" | "assistant";
 
@@ -28,7 +29,7 @@ export const Avatar: React.FC<AvatarProps> = ({ role, name, src, className }) =>
   return (
     <div
       className={cn(
-        "flex items-center justify-center w-8 h-8 rounded-full text-white text-sm font-medium",
+        "flex items-center justify-center w-8 h-8 rounded-full text-white text-sm font-medium shrink-0",
         getBgColor(),
         className
       )}
@@ -39,8 +40,10 @@ export const Avatar: React.FC<AvatarProps> = ({ role, name, src, className }) =>
           alt={name} 
           className="w-full h-full rounded-full object-cover"
         />
+      ) : role === "assistant" ? (
+        <Bot className="h-4 w-4" />
       ) : (
-        <span>{initial}</span>
+        initial ? <span>{initial}</span> : <User className="h-4 w-4" />
       )}
     </div>
   );

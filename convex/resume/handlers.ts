@@ -20,11 +20,93 @@ import {
   getResumeEnhancementSystemPrompt,
   getTailoredProfilePrompt,
 } from "./prompts";
-import { generationStatus, improveResumeAction } from "./schema";
+import {
+  generationStatus,
+  improveResumeAction,
+  resumeInsightsSchema,
+  resumeInsightsZodSchema,
+} from "./schema";
 import { ConvexError } from "convex/values";
 import { generateJakesResume } from "./templates";
 import { ProfileType, zodProfileInSchema } from "../profiles";
 import { cleanTailoredProfile } from "./verifiers";
+import { getPromptForResumeInsights } from "./prompts";
+
+export const generateResumeInsights = action({
+  args: {
+    resumeId: v.id("resumes"),
+    userId: v.string(),
+  },
+  handler: async (ctx, { resumeId, userId }) => {
+    await generateResumeInsightsHelper(resumeId, userId, ctx);
+  },
+});
+
+async function generateResumeInsightsHelper(
+  resumeId: Id<"resumes">,
+  userId: string,
+  ctx: ActionCtx,
+) {
+  const resume = await ctx.runQuery(api.resume.handlers.getResumeById, {
+    userId,
+    resumeId,
+  });
+  if (!resume) {
+    throw new Error("Resume not found");
+  }
+  if (!resume.jobId) {
+    throw new Error("Resume has no job id");
+  }
+  const job = await ctx.runQuery(api.jobs.getJobById, {
+    jobId: resume.jobId as Id<"jobs">,
+    userId,
+  });
+  if (!job) {
+    throw new Error("Job not found");
+  }
+  const jobDescription = job.description;
+  const { object } = await generateObject({
+    model: openai("gpt-4o-mini"),
+    prompt: getPromptForResumeInsights(resume.latexContent, jobDescription),
+    schema: resumeInsightsZodSchema,
+  });
+  await ctx.runMutation(api.resume.handlers.updateResumeInsights, {
+    resumeId,
+    resumeInsights: object.insights,
+  });
+}
+export const getResumeInsights = query({
+  args: {
+    resumeId: v.id("resumes"),
+    userId: v.string(),
+  },
+  handler: async (ctx, { resumeId, userId }) => {
+    const resume = await ctx.db.get(resumeId);
+    if (!resume || resume.userId !== userId) {
+      throw new Error("Resume not found");
+    }
+    if (!resume.resumeInsights) {
+      return undefined;
+    }
+    return resume.resumeInsights.sort((a, b) => {
+      if (a.match === "match" && b.match === "gap") return 1;
+      if (a.match === "gap" && b.match === "match") return -1;
+      return 0;
+    });
+  },
+});
+
+export const updateResumeInsights = mutation({
+  args: {
+    resumeId: v.id("resumes"),
+    resumeInsights: v.optional(resumeInsightsSchema),
+  },
+  handler: async (ctx, { resumeId, resumeInsights }) => {
+    await ctx.db.patch(resumeId, {
+      resumeInsights,
+    });
+  },
+});
 
 export const startResumeGeneration = mutation({
   args: {
@@ -77,7 +159,7 @@ export const restartResumeGeneration = mutation({
       tailoredProfile: {},
       userResumeCompilationErrorMessage: "",
     });
-    ctx.scheduler.runAfter(0, internal.resume.handlers.generateResume, {
+    await ctx.scheduler.runAfter(0, internal.resume.handlers.generateResume, {
       userId,
       jobId,
       aiEnhancementPrompt,
@@ -161,6 +243,13 @@ export const generateResume = internalAction({
 
       await ctx.runMutation(api.resume.handlers.updateResumeGenerationStatus, {
         resumeId,
+        status: "providing resume insights",
+      });
+
+      await generateResumeInsightsHelper(resumeId, userId, ctx);
+
+      await ctx.runMutation(api.resume.handlers.updateResumeGenerationStatus, {
+        resumeId,
         status: "compiling resume",
       });
 
@@ -170,6 +259,15 @@ export const generateResume = internalAction({
         resumeId,
         status: "completed",
       });
+
+      await ctx.scheduler.runAfter(
+        0,
+        api.resume.handlers.generateResumeInsights,
+        {
+          resumeId,
+          userId,
+        },
+      );
 
       return latexContent;
     } catch (error: unknown) {
@@ -542,7 +640,6 @@ async function createTailoredProfile(
       prompt: getTailoredProfilePrompt(profile, jobDescription),
       schema: zodProfileInSchema,
     });
-    console.log("Raw profile", object);
     // remove any work experience, education, or projects that do not match the user's profile
     const tailoredProfile = cleanTailoredProfile(
       {

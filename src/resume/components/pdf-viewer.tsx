@@ -2,32 +2,62 @@ import { Button } from "@/core/components/button";
 import { Download } from "lucide-react";
 import { pdfjs } from "react-pdf";
 import { Document, Page } from "react-pdf";
+import { ErrorBoundary } from "react-error-boundary";
 import "react-pdf/dist/Page/TextLayer.css";
 import "react-pdf/dist/Page/AnnotationLayer.css";
-import { useState, useEffect, useRef } from "react";
-
+import { useState, useEffect, useRef, useMemo, memo } from "react";
+import { usePdfScale } from "../hooks/use-pdf-scale";
 interface PdfViewerProps {
   pdfUrl: string | null;
   generationStatus: string;
   setClickedText: (text: string) => void;
 }
 
-const options = {
-  cMapUrl: "/cmaps/",
-  standardFontDataUrl: "/standard_fonts/",
-};
-
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
-
-export const PdfViewer = ({
+const PdfViewer = ({
   pdfUrl,
   generationStatus,
   setClickedText,
 }: PdfViewerProps) => {
-  const [numPages, setNumPages] = useState<number>(0);
-  const [scale, setScale] = useState(1.0);
+  const [numPages, setNumPages] = useState<number | null>(null);
+  const { scale, setScale } = usePdfScale();
+  const [useFallback, setUseFallback] = useState(false);
   const viewerRef = useRef<HTMLDivElement>(null);
-  const [docReady, setDocReady] = useState(false);
+  const timeoutRef = useRef<NodeJS.Timeout>(null);
+
+  const options = useMemo(
+    () => ({
+      cMapUrl: "/cmaps/",
+      standardFontDataUrl: "/standard_fonts/",
+    }),
+    [],
+  );
+
+  useEffect(() => {
+    pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+  }, []);
+
+  useEffect(() => {
+    setNumPages(null);
+    setUseFallback(false);
+
+    // Clear any existing timeout
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+
+    // Set a new timeout
+    if (pdfUrl) {
+      timeoutRef.current = setTimeout(() => {
+        setUseFallback(true);
+      }, 3000);
+    }
+
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, [pdfUrl]); // Only depend on pdfUrl changes
 
   useEffect(() => {
     const handleTextLayerClick = (event: MouseEvent) => {
@@ -79,9 +109,10 @@ export const PdfViewer = ({
 
   const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
     setNumPages(numPages);
-    setTimeout(() => {
-      setDocReady(true);
-    }, 200);
+    // Clear the timeout since PDF loaded successfully
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
   };
 
   const zoomIn = () => {
@@ -118,6 +149,25 @@ export const PdfViewer = ({
     );
   }
 
+  if (useFallback) {
+    return (
+      <div className="flex flex-col h-full">
+        <div className="flex justify-between items-center p-4 border-b bg-white">
+          <Button
+            onClick={handleDownloadPdf}
+            variant="outline"
+            size="sm"
+            className="flex items-center gap-2"
+          >
+            <Download className="h-4 w-4" />
+            Download PDF
+          </Button>
+        </div>
+        <ReactPDFErrorFallback pdfUrl={pdfUrl} />
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-full">
       <div className="flex justify-between items-center p-4 border-b bg-white">
@@ -150,44 +200,68 @@ export const PdfViewer = ({
           Download PDF
         </Button>
       </div>
-      <div
-        className="flex-1 w-full h-full overflow-auto bg-gray-200 p-6 relative"
-        ref={viewerRef}
+      <ErrorBoundary
+        fallback={<ReactPDFErrorFallback pdfUrl={pdfUrl} />}
+        onError={(error, info) => {
+          console.error("Error loading PDF:", error);
+          console.log("Error info:", info);
+        }}
       >
-        {!docReady && (
-          <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 z-10">
-            <div className="flex flex-col items-center gap-2">
-              <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-              <p className="text-sm text-gray-600">Loading PDF...</p>
-            </div>
-          </div>
-        )}
-        <Document
-          file={pdfUrl}
-          onLoad={() => {
-            setDocReady(false);
-          }}
-          onLoadSuccess={onDocumentLoadSuccess}
-          className="flex flex-col items-center"
-          options={options}
+        <div
+          className="flex-1 w-full h-full overflow-auto bg-gray-200 p-6 relative"
+          ref={viewerRef}
         >
-          {docReady &&
-            Array.from(new Array(numPages), (_, index) => (
-              <div
-                key={`page_${index + 1}`}
-                className="mb-8 shadow-lg overflow-hidden bg-white"
-              >
-                <Page
-                  pageNumber={index + 1}
-                  scale={scale}
-                  renderTextLayer={true}
-                  renderAnnotationLayer={true}
-                  className="border border-gray-200"
-                />
+          {!numPages && (
+            <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 z-10">
+              <div className="flex flex-col items-center gap-2">
+                <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                <p className="text-sm text-gray-600">Loading PDF...</p>
               </div>
-            ))}
-        </Document>
-      </div>
+            </div>
+          )}
+
+          <Document
+            file={pdfUrl}
+            onLoadSuccess={onDocumentLoadSuccess}
+            className="flex flex-col items-center"
+            options={options}
+            key={pdfUrl}
+          >
+            {numPages &&
+              Array.from(new Array(numPages), (_, index) => (
+                <div
+                  key={`page_${index + 1}`}
+                  className="mb-8 shadow-lg overflow-hidden bg-white"
+                >
+                  <Page
+                    pageNumber={index + 1}
+                    scale={scale}
+                    renderTextLayer={true}
+                    renderAnnotationLayer={true}
+                    className="border border-gray-200"
+                  />
+                </div>
+              ))}
+          </Document>
+        </div>
+      </ErrorBoundary>
     </div>
   );
 };
+
+// if react-pdf fails to load, fallback to object tag
+function ReactPDFErrorFallback({ pdfUrl }: { pdfUrl: string }) {
+  return (
+    <div className="flex-1 w-full h-full overflow-hidden">
+      <object
+        data={`${pdfUrl}#toolbar=0&navpanes=0&scrollbar=0&view=FitH`}
+        type="application/pdf"
+        className="w-full h-full"
+        style={{ maxWidth: "100%", objectFit: "contain" }}
+        title="Resume PDF Preview"
+      />
+    </div>
+  );
+}
+
+export default memo(PdfViewer);
