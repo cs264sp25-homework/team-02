@@ -136,8 +136,6 @@ export const addJob = mutation({
       jobFitSummary: "",
     });
 
-    console.log("questions", questions);
-
     if (Array.isArray(questions) && questions.length > 0) {
       console.log("Generating job application answers in addJob...");
       await ctx.scheduler.runAfter(
@@ -152,6 +150,11 @@ export const addJob = mutation({
         },
       );
     }
+
+    await ctx.scheduler.runAfter(0, api.jobFitSummary.generateJobFitSummary, {
+      userId,
+      jobId,
+    });
 
     return jobId;
   },

@@ -68,6 +68,9 @@ const JobDetailsPage = () => {
     userId: user!.id,
   });
   const extractRequiredSkills = useAction(api.jobs.extractRequiredSkills);
+  const generateJobFitSummary = useAction(
+    api.jobFitSummary.generateJobFitSummary,
+  );
 
   // Convex actions
   const getAiGeneratedAnswers = useAction(
@@ -97,7 +100,7 @@ const JobDetailsPage = () => {
 
     for (let line of lines) {
       // Remove any weird leading bullet-like characters (e, o, *, -, etc.)
-      line = line.replace(/^[-•*eóo0\s]+/, "").trim();
+      line = line.replace(/^[-•*»e+-óo«¢0\s]+/, "").trim();
 
       if (line.length > 0) {
         line = `• ${line}`; // Add a bullet point
@@ -135,6 +138,11 @@ const JobDetailsPage = () => {
           jobId: jobId,
           userId: user!.id,
           requirements: text,
+        });
+
+        await generateJobFitSummary({
+          jobId: jobId,
+          userId: user!.id,
         });
       } else {
         if (job?.description === "No requirements found") {

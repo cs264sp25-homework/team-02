@@ -20,7 +20,6 @@ export const generateJobFitSummary = action({
         userId: args.userId,
       });
 
-      console.log("User Profile:", userProfile);
       if (!userProfile) {
         throw new Error("User profile not found");
       }
@@ -110,6 +109,8 @@ export const generateJobFitSummary = action({
       if (!summary || summary === "") {
         throw new Error("OpenAI response content is empty.");
       }
+
+      console.log("Job Fit Summary:", summary);
 
       await ctx.runMutation(api.jobs.updateJob, {
         jobId: args.jobId as Id<"jobs">,

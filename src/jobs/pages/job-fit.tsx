@@ -16,6 +16,7 @@ import SummaryCard from "../components/SummaryCard";
 import { api } from "../../../convex/_generated/api";
 import { useAction } from "convex/react";
 import { useEffect, useState, useCallback } from "react";
+import { profileTables } from "convex/profiles";
 
 const JobFitPage = () => {
   const { isAuthenticated, user } = useAuth();
@@ -61,9 +62,7 @@ const JobFitPage = () => {
       setSummary(job.jobFitSummary);
       return;
     }
-
-    fetchJobFitSummary();
-  }, [job, profile, user, getJobFitSummary, jobId, fetchJobFitSummary]);
+  }, [job, profile, user]);
 
   if (loading || jobLoading || !profile || !job) {
     return (
@@ -108,46 +107,15 @@ const JobFitPage = () => {
     (skill) => !userSkills.includes(skill),
   );
 
-  const fitPercentage = (matchedSkills.length / requiredSkills.length) * 100;
-
-  let fitLevel = "Unknown";
-
-  if (fitPercentage >= 75) {
-    fitLevel = "Strong Fit";
-  } else if (fitPercentage >= 50) {
-    fitLevel = "Moderate Fit";
-  } else {
-    fitLevel = "Need to Gain More Skills";
-  }
-
   return (
-    <div className="container mx-auto max-w-5xl px-4 py-8">
-      <h1 className="text-4xl font-bold mb-5">Job Fit Analysis</h1>
+    <div className="container mx-auto max-w-5xl px-4 py-2">
+      <h1 className="text-3xl font-bold mb-5">Job Fit Analysis</h1>
       <div className="flex flex-col space-y-8">
         <SummaryCard
           title="Summary"
           summary={summary}
           onRegenerate={fetchJobFitSummary}
         ></SummaryCard>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-xl">
-              Skills Fit Level: {fitLevel}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="relative w-full">
-              <Progress
-                value={fitPercentage}
-                className="h-4 rounded-full bg-gray-200"
-              />
-              <span className="absolute inset-0 flex items-center justify-center text-sm font-medium text-white">
-                {Math.round(fitPercentage)}%
-              </span>
-            </div>
-          </CardContent>
-        </Card>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <SkillsCard title="Matched Skills" skills={matchedSkills} />

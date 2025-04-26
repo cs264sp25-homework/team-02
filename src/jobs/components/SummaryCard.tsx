@@ -25,14 +25,14 @@ const SummaryCard: React.FC<SummaryProps> = ({
       </CardHeader>
 
       <CardContent>
-        <Button className="w-auto mb-4" onClick={onRegenerate}>
-          Regenerate Summary
-        </Button>
         {summary ? (
           <p className="text-gray-700 text-lg">{summary}</p>
         ) : (
           <p className="text-gray-500">No summary to display.</p>
         )}
+        <Button className="w-auto mt-8" onClick={onRegenerate}>
+          Regenerate Summary
+        </Button>
       </CardContent>
     </Card>
   );
