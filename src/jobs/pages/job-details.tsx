@@ -52,6 +52,30 @@ const JobDetailsPage = () => {
     }
   }, [job?.answers]);
 
+  const formatExtractedRequirements = (text: string): string[] => {
+    if (!text) return [];
+
+    // Normalize line endings
+    const lines = text
+      .split(/\r?\n/) // split by line breaks
+      .map((line) => line.trim()) // remove extra spaces
+      .filter((line) => line.length > 0); // filter out empty lines
+
+    const bullets: string[] = [];
+
+    for (let line of lines) {
+      // Remove any weird leading bullet-like characters (e, o, *, -, etc.)
+      line = line.replace(/^[-•*eóo0\s]+/, "").trim();
+
+      if (line.length > 0) {
+        line = `• ${line}`; // Add a bullet point
+        bullets.push(line);
+      }
+    }
+
+    return bullets;
+  };
+
   const handleImageUpload = async (
     file: File,
     imageContentType: "requirements" | "questions",
@@ -72,7 +96,7 @@ const JobDetailsPage = () => {
         jobUpdated = await updateJob({
           userId: user!.id,
           jobId: job!._id,
-          description: text,
+          description: formatExtractedRequirements(text).join("\n"),
         });
       } else {
         if (job?.description === "No requirements found") {
@@ -235,19 +259,20 @@ const JobDetailsPage = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle>{job.title}</CardTitle>
+          <CardTitle className="text-xl">{job.title}</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-6">
-          <div>
+        <CardContent>
+          <div className="flex flex-col items-start gap-2 mb-6">
             <h3 className="text-lg font-semibold mb-2">Requirements</h3>
             {job.description && job.description !== "No requirements found" && (
-              <p className="whitespace-pre-wrap">{job.description}</p>
+              <p className="whitespace-pre-wrap text-left">{job.description}</p>
             )}
             {job.description === "No requirements found" && (
-              <div>
-                <p className="text-sm text-gray-600 mb-4">
+              <div className="flex flex-col items-start gap-2 mb-6">
+                <p className="text-sm text-gray-600 mb-4 text-left">
                   Unable to extract job requirements from provided link. Please
-                  upload screenshot of the job requirements.
+                  upload screenshot of the job requirements. Only take
+                  screenshot of the bulleted list.
                 </p>
                 <ImageUpload
                   onImageUpload={(file) =>
@@ -258,8 +283,8 @@ const JobDetailsPage = () => {
             )}
           </div>
 
-          {job.questions.length == 0 && (
-            <div>
+          {job.questions && job.questions.length == 0 && (
+            <div className="flex flex-col items-start gap-2 mb-6">
               <h3 className="text-lg font-semibold mb-2">
                 Application Questions
               </h3>
@@ -273,8 +298,8 @@ const JobDetailsPage = () => {
             </div>
           )}
 
-          {job.questions.length > 0 && (
-            <div>
+          {job.questions && job.questions.length > 0 && (
+            <div className="flex flex-col items-start gap-2 mb-6">
               <h3 className="text-lg font-semibold mb-2">
                 Application Questions
               </h3>
