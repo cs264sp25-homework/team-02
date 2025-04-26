@@ -3,11 +3,8 @@ import { defineTable } from "convex/server";
 import { mutation, query, action } from "./_generated/server";
 import { Id } from "./_generated/dataModel";
 import { ConvexError } from "convex/values";
-<<<<<<< HEAD
-import OpenAI from "openai";
-=======
->>>>>>> master
 import { api } from "./_generated/api";
+import OpenAI from "openai";
 
 /******************************************************************************
  * SCHEMA
@@ -135,11 +132,8 @@ export const addJob = mutation({
       applicationUrl: applicationUrl || "",
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-<<<<<<< HEAD
-      jobFitSummary: "",
-=======
       aiAnswersGenerated: false,
->>>>>>> master
+      jobFitSummary: "",
     });
 
     console.log("questions", questions);
@@ -378,7 +372,6 @@ export const getAllJobs = query({
     );
   },
 });
-<<<<<<< HEAD
 
 export const extractRequiredSkills = action({
   args: {
@@ -526,5 +519,3 @@ Proficiency with CRM software and other sales tools preferred
     }
   },
 });
-=======
->>>>>>> master
