@@ -69,30 +69,6 @@ const JobFitPage = () => {
     );
   }
 
-  if (userSkills.length === 0) {
-    return (
-      <div className="container mx-auto max-w-5xl px-4 py-8">
-        <Card>
-          <CardContent>
-            <p className="text-gray-500">
-              You need to add skills to your profile before we can analyze your
-              fit for this job.
-            </p>
-            <Button
-              variant="outline"
-              className="mt-4"
-              onClick={() => {
-                redirect("profile_skills");
-              }}
-            >
-              Add Skills
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   const matchedSkills = requiredSkills.filter((skill) =>
     userSkills.includes(skill),
   );
@@ -110,14 +86,36 @@ const JobFitPage = () => {
           onRegenerate={fetchJobFitSummary}
         ></SummaryCard>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <SkillsCard title="Matched Skills" skills={matchedSkills} />
-          <SkillsCard
-            title="Missing Skills"
-            skills={missingSkills}
-            textColor="text-red-500"
-          />
-        </div>
+        {userSkills.length === 0 ? (
+          <div className="container mx-auto max-w-5xl px-4 py-8">
+            <Card>
+              <CardContent>
+                <p className="text-gray-500">
+                  You need to add skills to your profile before we can analyze
+                  your fit for this job.
+                </p>
+                <Button
+                  variant="outline"
+                  className="mt-4"
+                  onClick={() => {
+                    redirect("profile_skills");
+                  }}
+                >
+                  Add Skills
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <SkillsCard title="Matched Skills" skills={matchedSkills} />
+            <SkillsCard
+              title="Missing Skills"
+              skills={missingSkills}
+              textColor="text-red-500"
+            />
+          </div>
+        )}
       </div>
     </div>
   );
