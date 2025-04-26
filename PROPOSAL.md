@@ -52,7 +52,7 @@ To align with the technology stack used in the Practical Gen AI course, we'll us
 5. Convex BaaS for backend services, including authentication and database
 6. Use Vercel's AI SDK as a thin abstraction layer for AI features.
    - Ideally, we will not use more complex abstraction (like LangChain or LlamaIndex) to orchestrate AI features, unless necessary.
-7. Netlify for deployment
+7. Github Pages for deployment
 
 ## Project Roadmap
 
