@@ -2,12 +2,7 @@ import { useRouter } from "@/core/hooks/use-router";
 import { api } from "../../../convex/_generated/api";
 import { useQuery, useMutation, useAction } from "convex/react";
 import { Id } from "../../../convex/_generated/dataModel";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/core/components/card";
+import { Card, CardContent, CardTitle } from "@/core/components/card";
 import { Button } from "@/core/components/button";
 import { ArrowLeft, Save } from "lucide-react";
 import { Textarea } from "@/core/components/textarea";
@@ -20,6 +15,7 @@ import { useAuth } from "@/linkedin/hooks/useAuth";
 import Tesseract from "tesseract.js";
 import { formatProfileBackground } from "../utils/profile";
 import { extractQuestions } from "../utils/clean";
+import { Pencil } from "lucide-react";
 
 const JobDetailsPage = () => {
   const { isAuthenticated, user } = useAuth();
@@ -28,6 +24,36 @@ const JobDetailsPage = () => {
   if (!isAuthenticated) {
     redirect("login");
   }
+
+  const [isEditingTitle, setIsEditingTitle] = useState(false); // Edit mode state
+  const [editedTitle, setEditedTitle] = useState(""); // Updated title state
+
+  const handleEditClick = () => {
+    setIsEditingTitle(true); // Enable edit mode
+    setEditedTitle(job?.title || ""); // Set the current title as the initial value
+  };
+
+  const handleSaveTitle = async () => {
+    try {
+      // Update the title in the backend
+      const updated = await updateJob({
+        userId: user!.id,
+        jobId: jobId,
+        title: editedTitle,
+      });
+
+      if (updated) {
+        toast.success("Job title updated successfully!");
+        setIsEditingTitle(false); // Exit edit mode
+      } else {
+        toast.error("Failed to update job title.");
+      }
+    } catch (error) {
+      console.error("Error updating job title:", error);
+      toast.error("Error updating job title.");
+    }
+  };
+
   const jobId = params.jobId as Id<"jobs">;
   const job = useQuery(api.jobs.getJobById, { jobId, userId: user!.id });
   const [answers, setAnswers] = useState<string[]>([]);
@@ -36,6 +62,10 @@ const JobDetailsPage = () => {
   const profile = useQuery(api.profiles.getProfileByUserId, {
     userId: user!.id,
   });
+  const extractRequiredSkills = useAction(api.jobs.extractRequiredSkills);
+  const generateJobFitSummary = useAction(
+    api.jobFitSummary.generateJobFitSummary,
+  );
 
   // Convex actions
   const getAiGeneratedAnswers = useAction(
@@ -65,7 +95,7 @@ const JobDetailsPage = () => {
 
     for (let line of lines) {
       // Remove any weird leading bullet-like characters (e, o, *, -, etc.)
-      line = line.replace(/^[-•*eóo0\s]+/, "").trim();
+      line = line.replace(/^[-•*»e+-óo«¢0\s]+/, "").trim();
 
       if (line.length > 0) {
         line = `• ${line}`; // Add a bullet point
@@ -97,6 +127,17 @@ const JobDetailsPage = () => {
           userId: user!.id,
           jobId: job!._id,
           description: formatExtractedRequirements(text).join("\n"),
+        });
+
+        await extractRequiredSkills({
+          jobId: jobId,
+          userId: user!.id,
+          requirements: text,
+        });
+
+        await generateJobFitSummary({
+          jobId: jobId,
+          userId: user!.id,
         });
       } else {
         if (job?.description === "No requirements found") {
@@ -139,7 +180,6 @@ const JobDetailsPage = () => {
 
   const saveAnswer = async (index: number, answer: string) => {
     try {
-      console.log("Saving answer at index:", index, "Answer:", answer);
       const saved = await updateAnswer(user!.id, jobId, index, answer);
       if (saved) {
         // Update local state immediately for better UX
@@ -219,12 +259,8 @@ const JobDetailsPage = () => {
     }
 
     if (newResponse) {
-      // Update the specific answer in the state
-      console.log("new response:", newResponse);
-      // Update the answer in the database
       const updated = await updateAnswer(user!.id, jobId, index, newResponse);
       if (updated) {
-        console.log("Answer updated successfully");
         toast.success("Response updated successfully in db");
       } else {
         console.error("Failed to update answer");
@@ -258,11 +294,39 @@ const JobDetailsPage = () => {
       </Button>
 
       <Card>
-        <CardHeader>
-          <CardTitle className="text-xl">{job.title}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col items-start gap-2 mb-6">
+        <div className="flex items-center justify-between px-4 py-2">
+          {isEditingTitle ? (
+            <div className="flex items-center gap-2 flex-1">
+              <input
+                type="text"
+                value={editedTitle}
+                onChange={(e) => setEditedTitle(e.target.value)}
+                className="border border-gray-300 rounded px-2 py-1 w-full"
+                autoFocus
+              />
+              <Button variant="outline" size="sm" onClick={handleSaveTitle}>
+                <Save className="mr-2 h-4 w-4" />
+                Save
+              </Button>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center w-full gap-2">
+              <CardTitle className="whitespace-nowrap overflow-hidden text-ellipsis">
+                {job.title}
+              </CardTitle>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0"
+                onClick={handleEditClick}
+              >
+                <Pencil className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+        </div>
+        <CardContent className="space-y-6">
+          <div>
             <h3 className="text-lg font-semibold mb-2">Requirements</h3>
             {job.description && job.description !== "No requirements found" && (
               <p className="whitespace-pre-wrap text-left">{job.description}</p>

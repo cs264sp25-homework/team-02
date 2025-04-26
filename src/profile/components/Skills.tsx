@@ -82,7 +82,7 @@ export const Skills = ({ profile, onUpdate }: SkillsProps) => {
   };
 
   return (
-    <Card>
+    <Card id="skills">
       <CardHeader className="relative text-center pb-8">
         <div>
           <CardTitle className="text-xl font-bold">Skills</CardTitle>

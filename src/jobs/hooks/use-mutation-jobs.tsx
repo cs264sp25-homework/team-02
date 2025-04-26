@@ -40,6 +40,8 @@ export function useAddJob(userId: string) {
     }
   };
 
+  const extractRequiredSkills = useAction(api.jobs.extractRequiredSkills);
+
   const importJob = async (postingUrl: string, applicationUrl: string) => {
     try {
       const jobData = await scrapeJob({
@@ -55,6 +57,19 @@ export function useAddJob(userId: string) {
         postingUrl,
         applicationUrl,
       });
+
+      console.log("description", jobData.description);
+
+      if (
+        jobData.description &&
+        jobData.description !== "No requirements found"
+      ) {
+        await extractRequiredSkills({
+          jobId: jobId,
+          userId,
+          requirements: jobData.description,
+        });
+      }
 
       return jobId;
     } catch (error) {

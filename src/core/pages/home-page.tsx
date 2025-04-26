@@ -16,6 +16,7 @@ import {
   PlusCircle,
   Trash2,
   HelpCircle,
+  ThumbsUp,
   MoreHorizontal,
   ClipboardList,
 } from "lucide-react";
@@ -235,6 +236,17 @@ const HomePage = () => {
                             >
                               <HelpCircle className="mr-2 h-4 w-4" />
                               Interview Prep
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="w-full justify-start"
+                              onClick={() => {
+                                navigate("job_fit", { jobId: job._id });
+                              }}
+                            >
+                              <ThumbsUp className="mr-2 h-4 w-4" />
+                              Job Fit Analysis
                             </Button>
                           </DropdownMenuContent>
                         </DropdownMenu>
