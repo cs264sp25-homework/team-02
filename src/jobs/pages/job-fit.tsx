@@ -1,10 +1,4 @@
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/core/components/card";
-import { Progress } from "@/core/components/progress"; // Assuming you have a progress bar component
+import { Card, CardContent } from "@/core/components/card";
 import { useRouter } from "@/core/hooks/use-router";
 import { Id } from "../../../convex/_generated/dataModel";
 import { useQueryProfile } from "../../profile/hooks/use-query-profile";
@@ -16,7 +10,6 @@ import SummaryCard from "../components/SummaryCard";
 import { api } from "../../../convex/_generated/api";
 import { useAction } from "convex/react";
 import { useEffect, useState, useCallback } from "react";
-import { profileTables } from "convex/profiles";
 
 const JobFitPage = () => {
   const { isAuthenticated, user } = useAuth();

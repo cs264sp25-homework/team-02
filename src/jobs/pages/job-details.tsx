@@ -2,12 +2,7 @@ import { useRouter } from "@/core/hooks/use-router";
 import { api } from "../../../convex/_generated/api";
 import { useQuery, useMutation, useAction } from "convex/react";
 import { Id } from "../../../convex/_generated/dataModel";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/core/components/card";
+import { Card, CardContent, CardTitle } from "@/core/components/card";
 import { Button } from "@/core/components/button";
 import { ArrowLeft, Save } from "lucide-react";
 import { Textarea } from "@/core/components/textarea";
