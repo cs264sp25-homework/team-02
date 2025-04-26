@@ -3,6 +3,7 @@ import { defineTable } from "convex/server";
 import { mutation, query } from "./_generated/server";
 import { Id } from "./_generated/dataModel";
 import { ConvexError } from "convex/values";
+import { api } from "./_generated/api";
 
 /******************************************************************************
  * SCHEMA
@@ -23,12 +24,13 @@ export const jobInSchema = {
   description: v.string(),
 
   // Application Questions and Answers
-  questions: v.array(v.string()),
-  answers: v.array(v.string()),
+  questions: v.optional(v.array(v.string())),
+  answers: v.optional(v.array(v.string())),
+  aiAnswersGenerated: v.optional(v.boolean()),
 
   // Urls
-  postingUrl: v.string(),
-  applicationUrl: v.string(),
+  postingUrl: v.optional(v.string()),
+  applicationUrl: v.optional(v.string()),
   questionImageUrl: v.optional(v.string()),
 
   // Timestamps
@@ -49,6 +51,7 @@ export const jobUpdateSchema = {
   description: v.optional(v.string()),
   questions: v.optional(v.array(v.string())),
   answers: v.optional(v.array(v.string())),
+  aiAnswersGenerated: v.optional(v.boolean()),
   questionImageUrl: v.optional(v.string()),
   postingUrl: v.optional(v.string()),
   applicationUrl: v.optional(v.string()),
@@ -69,7 +72,7 @@ export const jobSchema = {
 // eslint-disable-next-line
 const jobSchemaObject = v.object(jobSchema);
 export type JobType = Infer<typeof jobSchemaObject>;
-export type QuestionType = JobType["questions"][number];
+export type QuestionType = JobType["questions"] extends (infer T)[] ? T : never;
 
 /**
  * Job table schema definition
@@ -89,9 +92,8 @@ export const addJob = mutation({
     title: v.string(),
     description: v.string(),
     questions: v.array(v.string()),
-    answers: v.array(v.string()),
-    postingUrl: v.string(),
-    applicationUrl: v.string(),
+    postingUrl: v.optional(v.string()),
+    applicationUrl: v.optional(v.string()),
   },
   handler: async (ctx, args): Promise<Id<"jobs">> => {
     const {
@@ -99,7 +101,6 @@ export const addJob = mutation({
       title,
       description,
       questions,
-      answers,
       postingUrl,
       applicationUrl,
     } = args;
@@ -119,13 +120,30 @@ export const addJob = mutation({
       userId,
       title: title,
       description: description,
-      questions: questions,
-      answers: answers,
-      postingUrl: postingUrl,
-      applicationUrl: applicationUrl,
+      questions: questions || [],
+      postingUrl: postingUrl || "",
+      applicationUrl: applicationUrl || "",
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
+      aiAnswersGenerated: false,
     });
+
+    console.log("questions", questions);
+
+    if (Array.isArray(questions) && questions.length > 0) {
+      console.log("Generating job application answers in addJob...");
+      await ctx.scheduler.runAfter(
+        0,
+        api.jobApplicationAnswers.generateJobApplicationAnswers,
+        {
+          userId,
+          jobId,
+          jobTitle: title,
+          jobRequirements: description,
+          jobQuestions: questions,
+        },
+      );
+    }
 
     return jobId;
   },
@@ -165,35 +183,41 @@ export const updateJob = mutation({
     ...jobUpdateSchema,
   },
   handler: async (ctx, { userId, jobId, ...update }) => {
-    // get user from auth
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_id", (q) => q.eq("_id", userId as Id<"users">))
-      .first();
+    try {
+      // get user from auth
+      const user = await ctx.db
+        .query("users")
+        .withIndex("by_id", (q) => q.eq("_id", userId as Id<"users">))
+        .first();
 
-    if (!user) {
-      throw new Error("Not authenticated!");
+      if (!user) {
+        throw new Error("Not authenticated!");
+      }
+
+      const existingJob = await ctx.db.get(jobId);
+
+      if (!existingJob) {
+        throw new Error("Job not found");
+      }
+
+      if (existingJob.userId !== userId) {
+        throw new Error("Not authorized to update this job!");
+      }
+
+      // Add updatedAt timestamp
+      const jobUpdate = {
+        ...update,
+        updatedAt: new Date().toISOString(),
+      };
+
+      await ctx.db.patch(jobId, jobUpdate);
+
+      return true;
+    } catch (error) {
+      console.error("Error updating job:", error);
+      return false;
+      throw new Error("Failed to update job");
     }
-
-    const existingJob = await ctx.db.get(jobId);
-
-    if (!existingJob) {
-      throw new Error("Job not found");
-    }
-
-    if (existingJob.userId !== userId) {
-      throw new Error("Not authorized to update this job!");
-    }
-
-    // Add updatedAt timestamp
-    const jobUpdate = {
-      ...update,
-      updatedAt: new Date().toISOString(),
-    };
-
-    await ctx.db.patch(jobId, jobUpdate);
-
-    return true;
   },
 });
 
@@ -267,12 +291,12 @@ export const updateAnswerAtIndex = mutation({
     const currentAnswers = existingJob.answers;
 
     // Validate index
-    if (index < 0 || index >= currentAnswers.length) {
+    if (index < 0 || index >= currentAnswers!.length) {
       throw new Error("Invalid answer index");
     }
 
     // Create new answers array with updated value
-    const updatedAnswers = [...currentAnswers];
+    const updatedAnswers = [...(currentAnswers || [])];
     updatedAnswers[index] = answer;
 
     // Update the job with new answers
@@ -334,8 +358,9 @@ export const getAllJobs = query({
       .collect();
 
     // Sort by createdAt date, newest first
-    return jobs.sort((a, b) => 
-      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    return jobs.sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
     );
   },
 });
