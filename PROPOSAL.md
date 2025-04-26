@@ -184,6 +184,7 @@ This roadmap maps out the development of our AI-powered Flashcards App across tw
    - Add button to generate personal insights
    - Implement personal insights from AI
    - Implement user interface for AI's personal insights
+   - Above are implemented in the resume editor page as "Resume Insights"
 
 **Deliverables:**
 
@@ -199,7 +200,6 @@ This roadmap maps out the development of our AI-powered Flashcards App across tw
 
    - Implement logic for AI to give recommendations
    - Implement user interface for those recommendations
-   - Implement resume insights to show gaps in resume
 
 2. Implement AI generated message (Secondary Feature #4)
    - Add feature to ask AI for a good message that effectively introduces oneself and expresses interest in the company and job opening
