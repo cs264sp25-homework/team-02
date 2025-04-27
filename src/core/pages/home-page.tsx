@@ -18,7 +18,6 @@ import {
   FileText, 
   Trash2, 
   HelpCircle, 
-  ThumbsUp,
   Calendar, 
   MoreVertical,
   ExternalLink 
@@ -210,7 +209,7 @@ const HomePage = () => {
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         className="cursor-pointer"
-                        onClick={() => navigate("interview_prep")}
+                        onClick={() => navigate("interview_prep",  { jobId: job._id })}
                       >
                         <HelpCircle className="h-4 w-4 mr-2" />
                         Prepare for Interview
@@ -253,8 +252,8 @@ const HomePage = () => {
                 </div>
                 <div className="text-sm">
                   <span className="font-medium">Questions:</span>{" "}
-                  {job.questions.length > 0 
-                    ? `${job.questions.length} application questions` 
+                  {(job.questions?.length ?? 0) > 0 
+                    ? `${job.questions?.length ?? 0} application questions` 
                     : "No questions found"}
                 </div>
               </CardContent>
