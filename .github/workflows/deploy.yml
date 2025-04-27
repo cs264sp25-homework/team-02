@@ -84,7 +84,10 @@ jobs:
         uses: actions/upload-pages-artifact@v3.0.1
         with:
           path: ./dist
+          name: my-pages-${{ github.run_id }}
 
       - name: Deploy GitHub Pages site
         id: deployment
         uses: actions/deploy-pages@v4.0.5
+        with: 
+          artifact_name: my-pages-${{ github.run_id }}

@@ -6,19 +6,20 @@ import {
   Card,
   CardContent,
   CardHeader,
-  CardTitle,
+  CardDescription,
+  CardFooter,
 } from "@/core/components/card";
 import { Skeleton } from "@/core/components/skeleton";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { JobType } from "convex/jobs";
-import {
-  PlusCircle,
-  Trash2,
-  HelpCircle,
-  ThumbsUp,
-  MoreHorizontal,
-  ClipboardList,
+import { 
+  PlusCircle, 
+  Trash2, 
+  HelpCircle, 
+  Calendar, 
+  MoreVertical,
+  ExternalLink 
 } from "lucide-react";
 import { Id } from "convex/_generated/dataModel";
 import {
@@ -31,10 +32,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/core/components/alert-dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuSeparator, 
+  DropdownMenuTrigger 
 } from "@/core/components/dropdown-menu";
 import { toast } from "sonner";
 import EditableJobTitle from "@/jobs/components/EditableJobTitle";
@@ -49,6 +52,7 @@ const HomePage = () => {
   const [jobs, setJobs] = useState<JobWithId[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [jobToDelete, setJobToDelete] = useState<Id<"jobs"> | null>(null);
+  
   // Use a query hook to get all jobs for the current user
   const allJobs = useQuery(
     api.jobs.getAllJobs,
@@ -68,6 +72,16 @@ const HomePage = () => {
   // Handle job import
   const handleImportJob = () => {
     navigate("import_job");
+  };
+
+  // Format date to more readable format
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
   };
 
   // Handle job deletion
@@ -92,6 +106,12 @@ const HomePage = () => {
     }
   };
 
+  // Truncate text with ellipsis
+  const truncateText = (text: string, maxLength: number) => {
+    if (text.length <= maxLength) return text;
+    return `${text.substring(0, maxLength)}...`;
+  };
+
   // If user is not authenticated, show sign-in prompt
   if (!isAuthenticated) {
     return (
@@ -113,7 +133,7 @@ const HomePage = () => {
   }
 
   return (
-    <div className="container mx-auto max-w-5xl px-4 py-8">
+    <div className="container mx-auto max-w-6xl px-4 py-8">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Your Jobs</h1>
         <Button onClick={handleImportJob}>
@@ -123,10 +143,23 @@ const HomePage = () => {
       </div>
 
       {isLoading ? (
-        <div className="space-y-4">
-          <Skeleton className="h-12 w-full" />
-          <Skeleton className="h-12 w-full" />
-          <Skeleton className="h-12 w-full" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[1, 2, 3].map((i) => (
+            <Card key={i} className="h-72">
+              <CardHeader>
+                <Skeleton className="h-6 w-3/4 mb-2" />
+                <Skeleton className="h-4 w-1/2" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-20 w-full mb-4" />
+                <Skeleton className="h-4 w-1/3 mb-2" />
+                <Skeleton className="h-4 w-1/2" />
+              </CardContent>
+              <CardFooter>
+                <Skeleton className="h-9 w-full" />
+              </CardFooter>
+            </Card>
+          ))}
         </div>
       ) : jobs.length === 0 ? (
         <Card>
@@ -140,124 +173,105 @@ const HomePage = () => {
           </CardContent>
         </Card>
       ) : (
-        <Card>
-          <CardHeader>
-            <CardTitle>All Jobs</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b">
-                    <th className="px-4 py-2 text-left">Job Title</th>
-                    <th className="px-4 py-2 text-left">Date Added</th>
-                    <th className="px-4 py-2 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {jobs.map((job) => (
-                    <tr
-                      key={job._id.toString()}
-                      className="border-b hover:bg-muted/50 cursor-pointer relative"
-                      onClick={() =>
-                        navigate("job_details", { jobId: job._id })
-                      }
-                    >
-                      <td
-                        className="px-4 py-3"
-                        onClick={(e) => e.stopPropagation()}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {jobs.map((job) => (
+            <Card 
+              key={job._id.toString()} 
+              className="group transition-shadow hover:shadow-md cursor-pointer h-full flex flex-col"
+              onClick={() => navigate("job_details", { jobId: job._id })}
+            >
+              <CardHeader className="pb-2 relative">
+                <div className="absolute right-2 top-2 z-10" onClick={(e) => e.stopPropagation()}>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem
+                        className="cursor-pointer"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          window.open(job.postingUrl, '_blank');
+                        }}
                       >
-                        <div className="flex items-center">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="mr-2 h-8 w-8 p-0 text-muted-foreground hover:text-red-500 absolute left-1"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setJobToDelete(job._id);
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                          <span className="ml-8">
-                            <EditableJobTitle
-                              jobId={job._id}
-                              userId={user!.id}
-                              initialTitle={job.title}
-                            />
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        {new Date(job.createdAt).toLocaleDateString()}
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 w-8 p-0 data-[state=open]:bg-muted"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <MoreHorizontal className="h-4 w-4" />
-                              <span className="sr-only">Open menu</span>
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent
-                            align="end"
-                            className="w-auto p-2 space-y-1"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="w-full justify-start"
-                              onClick={() => {
-                                navigate("job_details", { jobId: job._id });
-                              }}
-                            >
-                              <ClipboardList className="mr-2 h-4 w-4" />
-                              Job Application Questions
-                            </Button>
-                            <div onClick={(e) => e.stopPropagation()}>
-                              <CustomizeResumeButton
-                                jobId={job._id}
-                                userId={user!.id}
-                              />
-                            </div>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="w-full justify-start"
-                              onClick={() => {
-                                navigate("interview_prep", { jobId: job._id });
-                              }}
-                            >
-                              <HelpCircle className="mr-2 h-4 w-4" />
-                              Interview Prep
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="w-full justify-start"
-                              onClick={() => {
-                                navigate("job_fit", { jobId: job._id });
-                              }}
-                            >
-                              <ThumbsUp className="mr-2 h-4 w-4" />
-                              Job Fit Analysis
-                            </Button>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
+                        <ExternalLink className="h-4 w-4 mr-2" />
+                        Open Job Posting
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        className="cursor-pointer"
+                        onClick={() => navigate("interview_prep",  { jobId: job._id })}
+                      >
+                        <HelpCircle className="h-4 w-4 mr-2" />
+                        Prepare for Interview
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setJobToDelete(job._id);
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete Job
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+                <div onClick={(e) => e.stopPropagation()}>
+                  <EditableJobTitle
+                    jobId={job._id}
+                    userId={user!.id}
+                    initialTitle={job.title}
+                  />
+                </div>
+                <CardDescription className="flex items-center">
+                  <Calendar className="h-3 w-3 mr-1" />
+                  {formatDate(job.createdAt)}
+                </CardDescription>
+              </CardHeader>
+              
+              <CardContent className="flex-1 pb-4">
+                <div className="bg-gray-50 rounded-md p-3 mb-4 max-h-32 overflow-y-auto">
+                  <h4 className="text-sm font-medium mb-1">Job Requirements</h4>
+                  <p className="text-sm text-gray-600 whitespace-pre-line line-clamp-4">
+                    {job.description === "No requirements found" 
+                      ? "No requirements provided" 
+                      : truncateText(job.description, 150)}
+                  </p>
+                </div>
+                <div className="text-sm">
+                  <span className="font-medium">Questions:</span>{" "}
+                  {(job.questions?.length ?? 0) > 0 
+                    ? `${job.questions?.length ?? 0} application questions` 
+                    : "No questions found"}
+                </div>
+              </CardContent>
+              
+              <CardFooter className="pt-0 pb-4 flex justify-center gap-4">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate("interview_prep", { jobId: job._id });
+                  }}
+                >
+                  <HelpCircle className="mr-2 h-4 w-4" />
+                  Interview Prep
+                </Button>
+                <div onClick={(e) => e.stopPropagation()}>
+                  <CustomizeResumeButton
+                    jobId={job._id}
+                    userId={user!.id}
+                  />
+                </div>
+              </CardFooter>
+            </Card>
+          ))}
+        </div>
       )}
 
       {/* Delete Confirmation Dialog */}
