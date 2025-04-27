@@ -25,12 +25,12 @@ const JobFitPage = () => {
   const { data: profile, loading } = useQueryProfile(user!.id);
   const { data: job, loading: jobLoading } = useQueryJob(jobId, user!.id);
 
-  const userSkills = profile?.skills || [];
-  const requiredSkills = job?.requiredSkills || [];
-
   const [summary, setSummary] = useState<string>("");
+  const [requiredSkills, setRequiredSkills] = useState<string[]>([]);
+  const [userSkills, setUserSkills] = useState<string[]>([]);
 
   const getJobFitSummary = useAction(api.jobFitSummary.generateJobFitSummary);
+  const extractRequiredSkills = useAction(api.jobs.extractRequiredSkills);
 
   const fetchJobFitSummary = useCallback(async () => {
     if (!job || !profile || !user) return;
@@ -46,6 +46,21 @@ const JobFitPage = () => {
     }
   }, [job, profile, user, getJobFitSummary, jobId]);
 
+  const fetchExtractRequiredSkills = useCallback(async () => {
+    if (!job || !profile || !user) return;
+
+    try {
+      const requiredSkills = await extractRequiredSkills({
+        userId: user.id,
+        jobId,
+        requirements: job.description,
+      });
+      setRequiredSkills(requiredSkills);
+    } catch (error) {
+      console.error("Error fetching required skills:", error);
+    }
+  }, [job, profile, user, extractRequiredSkills, jobId]);
+
   useEffect(() => {
     // Don't run until job, profile, and user are all available
     if (!job || !profile || !user) return;
@@ -56,7 +71,19 @@ const JobFitPage = () => {
     } else {
       fetchJobFitSummary();
     }
-  }, [job, profile, user, fetchJobFitSummary]);
+
+    if (job.requiredSkills && job.requiredSkills.length > 0) {
+      setRequiredSkills(job.requiredSkills);
+    }
+
+    if (profile.skills && profile.skills.length > 0) {
+      setUserSkills(profile.skills);
+    }
+
+    if (!job.requiredSkills || job.requiredSkills.length === 0) {
+      fetchExtractRequiredSkills();
+    }
+  }, [job, profile, user, fetchJobFitSummary, fetchExtractRequiredSkills]);
 
   if (loading || jobLoading || !profile || !job) {
     return (

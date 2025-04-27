@@ -520,6 +520,8 @@ Proficiency with CRM software and other sales tools preferred
         jobId: args.jobId as Id<"jobs">,
         requiredSkills: parsedSkillsArray,
       });
+
+      return parsedSkillsArray;
     } catch (error) {
       console.error(
         "Error generating array of skills from requirements string:",
