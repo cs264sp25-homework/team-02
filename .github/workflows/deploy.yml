@@ -60,7 +60,13 @@ jobs:
         if: github.event_name == 'push' && github.ref == 'refs/heads/master'
         uses: actions/upload-artifact@v4
         with:
-          name: dist-files
+          name: dist-files-${{ github.run_id }}
+          path: ./dist
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-files-${{ github.run_id }}
           path: ./dist
 
   deploy:
