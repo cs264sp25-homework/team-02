@@ -88,3 +88,5 @@ jobs:
       - name: Deploy GitHub Pages site
         id: deployment
         uses: actions/deploy-pages@v4.0.5
+        with: 
+          artifact_name: my-pages-${{ github.run_id }}
