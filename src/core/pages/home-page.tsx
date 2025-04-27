@@ -190,13 +190,6 @@ const HomePage = () => {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem 
-                        className="cursor-pointer"
-                        onClick={() => navigate("job_details", { jobId: job._id })}
-                      >
-                        <FileText className="h-4 w-4 mr-2" />
-                        View Application Questions
-                      </DropdownMenuItem>
                       <DropdownMenuItem
                         className="cursor-pointer"
                         onClick={(e) => {
@@ -258,17 +251,17 @@ const HomePage = () => {
                 </div>
               </CardContent>
               
-              <CardFooter className="pt-0 pb-4 flex flex-wrap gap-2 justify-end">
+              <CardFooter className="pt-0 pb-4 flex justify-center gap-4">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={(e) => {
                     e.stopPropagation();
-                    navigate("job_details", { jobId: job._id });
+                    navigate("interview_prep", { jobId: job._id });
                   }}
                 >
-                  <FileText className="mr-2 h-4 w-4" />
-                  Questions
+                  <HelpCircle className="mr-2 h-4 w-4" />
+                  Interview Prep
                 </Button>
                 <div onClick={(e) => e.stopPropagation()}>
                   <CustomizeResumeButton
