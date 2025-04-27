@@ -18,6 +18,7 @@ import {
   FileText, 
   Trash2, 
   HelpCircle, 
+  ThumbsUp,
   Calendar, 
   MoreVertical,
   ExternalLink 

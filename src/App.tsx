@@ -13,6 +13,7 @@ import { CustomizeResumeStatus } from "./resume/pages/customize-resume-status";
 import EditResume from "./resume/pages/edit-resume";
 import ChatPage from "./chat/pages/chat";
 import InterviewPrepPage from "./interview_prep/pages/InterviewPrepPage";
+import JobFitPage from "./jobs/pages/job-fit";
 
 function App() {
   const { currentRoute } = useRouter();
@@ -50,6 +51,8 @@ function App() {
         return <ChatPage />;
       case "interview_prep":
         return <InterviewPrepPage />;
+      case "job_fit":
+        return <JobFitPage />;
       default:
         return <NotFoundPage />;
     }

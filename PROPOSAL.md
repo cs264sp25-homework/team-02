@@ -21,11 +21,10 @@ As a user, I want to:
 
 As a user, I want to:
 
-1. Import personal information, work history, and skills into profile from uploaded resume
-2. Get AI feedback on whether the job that I am considering applying for is a goof fit for my current experience and skills (essentially, you put a link to the job posting and we will perform web scraping and then give you feedback on whether you should apply or not)
-3. Generate personal insights from AI on what experience/skills I am lacking to become a competitive candidate for the job
-4. Get recommendations from AI on activities I can do to fill in those gaps in my resume (e.g. if I want to apply to a Marketing Coordinator position but I have only SWE internships on my profile and resume, then AI will tell me that I need to gain more experience in marketing and suggest me some activities I can do to become a more competitive candidate)
-5. Generate a message introducing oneself and expressing interest in open position that can be sent to hiring manager or recruiter who posted the job posting on LinkedIn.
+1. Get AI feedback on whether the job that I am considering applying for is a goof fit for my current experience and skills (essentially, you put a link to the job posting and we will perform web scraping and then give you feedback on whether you should apply or not)
+2. Generate personal insights from AI on what experience/skills I am lacking to become a competitive candidate for the job
+3. Get recommendations from AI on activities I can do to fill in those gaps in my resume (e.g. if I want to apply to a Marketing Coordinator position but I have only SWE internships on my profile and resume, then AI will tell me that I need to gain more experience in marketing and suggest me some activities I can do to become a more competitive candidate)
+4. Generate a message introducing oneself and expressing interest in open position that can be sent to hiring manager or recruiter who posted the job posting on LinkedIn.
 
 ### Tertiary Features (Nice to Have)
 
@@ -53,7 +52,7 @@ To align with the technology stack used in the Practical Gen AI course, we'll us
 5. Convex BaaS for backend services, including authentication and database
 6. Use Vercel's AI SDK as a thin abstraction layer for AI features.
    - Ideally, we will not use more complex abstraction (like LangChain or LlamaIndex) to orchestrate AI features, unless necessary.
-7. Netlify for deployment
+7. Github Pages for deployment
 
 ## Project Roadmap
 
@@ -112,6 +111,7 @@ This roadmap maps out the development of our AI-powered Flashcards App across tw
    - Create user profile interface with work history, skills, and education
 
 2. Be able to import job application components and input my answers to job application (Primary Features #4, #5)
+
    - Streamline job application process by enabling users to add job posting and application links and images
    - Scrape the job title, requirements, and questions from uploaded links and images which saves time for users
    - Allow users to input their answers to job application questions
@@ -143,10 +143,12 @@ This roadmap maps out the development of our AI-powered Flashcards App across tw
    - Add ability to download final resume copy
 
 2. Implement AI-generated answers to imported job application questions (Primary Feature #5 continued, #7)
+
    - AI will automatically generate answers to job application questions based on user resume and profile
    - Allow user to select from different options on how they want to improve their responses (regenerate based on updated profile, polish response, optimize for job fit, and adjust tone)
 
 3. Implement a list of jobs shown on homepage (Primary Feature #8)
+
    - Set up a table of all imported jobs with two buttons
    - User can click on one button that says "Job application questions" which will take them to job-details page where they can get help with job application questions
    - User can click on another button that says "customize resume" which will generate a tailored resume to the job based on their profile
@@ -170,24 +172,19 @@ This roadmap maps out the development of our AI-powered Flashcards App across tw
 
 **Tasks:**
 
-1. Implement import from LinkedIn (Secondary Feature #1)
-
-   - Add the input box for LinkedIn profile URL
-   - Implement necessary web scraping to collect data from LinkedIn profile page and fill in the user profile
-   - Allow user to add any missing info or correct any wrong info
-
-2. AI feedback on job fit (Secondary Feature #2)
+1. AI feedback on job fit (Secondary Feature #1)
 
    - Add input box for job posting URL
    - Add web scraping for AI to get necessary job posting information
    - Implement AI being able to determine if the person's resume and work history and user profile is a good fit for the job or not
    - Implement user interface for AI's feedback
 
-3. AI personal insights (Secondary Feature #3)
+2. AI personal insights (Secondary Feature #2)
 
    - Add button to generate personal insights
    - Implement personal insights from AI
    - Implement user interface for AI's personal insights
+   - Above are implemented in the resume editor page as "Resume Insights"
 
 **Deliverables:**
 
@@ -199,20 +196,21 @@ This roadmap maps out the development of our AI-powered Flashcards App across tw
 
 **Tasks:**
 
-1. Implement AI recommendations (Secondary Feature #4)
+1. Implement AI recommendations (Secondary Feature #3)
 
    - Implement logic for AI to give recommendations
    - Implement user interface for those recommendations
 
-2. Implement AI generated message (Secondary Feature #5)
-
-   - Implement user interface for adding a job posting or company that the user is interested in
+2. Implement AI generated message (Secondary Feature #4)
    - Add feature to ask AI for a good message that effectively introduces oneself and expresses interest in the company and job opening
+   - Implement user interface for the message
+
+**Above are implemented as a chat interface where the user can ask the AI for help with the job application process.**
 
 **Deliverables:**
 
 - Complete AI assistant that gives feedback and recommendations
-- Allow for generation of messages to hiring managers and personalized answers to questions in job application
+- Develop a chat interface where the user can ask the AI for help with the job application process
 
 ### Week 14 (April 21-25): Final Touches & Buffer Week
 

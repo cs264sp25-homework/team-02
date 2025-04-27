@@ -6,7 +6,6 @@ import { parseResume } from "./resumeParser";
 import { api } from "./_generated/api";
 import { Id } from "./_generated/dataModel";
 
-
 export const openai = createOpenAI({
   apiKey: process.env.OPENAI_API_KEY,
   compatibility: "strict", // This ensures strict mode for the OpenAI API
@@ -418,135 +417,6 @@ export const regenerateResponse = action({
   },
 });
 
-export const generateJobQuestions = action({
-  args: {
-    jobTitle: v.string(),
-    jobRequirements: v.string(),
-    jobQuestions: v.array(v.string()),
-    userBackground: v.string(),
-  },
-  handler: async (_, args) => {
-    console.log("Starting generateJobQuestions...");
-    console.log("Job Title:", args.jobTitle);
-    console.log("Job Requirements:", args.jobRequirements);
-    console.log("Job Questions:", args.jobQuestions);
-    console.log("User Background:", args.userBackground);
-
-    const formattedQuestions = args.jobQuestions
-      .map((q, index) => `${index + 1}. ${q}`)
-      .join("\n");
-    console.log("Formatted Questions:", formattedQuestions);
-
-    const systemPrompt = `
-      You are an experienced career coach specializing in job applications, resume writing, and interview preparation. 
-      Your role is to generate well-structured and compelling responses to job application questions based on the user's education, experiences, and skills.
-
-      ### Job Details:
-        - **Job Title:** ${args.jobTitle}
-        - **Job Requirements:** ${args.jobRequirements}
-
-      ### User Background: ${args.userBackground}
-
-      ### Instructions:
-      1. **Craft tailored responses** that align with the job title and requirements.
-      2. **Emphasize relevant skills, experiences, and achievements** from the user's background. If they don't have anything in the user background, tell
-      them that they need to add experience, skills, education to their profile. Do not make things up! Always base the responses on the user's background given to you.
-      3. **Use a confident and professional tone** to make the user stand out.
-      4. **Optimize for ATS (Applicant Tracking System)** by naturally incorporating key industry-specific keywords.
-      5. **Where applicable, use the STAR (Situation, Task, Action, Result) method** to structure responses effectively.
-
-      IMPORTANT: Return ONLY a raw JSON array of responses, without any markdown formatting or code blocks. 
-      The response should be a valid JSON array where each item has a "response" field containing the answer.
-      Example format:
-      [{"response": "First answer"}, {"response": "Second answer"}, ...]
-
-      ### Job Application Questions:
-      ${formattedQuestions}`;
-
-    try {
-      console.log("About to call streamText...");
-      console.log("OpenAI API Key exists:", !!process.env.OPENAI_API_KEY);
-
-      const { textStream } = streamText({
-        model: openai("gpt-4o-mini"),
-        temperature: 0.1,
-        messages: [
-          { role: "system", content: systemPrompt },
-          {
-            role: "user",
-            content:
-              "Generate structured JSON responses for the job application questions.",
-          },
-        ],
-      });
-      console.log("Got textStream, starting to collect response...");
-      let fullResponse = "";
-      try {
-        for await (const delta of textStream) {
-          if (delta) {
-            fullResponse += delta;
-          }
-        }
-
-        console.log("Full response:", fullResponse);
-      } catch (streamError) {
-        console.error("Error during streaming:", streamError);
-        throw new Error(
-          `Streaming error: ${streamError instanceof Error ? streamError.message : String(streamError)}`,
-        );
-      }
-
-      // Validate that we got a response
-      if (!fullResponse.trim()) {
-        console.error(
-          "Empty response received from AI. Full response:",
-          fullResponse,
-        );
-        throw new Error("No response received from AI");
-      }
-
-      try {
-        // Clean the response by removing markdown code block formatting
-        const cleanedResponse = fullResponse
-          .replace(/```json\n?/g, "") // Remove opening ```json
-          .replace(/```\n?/g, "") // Remove closing ```
-          .trim(); // Remove any extra whitespace
-
-        console.log("Cleaned response:", cleanedResponse);
-        const parsedResponse = JSON.parse(cleanedResponse);
-
-        // Validate the response structure
-        if (!Array.isArray(parsedResponse)) {
-          throw new Error("AI response is not an array");
-        }
-
-        // Validate each item has the required fields
-        const validResponses = parsedResponse.every(
-          (item) => typeof item === "object" && "response" in item,
-        );
-
-        if (!validResponses) {
-          throw new Error(
-            "AI response items missing required 'response' field",
-          );
-        }
-
-        return parsedResponse.map(
-          (item: { response: string }) => item.response,
-        );
-      } catch (parseError: unknown) {
-        console.error("Failed to parse AI response:", fullResponse);
-        throw new Error(
-          `Failed to parse AI response: ${parseError instanceof Error ? parseError.message : String(parseError)}`,
-        );
-      }
-    } catch (error) {
-      console.error("Error generating job questions:", error);
-      throw error;
-    }
-  },
-});
-
 // Function to handle chat messages
 export const handleChatMessage = action({
   args: {
@@ -558,36 +428,39 @@ export const handleChatMessage = action({
   handler: async (ctx, args) => {
     try {
       console.log("Starting chat message processing");
-      
+
       // Get the current chat
       const chat = await ctx.runQuery(api.chat.getById, {
         chatId: args.chatId,
       });
-      
+
       if (!chat) {
         throw new Error("Chat not found");
       }
-      
+
       // Get message history
       const messageHistory = await ctx.runQuery(api.messages.getAll, {
         chatId: args.chatId,
         limit: 10,
       });
-      
+
       // Build the system prompt
       let systemPrompt = getBaseSystemPrompt();
-      
+
       // Add user profile context if this is the first message
       if (args.isFirstMessage) {
-        const userProfile = await ctx.runQuery(api.profiles.getProfileByUserId, {
-          userId: args.userId,
-        });
-        
+        const userProfile = await ctx.runQuery(
+          api.profiles.getProfileByUserId,
+          {
+            userId: args.userId,
+          },
+        );
+
         if (userProfile) {
           systemPrompt += getUserProfileContext(userProfile);
         }
       }
-      
+
       // Add job context if available
       if (chat.relatedJobId) {
         try {
@@ -595,7 +468,7 @@ export const handleChatMessage = action({
             userId: args.userId,
             jobId: chat.relatedJobId as Id<"jobs">,
           });
-          
+
           if (relatedJob) {
             systemPrompt += getJobContext(relatedJob);
           }
@@ -604,23 +477,23 @@ export const handleChatMessage = action({
           // Continue without job context if there's an error
         }
       }
-      
+
       // Prepare conversation history for the model
       const conversation = messageHistory
-        .filter(msg => msg.content.trim() !== "") // Filter out empty messages
-        .map(msg => ({
+        .filter((msg) => msg.content.trim() !== "") // Filter out empty messages
+        .map((msg) => ({
           role: msg.role,
-          content: msg.content
+          content: msg.content,
         }));
-      
+
       // Add current user message
       conversation.push({
         role: "user",
-        content: args.message
+        content: args.message,
       });
-      
+
       console.log("Calling OpenAI with context and history");
-      
+
       // Generate response from OpenAI
       const { textStream } = streamText({
         model: openai("gpt-4o-mini"),
@@ -628,18 +501,18 @@ export const handleChatMessage = action({
         system: systemPrompt,
         messages: conversation,
       });
-      
+
       let fullResponse = "";
-      
+
       // Collect the complete response
       for await (const delta of textStream) {
         if (delta) {
           fullResponse += delta;
         }
       }
-      
+
       console.log("Received complete response from OpenAI");
-      
+
       return fullResponse;
     } catch (error) {
       console.error("Error in chat handling:", error);
@@ -665,9 +538,9 @@ Guidelines:
 }
 
 // Helper function to get user profile context
-function getUserProfileContext(userProfile: any): string {
+export function getUserProfileContext(userProfile: any): string {
   let contextPrompt = `\n\n### User Profile Context:`;
-  
+
   if (userProfile.education && userProfile.education.length > 0) {
     contextPrompt += `\n#### Education:`;
     userProfile.education.forEach((edu: any) => {
@@ -677,7 +550,7 @@ function getUserProfileContext(userProfile: any): string {
       }
     });
   }
-  
+
   if (userProfile.workExperience && userProfile.workExperience.length > 0) {
     contextPrompt += `\n#### Work Experience:`;
     userProfile.workExperience.forEach((work: any) => {
@@ -691,15 +564,15 @@ function getUserProfileContext(userProfile: any): string {
         });
       }
       if (work.technologies && work.technologies.length > 0) {
-        contextPrompt += `\n  * Technologies: ${work.technologies.join(', ')}`;
+        contextPrompt += `\n  * Technologies: ${work.technologies.join(", ")}`;
       }
     });
   }
-  
+
   if (userProfile.skills && userProfile.skills.length > 0) {
     contextPrompt += `\n#### Skills: ${userProfile.skills.join(", ")}`;
   }
-  
+
   return contextPrompt;
 }
 
@@ -708,14 +581,14 @@ function getJobContext(relatedJob: any): string {
   let contextPrompt = `\n\n### Related Job Context:`;
   contextPrompt += `\n- Job Title: ${relatedJob.title}`;
   contextPrompt += `\n- Job Requirements:\n${relatedJob.description}`;
-  
+
   if (relatedJob.questions && relatedJob.questions.length > 0) {
     contextPrompt += `\n- Application Questions:`;
     relatedJob.questions.forEach((question: string, index: number) => {
       contextPrompt += `\n  ${index + 1}. ${question}`;
     });
   }
-  
+
   return contextPrompt;
 }
 
