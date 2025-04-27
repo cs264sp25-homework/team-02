@@ -15,7 +15,6 @@ import { api } from "../../../convex/_generated/api";
 import { JobType } from "convex/jobs";
 import { 
   PlusCircle, 
-  FileText, 
   Trash2, 
   HelpCircle, 
   Calendar, 
