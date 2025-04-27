@@ -151,10 +151,22 @@ export const addJob = mutation({
       );
     }
 
-    await ctx.scheduler.runAfter(0, api.jobFitSummary.generateJobFitSummary, {
-      userId,
-      jobId,
-    });
+    // if description is not empty, generate job fit summary and extract required skills
+
+    if (description && description !== "No requirements found") {
+      console.log("Extracting required skills in addJob...");
+
+      await ctx.scheduler.runAfter(0, api.jobFitSummary.generateJobFitSummary, {
+        userId,
+        jobId,
+      });
+
+      await ctx.scheduler.runAfter(0, api.jobs.extractRequiredSkills, {
+        userId,
+        jobId,
+        requirements: description,
+      });
+    }
 
     return jobId;
   },
