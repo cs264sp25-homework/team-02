@@ -15,10 +15,12 @@ export const parseResume = action({
   },
   handler: async (_, args) => {
     try {
-      console.log("Parsing resume...");
       const systemPrompt =
         "You are a resume parser that extracts structured information from resume text. " +
         "Parse the provided resume text into a structured profile format, ensuring all dates are in YYYY-MM-DD format. " +
+        "If the text contains multiple resume sections with clear separators, merge the information intelligently, keeping the most comprehensive and recent data. " +
+        "If the text contains multiple resumes, try to combine (add/update) the results. " +
+        "For conflicting information, prefer the most recent or most detailed information. " +
         "For any links, please always include the https:// prefix. " +
         "Output a JSON object that exactly fits the following schema. Here is the resume text:\n\n" +
         args.resumeText;
