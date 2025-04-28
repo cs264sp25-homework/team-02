@@ -19,7 +19,8 @@ import {
   HelpCircle, 
   Calendar, 
   MoreVertical,
-  ExternalLink 
+  ExternalLink,
+  BarChart
 } from "lucide-react";
 import { Id } from "convex/_generated/dataModel";
 import {
@@ -205,6 +206,16 @@ const HomePage = () => {
                       >
                         <HelpCircle className="h-4 w-4 mr-2" />
                         Prepare for Interview
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        className="cursor-pointer"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate("job_fit", { jobId: job._id });
+                        }}
+                      >
+                        <BarChart className="h-4 w-4 mr-2" />
+                        Job Fit
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
