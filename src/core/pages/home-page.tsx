@@ -13,14 +13,14 @@ import { Skeleton } from "@/core/components/skeleton";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { JobType } from "convex/jobs";
-import { 
-  PlusCircle, 
-  Trash2, 
-  HelpCircle, 
-  Calendar, 
+import {
+  PlusCircle,
+  Trash2,
+  HelpCircle,
+  Calendar,
   MoreVertical,
   ExternalLink,
-  BarChart
+  BarChart,
 } from "lucide-react";
 import { Id } from "convex/_generated/dataModel";
 import {
@@ -33,12 +33,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/core/components/alert-dialog";
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuSeparator, 
-  DropdownMenuTrigger 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from "@/core/components/dropdown-menu";
 import { toast } from "sonner";
 import EditableJobTitle from "@/jobs/components/EditableJobTitle";
@@ -53,7 +53,7 @@ const HomePage = () => {
   const [jobs, setJobs] = useState<JobWithId[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [jobToDelete, setJobToDelete] = useState<Id<"jobs"> | null>(null);
-  
+
   // Use a query hook to get all jobs for the current user
   const allJobs = useQuery(
     api.jobs.getAllJobs,
@@ -75,13 +75,30 @@ const HomePage = () => {
     navigate("import_job");
   };
 
+  const formatExtractedRequirements = (text: string): string => {
+    const blocks = text.split(/\n\s*\n/);
+
+    const cleanedBlocks = blocks.map((block) => {
+      let cleaned = block.trim().replace(/^[•*»@$+«¢-]+\s*/, ""); // Remove weird leading symbols first
+      cleaned = cleaned.replace(/\s+/g, " "); // Normalize spaces inside
+
+      if (!cleaned.startsWith("•")) {
+        cleaned = "• " + cleaned; // If not already starting with bullet, add it
+      }
+
+      return cleaned;
+    });
+
+    return cleanedBlocks.join("\n\n");
+  };
+
   // Format date to more readable format
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
     });
   };
 
@@ -109,8 +126,9 @@ const HomePage = () => {
 
   // Truncate text with ellipsis
   const truncateText = (text: string, maxLength: number) => {
-    if (text.length <= maxLength) return text;
-    return `${text.substring(0, maxLength)}...`;
+    const cleanedText = formatExtractedRequirements(text);
+    if (cleanedText.length <= maxLength) return text;
+    return `${cleanedText.substring(0, maxLength)}...`;
   };
 
   // If user is not authenticated, show sign-in prompt
@@ -176,13 +194,16 @@ const HomePage = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {jobs.map((job) => (
-            <Card 
-              key={job._id.toString()} 
+            <Card
+              key={job._id.toString()}
               className="group transition-shadow hover:shadow-md cursor-pointer h-full flex flex-col"
               onClick={() => navigate("job_details", { jobId: job._id })}
             >
               <CardHeader className="pb-2 relative">
-                <div className="absolute right-2 top-2 z-10" onClick={(e) => e.stopPropagation()}>
+                <div
+                  className="absolute right-2 top-2 z-10"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -194,7 +215,7 @@ const HomePage = () => {
                         className="cursor-pointer"
                         onClick={(e) => {
                           e.stopPropagation();
-                          window.open(job.postingUrl, '_blank');
+                          window.open(job.postingUrl, "_blank");
                         }}
                       >
                         <ExternalLink className="h-4 w-4 mr-2" />
@@ -202,7 +223,9 @@ const HomePage = () => {
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         className="cursor-pointer"
-                        onClick={() => navigate("interview_prep",  { jobId: job._id })}
+                        onClick={() =>
+                          navigate("interview_prep", { jobId: job._id })
+                        }
                       >
                         <HelpCircle className="h-4 w-4 mr-2" />
                         Prepare for Interview
@@ -243,24 +266,24 @@ const HomePage = () => {
                   {formatDate(job.createdAt)}
                 </CardDescription>
               </CardHeader>
-              
+
               <CardContent className="flex-1 pb-4">
                 <div className="bg-gray-50 rounded-md p-3 mb-4 max-h-32 overflow-y-auto">
                   <h4 className="text-sm font-medium mb-1">Job Requirements</h4>
                   <p className="text-sm text-gray-600 whitespace-pre-line line-clamp-4">
-                    {job.description === "No requirements found" 
-                      ? "No requirements provided" 
+                    {job.description === "No requirements found"
+                      ? "No requirements provided"
                       : truncateText(job.description, 150)}
                   </p>
                 </div>
                 <div className="text-sm">
                   <span className="font-medium">Questions:</span>{" "}
-                  {(job.questions?.length ?? 0) > 0 
-                    ? `${job.questions?.length ?? 0} application questions` 
+                  {(job.questions?.length ?? 0) > 0
+                    ? `${job.questions?.length ?? 0} application questions`
                     : "No questions found"}
                 </div>
               </CardContent>
-              
+
               <CardFooter className="pt-0 pb-4 flex justify-center gap-4">
                 <Button
                   variant="outline"
@@ -274,10 +297,7 @@ const HomePage = () => {
                   Interview Prep
                 </Button>
                 <div onClick={(e) => e.stopPropagation()}>
-                  <CustomizeResumeButton
-                    jobId={job._id}
-                    userId={user!.id}
-                  />
+                  <CustomizeResumeButton jobId={job._id} userId={user!.id} />
                 </div>
               </CardFooter>
             </Card>
