@@ -17,8 +17,8 @@ import {
 const MAX_FILE_SIZE = 5;
 
 export default function AddFile() {
-  const [file, setFile] = useState<File | null>(null);
-  const [fileSize, setFileSize] = useState(0);
+  const [files, setFiles] = useState<File[]>([]);
+  const [fileSizes, setFileSizes] = useState<number[]>([]);
   const [currentStage, setCurrentStage] = useState<FileUploadStage>("idle");
   const [errorMessage, setErrorMessage] = useState<string | undefined>(
     undefined,
@@ -44,18 +44,22 @@ export default function AddFile() {
   const isProcessing = !["idle", "completed", "failed"].includes(currentStage);
 
   const onDrop = (acceptedFiles: File[]) => {
-    const selectedFile = acceptedFiles[0];
-    if (selectedFile) {
-      const fileSizeMB = selectedFile.size / 1024 / 1024;
-      if (fileSizeMB > MAX_FILE_SIZE) {
-        toast.error(`File size must be less than ${MAX_FILE_SIZE}MB`);
-        return;
-      }
-      setFileSize(fileSizeMB);
-      setFile(selectedFile);
-      setCurrentStage("idle");
-      setErrorMessage(undefined);
+    const validFiles = acceptedFiles.filter((file) => {
+      const fileSizeMB = file.size / 1024 / 1024;
+      return fileSizeMB <= MAX_FILE_SIZE;
+    });
+
+    if (validFiles.length < acceptedFiles.length) {
+      toast.error(
+        `Some files exceeded the ${MAX_FILE_SIZE}MB limit and were ignored`,
+      );
     }
+
+    const newFileSizes = validFiles.map((file) => file.size / 1024 / 1024);
+    setFileSizes((prev) => [...prev, ...newFileSizes]);
+    setFiles((prev) => [...prev, ...validFiles]);
+    setCurrentStage("idle");
+    setErrorMessage(undefined);
   };
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -63,8 +67,7 @@ export default function AddFile() {
     accept: {
       "application/pdf": [".pdf"],
     },
-    maxFiles: 1,
-    multiple: false,
+    multiple: true,
     disabled: isProcessing,
   });
 
@@ -113,8 +116,8 @@ export default function AddFile() {
   };
 
   const handleProcessAndProfileUpdate = async () => {
-    if (!file || !user?.id) {
-      toast.error("No file selected or user not authenticated.");
+    if (files.length === 0 || !user?.id) {
+      toast.error("No files selected or user not authenticated.");
       return;
     }
 
@@ -122,128 +125,140 @@ export default function AddFile() {
     setErrorMessage(undefined);
 
     try {
-      await handleUpload(file);
+      for (const file of files) {
+        await handleUpload(file);
 
-      setCurrentStage("extracting");
-      const buffer = await readFileAsArrayBuffer(file);
-      await loadDocument(buffer);
-      const text = await extractText();
+        setCurrentStage("extracting");
+        const buffer = await readFileAsArrayBuffer(file);
+        await loadDocument(buffer);
+        const text = await extractText();
 
-      setCurrentStage("parsing");
-      const parsedProfile = await parseResume({ resumeText: text });
-      console.log("Parsed Profile:", parsedProfile);
+        setCurrentStage("parsing");
+        const parsedProfile = await parseResume({ resumeText: text });
+        console.log("Parsed Profile:", parsedProfile);
 
-      setCurrentStage("updating_profile");
-      if (!user.id) {
-        throw new Error("User ID missing.");
-      }
+        setCurrentStage("updating_profile");
+        if (!user.id) {
+          throw new Error("User ID missing.");
+        }
 
-      const profileData = {
-        name: parsedProfile.name || "User Name",
-        email: parsedProfile.email || "user@example.com",
-        ...(parsedProfile.phone ? { phone: String(parsedProfile.phone) } : {}),
-        ...(parsedProfile.location
-          ? { location: String(parsedProfile.location) }
-          : {}),
+        const profileData = {
+          name: parsedProfile.name || "User Name",
+          email: parsedProfile.email || "user@example.com",
+          ...(parsedProfile.phone
+            ? { phone: String(parsedProfile.phone) }
+            : {}),
+          ...(parsedProfile.location
+            ? { location: String(parsedProfile.location) }
+            : {}),
 
-        education: Array.isArray(parsedProfile.education)
-          ? parsedProfile.education
-              .filter(Boolean)
-              .filter(
-                (edu) =>
-                  edu.institution && edu.degree && edu.field && edu.startDate,
-              )
-              .map((edu) => ({
-                institution: String(edu.institution),
-                degree: String(edu.degree),
-                field: String(edu.field),
-                startDate: String(edu.startDate),
-                endDate: edu.endDate ? String(edu.endDate) : undefined,
-                gpa: edu.gpa != null ? Number(edu.gpa) : undefined,
-                description: edu.description
-                  ? String(edu.description)
-                  : undefined,
-                location: edu.location ? String(edu.location) : undefined,
-              }))
-          : [],
+          education: Array.isArray(parsedProfile.education)
+            ? parsedProfile.education
+                .filter(Boolean)
+                .filter(
+                  (edu) =>
+                    edu.institution && edu.degree && edu.field && edu.startDate,
+                )
+                .map((edu) => ({
+                  institution: String(edu.institution),
+                  degree: String(edu.degree),
+                  field: String(edu.field),
+                  startDate: String(edu.startDate),
+                  endDate: edu.endDate ? String(edu.endDate) : undefined,
+                  gpa: edu.gpa != null ? Number(edu.gpa) : undefined,
+                  description: edu.description
+                    ? String(edu.description)
+                    : undefined,
+                  location: edu.location ? String(edu.location) : undefined,
+                }))
+            : [],
 
-        workExperience: Array.isArray(parsedProfile.workExperience)
-          ? parsedProfile.workExperience
-              .filter(Boolean)
-              .filter((work) => work.company && work.position && work.startDate)
-              .map((work) => ({
-                company: String(work.company),
-                position: String(work.position),
-                startDate: String(work.startDate),
-                current: work.current === true,
-                description: Array.isArray(work.description)
-                  ? work.description.map(String)
-                  : [],
-                endDate: work.endDate ? String(work.endDate) : undefined,
-                location: work.location ? String(work.location) : undefined,
-                technologies: Array.isArray(work.technologies)
-                  ? work.technologies.map(String)
-                  : [],
-              }))
-          : [],
+          workExperience: Array.isArray(parsedProfile.workExperience)
+            ? parsedProfile.workExperience
+                .filter(Boolean)
+                .filter(
+                  (work) => work.company && work.position && work.startDate,
+                )
+                .map((work) => ({
+                  company: String(work.company),
+                  position: String(work.position),
+                  startDate: String(work.startDate),
+                  current: work.current === true,
+                  description: Array.isArray(work.description)
+                    ? work.description.map(String)
+                    : [],
+                  endDate: work.endDate ? String(work.endDate) : undefined,
+                  location: work.location ? String(work.location) : undefined,
+                  technologies: Array.isArray(work.technologies)
+                    ? work.technologies.map(String)
+                    : [],
+                }))
+            : [],
 
-        projects: Array.isArray(parsedProfile.projects)
-          ? parsedProfile.projects
-              .filter(Boolean)
-              .filter((proj) => proj.name)
-              .map((proj) => ({
-                name: String(proj.name),
-                description: Array.isArray(proj.description)
-                  ? proj.description.map(String)
-                  : [],
-                technologies: Array.isArray(proj.technologies)
-                  ? proj.technologies.map(String)
-                  : [],
-                startDate: proj.startDate ? String(proj.startDate) : undefined,
-                endDate: proj.endDate ? String(proj.endDate) : undefined,
-                link: proj.link ? String(proj.link) : undefined,
-                githubUrl: proj.githubUrl ? String(proj.githubUrl) : undefined,
-                highlights: Array.isArray(proj.highlights)
-                  ? proj.highlights.map(String)
-                  : [],
-              }))
-          : [],
+          projects: Array.isArray(parsedProfile.projects)
+            ? parsedProfile.projects
+                .filter(Boolean)
+                .filter((proj) => proj.name)
+                .map((proj) => ({
+                  name: String(proj.name),
+                  description: Array.isArray(proj.description)
+                    ? proj.description.map(String)
+                    : [],
+                  technologies: Array.isArray(proj.technologies)
+                    ? proj.technologies.map(String)
+                    : [],
+                  startDate: proj.startDate
+                    ? String(proj.startDate)
+                    : undefined,
+                  endDate: proj.endDate ? String(proj.endDate) : undefined,
+                  link: proj.link ? String(proj.link) : undefined,
+                  githubUrl: proj.githubUrl
+                    ? String(proj.githubUrl)
+                    : undefined,
+                  highlights: Array.isArray(proj.highlights)
+                    ? proj.highlights.map(String)
+                    : [],
+                }))
+            : [],
 
-        skills: Array.isArray(parsedProfile.skills)
-          ? parsedProfile.skills.map(String)
-          : [],
+          skills: Array.isArray(parsedProfile.skills)
+            ? parsedProfile.skills.map(String)
+            : [],
 
-        socialLinks: Array.isArray(parsedProfile.socialLinks)
-          ? parsedProfile.socialLinks
-              .filter(Boolean)
-              .filter((link) => link.platform && link.url)
-              .map((link) => ({
-                platform: String(link.platform),
-                url: String(link.url),
-              }))
-          : [],
+          socialLinks: Array.isArray(parsedProfile.socialLinks)
+            ? parsedProfile.socialLinks
+                .filter(Boolean)
+                .filter((link) => link.platform && link.url)
+                .map((link) => ({
+                  platform: String(link.platform),
+                  url: String(link.url),
+                }))
+            : [],
 
-        userId: user.id,
-      };
-
-      if (userProfile) {
-        await updateProfile({
-          ...profileData,
-          profileId: userProfile._id,
           userId: user.id,
-        });
-        toast.success("Resume processed and profile updated successfully!");
-      } else {
-        await createProfile({
-          ...profileData,
-          userId: user.id,
-        });
-        toast.success("Resume processed and profile created successfully!");
+        };
+
+        if (userProfile) {
+          await updateProfile({
+            ...profileData,
+            profileId: userProfile._id,
+            userId: user.id,
+          });
+          toast.success("Resume processed and profile updated successfully!");
+        } else {
+          await createProfile({
+            ...profileData,
+            userId: user.id,
+          });
+          toast.success("Resume processed and profile created successfully!");
+        }
+
+        setCurrentStage("completed");
       }
 
       setCurrentStage("completed");
-      setFile(null);
-      setFileSize(0);
+      setFiles([]);
+      setFileSizes([]);
     } catch (error) {
       console.error("Processing error:", error);
       if (currentStage !== "failed") {
@@ -279,18 +294,12 @@ export default function AddFile() {
         <Label>Upload Resume (PDF, Max {MAX_FILE_SIZE}MB)</Label>
         <div className="text-sm text-muted-foreground text-center">
           {isDragActive ? (
-            <p>Drop the file here</p>
+            <p>Drop the files here</p>
           ) : (
-            <p>Drag and drop a file here, or click to select</p>
+            <p>Drag and drop files here, or click to select</p>
           )}
         </div>
       </div>
-
-      {file && !isProcessing && currentStage !== "completed" && (
-        <div className="text-sm text-gray-600">
-          Selected file: {file.name} ({fileSize.toFixed(2)} MB)
-        </div>
-      )}
 
       {currentStage !== "idle" && (
         <FileUploadProgress currentStage={currentStage} error={errorMessage} />
@@ -298,10 +307,10 @@ export default function AddFile() {
 
       <Button
         onClick={handleProcessAndProfileUpdate}
-        disabled={!file || !isWorkerInitialized || isProcessing}
+        disabled={!files.length || !isWorkerInitialized || isProcessing}
         className="w-full"
       >
-        {isProcessing ? "Processing..." : "Process Resume & Update Profile"}
+        {isProcessing ? "Processing..." : "Process Resumes & Update Profiles"}
       </Button>
     </div>
   );
