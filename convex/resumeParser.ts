@@ -12,17 +12,44 @@ export const openai = createOpenAI({
 export const parseResume = action({
   args: {
     resumeText: v.string(),
+    existingProfile: v.optional(v.string()),
   },
   handler: async (_, args) => {
     try {
+      // Prepare existing profile context if available
+      let existingProfileContext = "";
+      if (args.existingProfile && args.existingProfile.trim()) {
+        try {
+          const profile = JSON.parse(args.existingProfile);
+          existingProfileContext = `
+===== EXISTING PROFILE DATA =====
+
+This is the user's current profile data that should be used as a reference when parsing. 
+Update this data with new information from the resume(s), but keep existing information 
+if the resume doesn't contain conflicting or improved data:
+
+${JSON.stringify(profile, null, 2)}
+
+`;
+        } catch (error) {
+          console.error("Error parsing existing profile:", error);
+        }
+      }
+
       const systemPrompt =
         "You are a resume parser that extracts structured information from resume text. " +
         "Parse the provided resume text into a structured profile format, ensuring all dates are in YYYY-MM-DD format. " +
         "If the text contains multiple resume sections with clear separators, merge the information intelligently, keeping the most comprehensive and recent data. " +
         "If the text contains multiple resumes, try to combine (add/update) the results. " +
         "For conflicting information, prefer the most recent or most detailed information. " +
+        (existingProfileContext
+          ? "IMPORTANT: The user already has an existing profile. Use this as a base and update it with any new or improved information from the resume(s). " +
+            "Retain all existing profile information unless explicitly contradicted or improved by the resume data. "
+          : "") +
         "For any links, please always include the https:// prefix. " +
-        "Output a JSON object that exactly fits the following schema. Here is the resume text:\n\n" +
+        "Output a JSON object that exactly fits the following schema. " +
+        (existingProfileContext ? existingProfileContext : "") +
+        "Here is the resume text:\n\n" +
         args.resumeText;
 
       const { object } = await generateObject({

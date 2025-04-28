@@ -21,7 +21,7 @@ type FileUploadProgressProps = {
 const stages: { key: FileUploadStage; label: string }[] = [
   { key: "uploading", label: "Uploading" },
   { key: "extracting", label: "Extracting Text" },
-  { key: "parsing", label: "Parsing Resume Data" },
+  { key: "parsing", label: "Analyzing Resume Data" },
   { key: "updating_profile", label: "Updating Profile" },
   { key: "completed", label: "Completed" },
 ];

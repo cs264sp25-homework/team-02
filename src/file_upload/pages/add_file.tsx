@@ -189,8 +189,27 @@ export default function AddFile() {
         .map((text, index) => `===== RESUME ${index + 1} =====\n\n${text}`)
         .join("\n\n");
 
+      // Include existing profile data if available
+      let existingProfileData = "";
+      if (userProfile) {
+        // Create a simplified version of the profile without system fields
+        const profileForAI = {
+          name: userProfile.name,
+          email: userProfile.email,
+          phone: userProfile.phone,
+          location: userProfile.location,
+          education: userProfile.education,
+          workExperience: userProfile.workExperience,
+          projects: userProfile.projects,
+          skills: userProfile.skills,
+          socialLinks: userProfile.socialLinks,
+        };
+        existingProfileData = JSON.stringify(profileForAI);
+      }
+
       const parsedProfile = await parseResume({
         resumeText: combinedResumeText,
+        existingProfile: existingProfileData,
       });
       console.log("Parsed Profile:", parsedProfile);
 
@@ -410,7 +429,7 @@ export default function AddFile() {
       >
         {isProcessing
           ? "Processing..."
-          : `Process ${files.length} Resume(s) & Update Profile`}
+          : `Process ${files.length} Resume(s) & Enhance Profile`}
       </Button>
     </div>
   );
