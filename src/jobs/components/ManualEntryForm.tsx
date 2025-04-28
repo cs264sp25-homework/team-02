@@ -69,7 +69,7 @@ const ManualEntryForm: React.FC<ManualEntryFormProps> = ({
           <div className="flex items-center gap-4">
             <label
               htmlFor="jobTitle"
-              className="w-1/3 text-sm font-medium text-left"
+              className="w-1/3 text-lg font-medium text-left"
             >
               Job Title
             </label>
@@ -88,14 +88,23 @@ const ManualEntryForm: React.FC<ManualEntryFormProps> = ({
           <div className="flex items-start gap-4">
             <label
               htmlFor="jobDescription"
-              className="w-1/3 text-sm font-medium text-left"
+              className="w-1/3 text-lg font-medium text-left"
             >
               Job Requirements
+              <div className="text-xs text-gray-500">
+                Write each requirement on its own line, with an empty line
+                between each requirement.
+                <br />
+                <br />
+                Example: <br />
+                req 1 <br /> <br /> req 2 <br /> <br />
+                req 3
+              </div>
             </label>
             <Textarea
               required
               id="jobDescription"
-              placeholder="Enter job requirements..."
+              placeholder="Enter job requirements like the example..."
               rows={4}
               value={jobRequirements}
               onChange={(e) => {
@@ -105,9 +114,19 @@ const ManualEntryForm: React.FC<ManualEntryFormProps> = ({
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2 text-left">
-              Job Application Questions
-            </label>
+            <div className="flex items-start gap-4">
+              <label className="text-lg font-medium text-left">
+                Job Application Questions
+              </label>
+              <Button
+                className="mb-4 text-sm"
+                type="button"
+                onClick={handleAddQuestion}
+              >
+                Add Question
+              </Button>
+            </div>
+
             <div className="space-y-4">
               {questions.map((question, index) => (
                 <div key={index} className="flex items-center gap-4">
@@ -128,9 +147,6 @@ const ManualEntryForm: React.FC<ManualEntryFormProps> = ({
                 </div>
               ))}
             </div>
-            <Button type="button" className="mt-4" onClick={handleAddQuestion}>
-              Add Question
-            </Button>
           </div>
           <div className="flex justify-end">
             <Button type="submit">Add Job</Button>

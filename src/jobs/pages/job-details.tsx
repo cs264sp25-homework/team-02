@@ -82,28 +82,21 @@ const JobDetailsPage = () => {
     }
   }, [job?.answers]);
 
-  const formatExtractedRequirements = (text: string): string[] => {
-    if (!text) return [];
+  const formatExtractedRequirements = (text: string): string => {
+    const blocks = text.split(/\n\s*\n/);
 
-    // Normalize line endings
-    const lines = text
-      .split(/\r?\n/) // split by line breaks
-      .map((line) => line.trim()) // remove extra spaces
-      .filter((line) => line.length > 0); // filter out empty lines
+    const cleanedBlocks = blocks.map((block) => {
+      let cleaned = block.trim().replace(/^[•*»@$+«¢-]+\s*/, ""); // Remove weird leading symbols first
+      cleaned = cleaned.replace(/\s+/g, " "); // Normalize spaces inside
 
-    const bullets: string[] = [];
-
-    for (let line of lines) {
-      // Remove any weird leading bullet-like characters (e, o, *, -, etc.)
-      line = line.replace(/^[-•*»e+-óo«¢0\s]+/, "").trim();
-
-      if (line.length > 0) {
-        line = `• ${line}`; // Add a bullet point
-        bullets.push(line);
+      if (!cleaned.startsWith("•")) {
+        cleaned = "• " + cleaned; // If not already starting with bullet, add it
       }
-    }
 
-    return bullets;
+      return cleaned;
+    });
+
+    return cleanedBlocks.join("\n\n");
   };
 
   const handleImageUpload = async (
@@ -126,7 +119,7 @@ const JobDetailsPage = () => {
         jobUpdated = await updateJob({
           userId: user!.id,
           jobId: job!._id,
-          description: formatExtractedRequirements(text).join("\n"),
+          description: text,
         });
 
         await extractRequiredSkills({
@@ -162,9 +155,6 @@ const JobDetailsPage = () => {
         imageContentType === "questions" &&
         jobQuestions.length > 0
       ) {
-        console.log(
-          "Generating AI answers for questions in handleImageUpload...",
-        );
         await getAiGeneratedAnswers({
           userId: user!.id,
           jobId: job!._id,
@@ -325,14 +315,16 @@ const JobDetailsPage = () => {
             </div>
           )}
         </div>
+
         <CardContent className="space-y-6">
-          <div>
+          <div className="flex flex-col items-start gap-2 mb-6">
             <h3 className="text-lg font-semibold mb-2">Requirements</h3>
-            {job.description && job.description !== "No requirements found" && (
-              <p className="whitespace-pre-wrap text-left">{job.description}</p>
-            )}
-            {job.description === "No requirements found" && (
-              <div className="flex flex-col items-start gap-2 mb-6">
+            {job.description && job.description !== "No requirements found" ? (
+              <p className="whitespace-pre-wrap text-left w-full">
+                {formatExtractedRequirements(job.description)}
+              </p>
+            ) : (
+              <div className="w-full">
                 <p className="text-sm text-gray-600 mb-4 text-left">
                   Unable to extract job requirements from provided link. Please
                   upload screenshot of the job requirements. Only take
@@ -347,26 +339,11 @@ const JobDetailsPage = () => {
             )}
           </div>
 
-          {job.questions && job.questions.length == 0 && (
-            <div className="flex flex-col items-start gap-2 mb-6">
-              <h3 className="text-lg font-semibold mb-2">
-                Application Questions
-              </h3>
-              <p className="text-sm text-gray-600 mb-4">
-                Unable to extract application questions from provided link.
-                Please upload screenshot of the questions.
-              </p>
-              <ImageUpload
-                onImageUpload={(file) => handleImageUpload(file, "questions")}
-              />
-            </div>
-          )}
-
-          {job.questions && job.questions.length > 0 && (
-            <div className="flex flex-col items-start gap-2 mb-6">
-              <h3 className="text-lg font-semibold mb-2">
-                Application Questions
-              </h3>
+          <div className="flex flex-col items-start gap-2 mb-6">
+            <h3 className="text-lg font-semibold mb-2">
+              Application Questions
+            </h3>
+            {job.questions && job.questions.length > 0 ? (
               <ul className="space-y-4">
                 {job.questions.map((question, index) => (
                   <li key={index} className="space-y-2">
@@ -409,8 +386,18 @@ const JobDetailsPage = () => {
                   </li>
                 ))}
               </ul>
-            </div>
-          )}
+            ) : (
+              <div className="w-full">
+                <p className="text-sm text-gray-600 mb-4">
+                  Unable to extract application questions from provided link.
+                  Please upload screenshot of the questions.
+                </p>
+                <ImageUpload
+                  onImageUpload={(file) => handleImageUpload(file, "questions")}
+                />
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
     </div>

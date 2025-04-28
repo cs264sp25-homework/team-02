@@ -30,8 +30,6 @@ export const generateJobApplicationAnswers = action({
       .map((q, index) => `${index + 1}. ${q}`)
       .join("\n");
 
-    console.log("Formatted Questions:", formattedQuestions);
-
     const systemPrompt = `
     You are expert career coach specialized in crafting excellent job application answers.
       
