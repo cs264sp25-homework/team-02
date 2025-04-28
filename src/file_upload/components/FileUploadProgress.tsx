@@ -9,91 +9,79 @@ export type FileUploadStage =
   | "completed"
   | "failed";
 
-interface FileUploadProgressProps {
+type FileUploadProgressProps = {
   currentStage: FileUploadStage;
   error?: string;
-}
+  processingInfo?: {
+    current: number;
+    total: number;
+  };
+};
 
-const STAGES: { stage: FileUploadStage; label: string }[] = [
-  { stage: "uploading", label: "Uploading File" },
-  { stage: "extracting", label: "Extracting Text" },
-  { stage: "parsing", label: "Parsing Resume with AI" },
-  { stage: "updating_profile", label: "Updating Profile" },
-  { stage: "completed", label: "Completed" },
+const stages: { key: FileUploadStage; label: string }[] = [
+  { key: "uploading", label: "Uploading" },
+  { key: "extracting", label: "Extracting Text" },
+  { key: "parsing", label: "Analyzing Resume Data" },
+  { key: "updating_profile", label: "Updating Profile" },
+  { key: "completed", label: "Completed" },
 ];
 
-export const FileUploadProgress = ({
+export function FileUploadProgress({
   currentStage,
   error,
-}: FileUploadProgressProps) => {
-  if (currentStage === "idle") {
-    return null; // Don't show anything if idle
-  }
-
-  let activeIndex = STAGES.findIndex((s) => s.stage === currentStage);
-  if (currentStage === "failed") {
-    activeIndex = STAGES.findIndex((s) => s.stage === "updating_profile");
-  } else if (currentStage === "completed") {
-    activeIndex = STAGES.length - 1; // Mark all as completed
-  }
+  processingInfo,
+}: FileUploadProgressProps) {
+  // Calculate the current progress percentage
+  const currentStageIndex = stages.findIndex(
+    (stage) => stage.key === currentStage,
+  );
+  const totalStages = stages.length - 1; // Exclude "completed" from progress calculation
+  const progress =
+    currentStage === "completed"
+      ? 100
+      : currentStage === "failed"
+        ? 100
+        : currentStageIndex >= 0
+          ? Math.round(
+              ((currentStageIndex + (processingInfo?.current || 1)) /
+                (totalStages + (processingInfo?.total || 1))) *
+                100,
+            )
+          : 0;
 
   return (
-    <div className="w-full max-w-md mx-auto p-4 border rounded-lg my-4">
-      <h4 className="text-sm font-medium text-center mb-4">
-        Processing Status
-      </h4>
-      <div className="relative">
-        {/* Timeline line */}
-        <div className="absolute left-4 top-0 h-full w-0.5 bg-gray-200" />
-
-        {/* Timeline items */}
-        <div className="space-y-6">
-          {STAGES.map((stageInfo, index) => {
-            // Determine stage status
-            const isCompleted =
-              currentStage === "completed" || index < activeIndex;
-            const isActive = index === activeIndex && currentStage !== "failed";
-            const isFailed = index === activeIndex && currentStage === "failed";
-
-            return (
-              <div key={stageInfo.stage} className="relative flex items-start">
-                {/* Status indicator */}
-                <div
-                  className={cn(
-                    "absolute left-4 -translate-x-1/2 w-4 h-4 rounded-full border-2 transition-colors duration-300",
-                    isCompleted && "bg-green-500 border-green-500", // Completed
-                    isActive && "bg-blue-500 border-blue-500 animate-pulse", // Active
-                    isFailed && "bg-red-500 border-red-500", // Failed
-                    !isCompleted &&
-                      !isActive &&
-                      !isFailed &&
-                      "bg-white border-gray-300", // Pending
-                  )}
-                />
-
-                {/* Content */}
-                <div className="ml-8">
-                  <h3
-                    className={cn(
-                      "text-sm font-medium text-left transition-colors duration-300",
-                      isCompleted && "text-green-600",
-                      isActive && "text-blue-600",
-                      isFailed && "text-red-600",
-                      !isCompleted && !isActive && !isFailed && "text-gray-500",
-                    )}
-                  >
-                    {stageInfo.label}
-                    {isFailed && " (Failed)"}
-                  </h3>
-                  {isFailed && error && (
-                    <p className="mt-1 text-xs text-red-500">{error}</p>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+    <div className="w-full space-y-2">
+      <div className="flex justify-between text-sm text-muted-foreground">
+        <span>
+          {currentStage === "completed"
+            ? "Completed"
+            : currentStage === "failed"
+              ? "Failed"
+              : `${
+                  currentStage === "extracting" && processingInfo?.total
+                    ? `Extracting (${processingInfo.current}/${processingInfo.total})`
+                    : stages.find((stage) => stage.key === currentStage)
+                        ?.label || "Processing"
+                }`}
+        </span>
+        <span>{progress}%</span>
       </div>
+
+      <div className="h-2 w-full overflow-hidden rounded-full bg-secondary">
+        <div
+          className={cn(
+            "h-full transition-all duration-500",
+            currentStage === "failed"
+              ? "bg-destructive"
+              : currentStage === "completed"
+                ? "bg-primary"
+                : "bg-primary animate-pulse",
+          )}
+          style={{ width: `${progress}%` }}
+        ></div>
+      </div>
+
+      {error && <div className="mt-2 text-sm text-destructive">{error}</div>}
     </div>
   );
-};
+}

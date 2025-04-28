@@ -17,12 +17,18 @@ import {
 const MAX_FILE_SIZE = 5;
 
 export default function AddFile() {
-  const [file, setFile] = useState<File | null>(null);
-  const [fileSize, setFileSize] = useState(0);
+  const [files, setFiles] = useState<File[]>([]);
+  const [fileDetails, setFileDetails] = useState<{
+    [key: string]: { size: number; uploaded: boolean };
+  }>({});
   const [currentStage, setCurrentStage] = useState<FileUploadStage>("idle");
   const [errorMessage, setErrorMessage] = useState<string | undefined>(
     undefined,
   );
+  const [processingCount, setProcessingCount] = useState({
+    current: 0,
+    total: 0,
+  });
 
   const generateUploadUrl = useMutation(api.files.generateUploadUrl);
   const saveFile = useMutation(api.files.saveFile);
@@ -44,17 +50,34 @@ export default function AddFile() {
   const isProcessing = !["idle", "completed", "failed"].includes(currentStage);
 
   const onDrop = (acceptedFiles: File[]) => {
-    const selectedFile = acceptedFiles[0];
-    if (selectedFile) {
-      const fileSizeMB = selectedFile.size / 1024 / 1024;
+    if (acceptedFiles.length === 0) return;
+
+    const validFiles: File[] = [];
+    const newFileDetails: {
+      [key: string]: { size: number; uploaded: boolean };
+    } = { ...fileDetails };
+
+    acceptedFiles.forEach((file) => {
+      const fileSizeMB = file.size / 1024 / 1024;
       if (fileSizeMB > MAX_FILE_SIZE) {
-        toast.error(`File size must be less than ${MAX_FILE_SIZE}MB`);
+        toast.error(
+          `File ${file.name} exceeds the ${MAX_FILE_SIZE}MB limit and was not added`,
+        );
         return;
       }
-      setFileSize(fileSizeMB);
-      setFile(selectedFile);
+      validFiles.push(file);
+      newFileDetails[file.name] = {
+        size: fileSizeMB,
+        uploaded: false,
+      };
+    });
+
+    if (validFiles.length > 0) {
+      setFiles((prev) => [...prev, ...validFiles]);
+      setFileDetails(newFileDetails);
       setCurrentStage("idle");
       setErrorMessage(undefined);
+      toast.success(`${validFiles.length} file(s) added successfully`);
     }
   };
 
@@ -63,8 +86,8 @@ export default function AddFile() {
     accept: {
       "application/pdf": [".pdf"],
     },
-    maxFiles: 1,
-    multiple: false,
+    maxFiles: 10,
+    multiple: true,
     disabled: isProcessing,
   });
 
@@ -77,8 +100,6 @@ export default function AddFile() {
     });
 
   const handleUpload = async (fileToUpload: File): Promise<string> => {
-    setCurrentStage("uploading");
-    setErrorMessage(undefined);
     try {
       const postUrl = await generateUploadUrl();
       const result = await fetch(postUrl, {
@@ -100,37 +121,96 @@ export default function AddFile() {
         fileSize: fileToUpload.size,
         userId: user?.id || "",
       });
-      toast.success("File uploaded successfully!");
+
+      setFileDetails((prev) => ({
+        ...prev,
+        [fileToUpload.name]: {
+          ...prev[fileToUpload.name],
+          uploaded: true,
+        },
+      }));
+
       return storageId;
     } catch (error) {
       console.error("Upload error:", error);
-      const message = "Failed to upload file. Please try again.";
-      setErrorMessage(message);
-      setCurrentStage("failed");
-      toast.error(message);
+      throw error;
+    }
+  };
+
+  const processFile = async (file: File): Promise<string> => {
+    setProcessingCount((prev) => ({ ...prev, current: prev.current + 1 }));
+
+    try {
+      await handleUpload(file);
+      const buffer = await readFileAsArrayBuffer(file);
+      await loadDocument(buffer);
+      const text = await extractText();
+      return text;
+    } catch (error) {
+      console.error(`Error processing file ${file.name}:`, error);
       throw error;
     }
   };
 
   const handleProcessAndProfileUpdate = async () => {
-    if (!file || !user?.id) {
-      toast.error("No file selected or user not authenticated.");
+    if (files.length === 0 || !user?.id) {
+      toast.error("No files selected or user not authenticated.");
       return;
     }
 
-    setCurrentStage("idle");
+    setCurrentStage("uploading");
     setErrorMessage(undefined);
+    setProcessingCount({ current: 0, total: files.length });
 
     try {
-      await handleUpload(file);
+      const allTexts: string[] = [];
 
+      // First upload all files and extract text
       setCurrentStage("extracting");
-      const buffer = await readFileAsArrayBuffer(file);
-      await loadDocument(buffer);
-      const text = await extractText();
+      for (const file of files) {
+        try {
+          const text = await processFile(file);
+          allTexts.push(text);
+        } catch (error) {
+          console.error(`Failed to process ${file.name}:`, error);
+          toast.error(`Failed to process ${file.name}`);
+        }
+      }
 
+      if (allTexts.length === 0) {
+        throw new Error("No files were successfully processed");
+      }
+
+      // Then parse all resume texts together
       setCurrentStage("parsing");
-      const parsedProfile = await parseResume({ resumeText: text });
+
+      // Combine all resume texts with clear separators
+      const combinedResumeText = allTexts
+        .map((text, index) => `===== RESUME ${index + 1} =====\n\n${text}`)
+        .join("\n\n");
+
+      // Include existing profile data if available
+      let existingProfileData = "";
+      if (userProfile) {
+        // Create a simplified version of the profile without system fields
+        const profileForAI = {
+          name: userProfile.name,
+          email: userProfile.email,
+          phone: userProfile.phone,
+          location: userProfile.location,
+          education: userProfile.education,
+          workExperience: userProfile.workExperience,
+          projects: userProfile.projects,
+          skills: userProfile.skills,
+          socialLinks: userProfile.socialLinks,
+        };
+        existingProfileData = JSON.stringify(profileForAI);
+      }
+
+      const parsedProfile = await parseResume({
+        resumeText: combinedResumeText,
+        existingProfile: existingProfileData,
+      });
       console.log("Parsed Profile:", parsedProfile);
 
       setCurrentStage("updating_profile");
@@ -232,25 +312,26 @@ export default function AddFile() {
           profileId: userProfile._id,
           userId: user.id,
         });
-        toast.success("Resume processed and profile updated successfully!");
+        toast.success("Resumes processed and profile updated successfully!");
       } else {
         await createProfile({
           ...profileData,
           userId: user.id,
         });
-        toast.success("Resume processed and profile created successfully!");
+        toast.success("Resumes processed and profile created successfully!");
       }
 
       setCurrentStage("completed");
-      setFile(null);
-      setFileSize(0);
+      setFiles([]);
+      setFileDetails({});
+      setProcessingCount({ current: 0, total: 0 });
     } catch (error) {
       console.error("Processing error:", error);
       if (currentStage !== "failed") {
         let stageErrorMessage =
           "An unexpected error occurred during processing.";
         if (currentStage === "extracting")
-          stageErrorMessage = "Failed to extract text from PDF.";
+          stageErrorMessage = "Failed to extract text from PDFs.";
         else if (currentStage === "parsing")
           stageErrorMessage = "Failed to parse resume data.";
         else if (currentStage === "updating_profile")
@@ -261,6 +342,16 @@ export default function AddFile() {
         toast.error(stageErrorMessage);
       }
     }
+  };
+
+  const removeFile = (fileName: string) => {
+    setFiles((prev) => prev.filter((file) => file.name !== fileName));
+    setFileDetails((prev) => {
+      const newDetails = { ...prev };
+      delete newDetails[fileName];
+      return newDetails;
+    });
+    toast.info(`Removed ${fileName}`);
   };
 
   return (
@@ -276,32 +367,69 @@ export default function AddFile() {
         )}
       >
         <input {...getInputProps()} disabled={isProcessing} />
-        <Label>Upload Resume (PDF, Max {MAX_FILE_SIZE}MB)</Label>
+        <Label>Upload Resumes (PDF, Max {MAX_FILE_SIZE}MB each)</Label>
         <div className="text-sm text-muted-foreground text-center">
           {isDragActive ? (
-            <p>Drop the file here</p>
+            <p>Drop the files here</p>
           ) : (
-            <p>Drag and drop a file here, or click to select</p>
+            <p>Drag and drop files here, or click to select multiple files</p>
           )}
         </div>
       </div>
 
-      {file && !isProcessing && currentStage !== "completed" && (
-        <div className="text-sm text-gray-600">
-          Selected file: {file.name} ({fileSize.toFixed(2)} MB)
+      {files.length > 0 && (
+        <div className="space-y-2">
+          <div className="text-sm font-medium">
+            Selected files ({files.length}):
+          </div>
+          <ul className="text-sm space-y-1">
+            {files.map((file) => (
+              <li
+                key={file.name}
+                className="flex justify-between items-center bg-gray-50 p-2 rounded"
+              >
+                <span>
+                  {file.name} ({fileDetails[file.name]?.size.toFixed(2) || "0"}{" "}
+                  MB)
+                </span>
+                {!isProcessing && (
+                  <button
+                    onClick={() => removeFile(file.name)}
+                    className="text-red-500 hover:text-red-700"
+                  >
+                    Remove
+                  </button>
+                )}
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 
       {currentStage !== "idle" && (
-        <FileUploadProgress currentStage={currentStage} error={errorMessage} />
+        <div>
+          <FileUploadProgress
+            currentStage={currentStage}
+            error={errorMessage}
+            processingInfo={processingCount}
+          />
+          {isProcessing && processingCount.total > 0 && (
+            <div className="text-sm text-center mt-2">
+              Processing file {processingCount.current} of{" "}
+              {processingCount.total}
+            </div>
+          )}
+        </div>
       )}
 
       <Button
         onClick={handleProcessAndProfileUpdate}
-        disabled={!file || !isWorkerInitialized || isProcessing}
+        disabled={files.length === 0 || !isWorkerInitialized || isProcessing}
         className="w-full"
       >
-        {isProcessing ? "Processing..." : "Process Resume & Update Profile"}
+        {isProcessing
+          ? "Processing..."
+          : `Process ${files.length} Resume(s) & Enhance Profile`}
       </Button>
     </div>
   );
