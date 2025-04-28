@@ -41,6 +41,7 @@ ${JSON.stringify(profile, null, 2)}
         "Parse the provided resume text into a structured profile format, ensuring all dates are in YYYY-MM-DD format. " +
         "If the text contains multiple resume sections with clear separators, merge the information intelligently, keeping the most comprehensive and recent data. " +
         "If the text contains multiple resumes, try to combine (add/update) the results. " +
+        "If you determine that the provided resume text is not a resume / is not relevant, you can ignore that provided text and move on. " +
         "For conflicting information, prefer the most recent or most detailed information. " +
         (existingProfileContext
           ? "IMPORTANT: The user already has an existing profile. Use this as a base and update it with any new or improved information from the resume(s). " +

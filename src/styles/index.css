@@ -167,7 +167,8 @@
 }
 
 @keyframes blink {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {
@@ -180,4 +181,14 @@
 }
 .custom-scrollbar::-webkit-scrollbar {
   display: none; /* Chrome, Safari, Opera */
+}
+
+@keyframes glow {
+  0%,
+  100% {
+    box-shadow: 0 0 15px 5px rgba(14, 148, 250, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 25px 8px rgba(14, 148, 250, 0.5);
+  }
 }

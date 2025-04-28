@@ -20,6 +20,15 @@ import { ProfileUpdateType } from "convex/profiles";
 import { useRouter } from "@/core/hooks/use-router";
 import { useAuth } from "@/linkedin/hooks/useAuth";
 import { useEffect } from "react";
+import { FileUpIcon, ArrowRightIcon } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/core/components/dialog";
 
 const ProfilePage = () => {
   const { isAuthenticated, user } = useAuth();
@@ -89,9 +98,47 @@ const ProfilePage = () => {
 
   return (
     <div className="container mx-auto max-w-5xl px-4 py-8">
-      <div className="flex justify-end mb-6">
-        <Button onClick={() => redirect("import_job")}>Import Job</Button>
+      {/* Floating Resume Upload Button */}
+      <div className="fixed right-6 bottom-10 z-10">
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button
+              className="rounded-full w-14 h-14 flex items-center justify-center bg-black hover:bg-gray-800 text-white animate-[glow_2s_ease-in-out_infinite]"
+              size="icon"
+            >
+              <FileUpIcon className="h-6 w-6" />
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-center text-xl">
+                Quick Profile Update
+              </DialogTitle>
+              <DialogDescription className="text-center">
+                Enhance your profile with resume upload
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 pt-4">
+              <p className="text-sm text-muted-foreground">
+                Have a resume? You can quickly update your entire profile by
+                uploading it. We will extract and merge the information
+                automatically, saving you time.
+              </p>
+              <div className="flex justify-center">
+                <Button
+                  onClick={() => redirect("add_file")}
+                  className="gap-2 bg-black hover:bg-gray-800"
+                >
+                  <FileUpIcon className="h-4 w-4" />
+                  Go to Resume Upload
+                  <ArrowRightIcon className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
+
       <div className="space-y-8">
         <Card>
           <CardHeader className="relative text-center pb-8">
