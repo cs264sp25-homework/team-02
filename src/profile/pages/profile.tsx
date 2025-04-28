@@ -19,8 +19,8 @@ import { Skills } from "../components/Skills";
 import { ProfileUpdateType } from "convex/profiles";
 import { useRouter } from "@/core/hooks/use-router";
 import { useAuth } from "@/linkedin/hooks/useAuth";
-import { useEffect } from "react";
-import { FileUpIcon, ArrowRightIcon } from "lucide-react";
+import { useEffect, useState } from "react";
+import { FileUpIcon, ArrowRightIcon, TrashIcon } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -29,10 +29,21 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/core/components/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/core/components/alert-dialog";
 
 const ProfilePage = () => {
   const { isAuthenticated, user } = useAuth();
   const { redirect } = useRouter();
+  const [clearDialogOpen, setClearDialogOpen] = useState(false);
 
   if (!isAuthenticated) {
     redirect("login");
@@ -96,6 +107,11 @@ const ProfilePage = () => {
       ?.url;
   };
 
+  const handleClearProfile = async () => {
+    await mutation.clearNonRequiredFields();
+    setClearDialogOpen(false);
+  };
+
   return (
     <div className="container mx-auto max-w-5xl px-4 py-8">
       {/* Floating Resume Upload Button */}
@@ -127,7 +143,7 @@ const ProfilePage = () => {
               <div className="flex justify-center">
                 <Button
                   onClick={() => redirect("add_file")}
-                  className="gap-2 bg-black hover:bg-gray-800"
+                  className="gap-2 bg-black hover:bg-gray-800 text-white"
                 >
                   <FileUpIcon className="h-4 w-4" />
                   Go to Resume Upload
@@ -137,6 +153,49 @@ const ProfilePage = () => {
             </div>
           </DialogContent>
         </Dialog>
+      </div>
+
+      {/* Clear Profile Alert Dialog */}
+      <AlertDialog open={clearDialogOpen} onOpenChange={setClearDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reset Profile?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will reset your professional data, removing:
+              <ul className="list-disc pl-5 mt-2 space-y-1">
+                <li>Education history</li>
+                <li>Work experience</li>
+                <li>Projects</li>
+                <li>Skills</li>
+              </ul>
+              <p className="mt-2">
+                Your personal information (name, email, phone, location, and
+                social links) will be preserved.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleClearProfile}
+              className="bg-red-500 hover:bg-red-600"
+            >
+              Reset Profile
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Page Header with Clear Button */}
+      <div className="flex justify-end mb-6">
+        <Button
+          variant="outline"
+          onClick={() => setClearDialogOpen(true)}
+          className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 gap-2"
+        >
+          <TrashIcon className="h-4 w-4" />
+          Reset Profile
+        </Button>
       </div>
 
       <div className="space-y-8">
