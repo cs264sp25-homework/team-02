@@ -18,11 +18,17 @@ const MAX_FILE_SIZE = 5;
 
 export default function AddFile() {
   const [files, setFiles] = useState<File[]>([]);
-  const [fileSizes, setFileSizes] = useState<number[]>([]);
+  const [fileDetails, setFileDetails] = useState<{
+    [key: string]: { size: number; uploaded: boolean };
+  }>({});
   const [currentStage, setCurrentStage] = useState<FileUploadStage>("idle");
   const [errorMessage, setErrorMessage] = useState<string | undefined>(
     undefined,
   );
+  const [processingCount, setProcessingCount] = useState({
+    current: 0,
+    total: 0,
+  });
 
   const generateUploadUrl = useMutation(api.files.generateUploadUrl);
   const saveFile = useMutation(api.files.saveFile);
@@ -44,22 +50,35 @@ export default function AddFile() {
   const isProcessing = !["idle", "completed", "failed"].includes(currentStage);
 
   const onDrop = (acceptedFiles: File[]) => {
-    const validFiles = acceptedFiles.filter((file) => {
+    if (acceptedFiles.length === 0) return;
+
+    const validFiles: File[] = [];
+    const newFileDetails: {
+      [key: string]: { size: number; uploaded: boolean };
+    } = { ...fileDetails };
+
+    acceptedFiles.forEach((file) => {
       const fileSizeMB = file.size / 1024 / 1024;
-      return fileSizeMB <= MAX_FILE_SIZE;
+      if (fileSizeMB > MAX_FILE_SIZE) {
+        toast.error(
+          `File ${file.name} exceeds the ${MAX_FILE_SIZE}MB limit and was not added`,
+        );
+        return;
+      }
+      validFiles.push(file);
+      newFileDetails[file.name] = {
+        size: fileSizeMB,
+        uploaded: false,
+      };
     });
 
-    if (validFiles.length < acceptedFiles.length) {
-      toast.error(
-        `Some files exceeded the ${MAX_FILE_SIZE}MB limit and were ignored`,
-      );
+    if (validFiles.length > 0) {
+      setFiles((prev) => [...prev, ...validFiles]);
+      setFileDetails(newFileDetails);
+      setCurrentStage("idle");
+      setErrorMessage(undefined);
+      toast.success(`${validFiles.length} file(s) added successfully`);
     }
-
-    const newFileSizes = validFiles.map((file) => file.size / 1024 / 1024);
-    setFileSizes((prev) => [...prev, ...newFileSizes]);
-    setFiles((prev) => [...prev, ...validFiles]);
-    setCurrentStage("idle");
-    setErrorMessage(undefined);
   };
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -67,6 +86,7 @@ export default function AddFile() {
     accept: {
       "application/pdf": [".pdf"],
     },
+    maxFiles: 10,
     multiple: true,
     disabled: isProcessing,
   });
@@ -80,8 +100,6 @@ export default function AddFile() {
     });
 
   const handleUpload = async (fileToUpload: File): Promise<string> => {
-    setCurrentStage("uploading");
-    setErrorMessage(undefined);
     try {
       const postUrl = await generateUploadUrl();
       const result = await fetch(postUrl, {
@@ -103,14 +121,33 @@ export default function AddFile() {
         fileSize: fileToUpload.size,
         userId: user?.id || "",
       });
-      toast.success("File uploaded successfully!");
+
+      setFileDetails((prev) => ({
+        ...prev,
+        [fileToUpload.name]: {
+          ...prev[fileToUpload.name],
+          uploaded: true,
+        },
+      }));
+
       return storageId;
     } catch (error) {
       console.error("Upload error:", error);
-      const message = "Failed to upload file. Please try again.";
-      setErrorMessage(message);
-      setCurrentStage("failed");
-      toast.error(message);
+      throw error;
+    }
+  };
+
+  const processFile = async (file: File): Promise<string> => {
+    setProcessingCount((prev) => ({ ...prev, current: prev.current + 1 }));
+
+    try {
+      await handleUpload(file);
+      const buffer = await readFileAsArrayBuffer(file);
+      await loadDocument(buffer);
+      const text = await extractText();
+      return text;
+    } catch (error) {
+      console.error(`Error processing file ${file.name}:`, error);
       throw error;
     }
   };
@@ -121,149 +158,161 @@ export default function AddFile() {
       return;
     }
 
-    setCurrentStage("idle");
+    setCurrentStage("uploading");
     setErrorMessage(undefined);
+    setProcessingCount({ current: 0, total: files.length });
 
     try {
+      const allTexts: string[] = [];
+
+      // First upload all files and extract text
+      setCurrentStage("extracting");
       for (const file of files) {
-        await handleUpload(file);
-
-        setCurrentStage("extracting");
-        const buffer = await readFileAsArrayBuffer(file);
-        await loadDocument(buffer);
-        const text = await extractText();
-
-        setCurrentStage("parsing");
-        const parsedProfile = await parseResume({ resumeText: text });
-        console.log("Parsed Profile:", parsedProfile);
-
-        setCurrentStage("updating_profile");
-        if (!user.id) {
-          throw new Error("User ID missing.");
+        try {
+          const text = await processFile(file);
+          allTexts.push(text);
+        } catch (error) {
+          console.error(`Failed to process ${file.name}:`, error);
+          toast.error(`Failed to process ${file.name}`);
         }
+      }
 
-        const profileData = {
-          name: parsedProfile.name || "User Name",
-          email: parsedProfile.email || "user@example.com",
-          ...(parsedProfile.phone
-            ? { phone: String(parsedProfile.phone) }
-            : {}),
-          ...(parsedProfile.location
-            ? { location: String(parsedProfile.location) }
-            : {}),
+      if (allTexts.length === 0) {
+        throw new Error("No files were successfully processed");
+      }
 
-          education: Array.isArray(parsedProfile.education)
-            ? parsedProfile.education
-                .filter(Boolean)
-                .filter(
-                  (edu) =>
-                    edu.institution && edu.degree && edu.field && edu.startDate,
-                )
-                .map((edu) => ({
-                  institution: String(edu.institution),
-                  degree: String(edu.degree),
-                  field: String(edu.field),
-                  startDate: String(edu.startDate),
-                  endDate: edu.endDate ? String(edu.endDate) : undefined,
-                  gpa: edu.gpa != null ? Number(edu.gpa) : undefined,
-                  description: edu.description
-                    ? String(edu.description)
-                    : undefined,
-                  location: edu.location ? String(edu.location) : undefined,
-                }))
-            : [],
+      // Then parse all resume texts together
+      setCurrentStage("parsing");
 
-          workExperience: Array.isArray(parsedProfile.workExperience)
-            ? parsedProfile.workExperience
-                .filter(Boolean)
-                .filter(
-                  (work) => work.company && work.position && work.startDate,
-                )
-                .map((work) => ({
-                  company: String(work.company),
-                  position: String(work.position),
-                  startDate: String(work.startDate),
-                  current: work.current === true,
-                  description: Array.isArray(work.description)
-                    ? work.description.map(String)
-                    : [],
-                  endDate: work.endDate ? String(work.endDate) : undefined,
-                  location: work.location ? String(work.location) : undefined,
-                  technologies: Array.isArray(work.technologies)
-                    ? work.technologies.map(String)
-                    : [],
-                }))
-            : [],
+      // Combine all resume texts with clear separators
+      const combinedResumeText = allTexts
+        .map((text, index) => `===== RESUME ${index + 1} =====\n\n${text}`)
+        .join("\n\n");
 
-          projects: Array.isArray(parsedProfile.projects)
-            ? parsedProfile.projects
-                .filter(Boolean)
-                .filter((proj) => proj.name)
-                .map((proj) => ({
-                  name: String(proj.name),
-                  description: Array.isArray(proj.description)
-                    ? proj.description.map(String)
-                    : [],
-                  technologies: Array.isArray(proj.technologies)
-                    ? proj.technologies.map(String)
-                    : [],
-                  startDate: proj.startDate
-                    ? String(proj.startDate)
-                    : undefined,
-                  endDate: proj.endDate ? String(proj.endDate) : undefined,
-                  link: proj.link ? String(proj.link) : undefined,
-                  githubUrl: proj.githubUrl
-                    ? String(proj.githubUrl)
-                    : undefined,
-                  highlights: Array.isArray(proj.highlights)
-                    ? proj.highlights.map(String)
-                    : [],
-                }))
-            : [],
+      const parsedProfile = await parseResume({
+        resumeText: combinedResumeText,
+      });
+      console.log("Parsed Profile:", parsedProfile);
 
-          skills: Array.isArray(parsedProfile.skills)
-            ? parsedProfile.skills.map(String)
-            : [],
+      setCurrentStage("updating_profile");
+      if (!user.id) {
+        throw new Error("User ID missing.");
+      }
 
-          socialLinks: Array.isArray(parsedProfile.socialLinks)
-            ? parsedProfile.socialLinks
-                .filter(Boolean)
-                .filter((link) => link.platform && link.url)
-                .map((link) => ({
-                  platform: String(link.platform),
-                  url: String(link.url),
-                }))
-            : [],
+      const profileData = {
+        name: parsedProfile.name || "User Name",
+        email: parsedProfile.email || "user@example.com",
+        ...(parsedProfile.phone ? { phone: String(parsedProfile.phone) } : {}),
+        ...(parsedProfile.location
+          ? { location: String(parsedProfile.location) }
+          : {}),
 
+        education: Array.isArray(parsedProfile.education)
+          ? parsedProfile.education
+              .filter(Boolean)
+              .filter(
+                (edu) =>
+                  edu.institution && edu.degree && edu.field && edu.startDate,
+              )
+              .map((edu) => ({
+                institution: String(edu.institution),
+                degree: String(edu.degree),
+                field: String(edu.field),
+                startDate: String(edu.startDate),
+                endDate: edu.endDate ? String(edu.endDate) : undefined,
+                gpa: edu.gpa != null ? Number(edu.gpa) : undefined,
+                description: edu.description
+                  ? String(edu.description)
+                  : undefined,
+                location: edu.location ? String(edu.location) : undefined,
+              }))
+          : [],
+
+        workExperience: Array.isArray(parsedProfile.workExperience)
+          ? parsedProfile.workExperience
+              .filter(Boolean)
+              .filter((work) => work.company && work.position && work.startDate)
+              .map((work) => ({
+                company: String(work.company),
+                position: String(work.position),
+                startDate: String(work.startDate),
+                current: work.current === true,
+                description: Array.isArray(work.description)
+                  ? work.description.map(String)
+                  : [],
+                endDate: work.endDate ? String(work.endDate) : undefined,
+                location: work.location ? String(work.location) : undefined,
+                technologies: Array.isArray(work.technologies)
+                  ? work.technologies.map(String)
+                  : [],
+              }))
+          : [],
+
+        projects: Array.isArray(parsedProfile.projects)
+          ? parsedProfile.projects
+              .filter(Boolean)
+              .filter((proj) => proj.name)
+              .map((proj) => ({
+                name: String(proj.name),
+                description: Array.isArray(proj.description)
+                  ? proj.description.map(String)
+                  : [],
+                technologies: Array.isArray(proj.technologies)
+                  ? proj.technologies.map(String)
+                  : [],
+                startDate: proj.startDate ? String(proj.startDate) : undefined,
+                endDate: proj.endDate ? String(proj.endDate) : undefined,
+                link: proj.link ? String(proj.link) : undefined,
+                githubUrl: proj.githubUrl ? String(proj.githubUrl) : undefined,
+                highlights: Array.isArray(proj.highlights)
+                  ? proj.highlights.map(String)
+                  : [],
+              }))
+          : [],
+
+        skills: Array.isArray(parsedProfile.skills)
+          ? parsedProfile.skills.map(String)
+          : [],
+
+        socialLinks: Array.isArray(parsedProfile.socialLinks)
+          ? parsedProfile.socialLinks
+              .filter(Boolean)
+              .filter((link) => link.platform && link.url)
+              .map((link) => ({
+                platform: String(link.platform),
+                url: String(link.url),
+              }))
+          : [],
+
+        userId: user.id,
+      };
+
+      if (userProfile) {
+        await updateProfile({
+          ...profileData,
+          profileId: userProfile._id,
           userId: user.id,
-        };
-
-        if (userProfile) {
-          await updateProfile({
-            ...profileData,
-            profileId: userProfile._id,
-            userId: user.id,
-          });
-          toast.success("Resume processed and profile updated successfully!");
-        } else {
-          await createProfile({
-            ...profileData,
-            userId: user.id,
-          });
-          toast.success("Resume processed and profile created successfully!");
-        }
+        });
+        toast.success("Resumes processed and profile updated successfully!");
+      } else {
+        await createProfile({
+          ...profileData,
+          userId: user.id,
+        });
+        toast.success("Resumes processed and profile created successfully!");
       }
 
       setCurrentStage("completed");
       setFiles([]);
-      setFileSizes([]);
+      setFileDetails({});
+      setProcessingCount({ current: 0, total: 0 });
     } catch (error) {
       console.error("Processing error:", error);
       if (currentStage !== "failed") {
         let stageErrorMessage =
           "An unexpected error occurred during processing.";
         if (currentStage === "extracting")
-          stageErrorMessage = "Failed to extract text from PDF.";
+          stageErrorMessage = "Failed to extract text from PDFs.";
         else if (currentStage === "parsing")
           stageErrorMessage = "Failed to parse resume data.";
         else if (currentStage === "updating_profile")
@@ -274,6 +323,16 @@ export default function AddFile() {
         toast.error(stageErrorMessage);
       }
     }
+  };
+
+  const removeFile = (fileName: string) => {
+    setFiles((prev) => prev.filter((file) => file.name !== fileName));
+    setFileDetails((prev) => {
+      const newDetails = { ...prev };
+      delete newDetails[fileName];
+      return newDetails;
+    });
+    toast.info(`Removed ${fileName}`);
   };
 
   return (
@@ -289,23 +348,39 @@ export default function AddFile() {
         )}
       >
         <input {...getInputProps()} disabled={isProcessing} />
-        <Label>Upload Resume (PDF, Max {MAX_FILE_SIZE}MB)</Label>
+        <Label>Upload Resumes (PDF, Max {MAX_FILE_SIZE}MB each)</Label>
         <div className="text-sm text-muted-foreground text-center">
           {isDragActive ? (
-            <p>Drop the file here</p>
+            <p>Drop the files here</p>
           ) : (
-            <p>Drag and drop a file here, or click to select</p>
+            <p>Drag and drop files here, or click to select multiple files</p>
           )}
         </div>
       </div>
 
-      {files.length > 0 && !isProcessing && currentStage !== "completed" && (
-        <div className="text-sm text-gray-600 space-y-2">
-          <p>Selected files:</p>
-          <ul className="list-disc pl-5">
-            {files.map((file, index) => (
-              <li key={index}>
-                {file.name} ({fileSizes[index]?.toFixed(2) || "?"} MB)
+      {files.length > 0 && (
+        <div className="space-y-2">
+          <div className="text-sm font-medium">
+            Selected files ({files.length}):
+          </div>
+          <ul className="text-sm space-y-1">
+            {files.map((file) => (
+              <li
+                key={file.name}
+                className="flex justify-between items-center bg-gray-50 p-2 rounded"
+              >
+                <span>
+                  {file.name} ({fileDetails[file.name]?.size.toFixed(2) || "0"}{" "}
+                  MB)
+                </span>
+                {!isProcessing && (
+                  <button
+                    onClick={() => removeFile(file.name)}
+                    className="text-red-500 hover:text-red-700"
+                  >
+                    Remove
+                  </button>
+                )}
               </li>
             ))}
           </ul>
@@ -313,15 +388,29 @@ export default function AddFile() {
       )}
 
       {currentStage !== "idle" && (
-        <FileUploadProgress currentStage={currentStage} error={errorMessage} />
+        <div>
+          <FileUploadProgress
+            currentStage={currentStage}
+            error={errorMessage}
+            processingInfo={processingCount}
+          />
+          {isProcessing && processingCount.total > 0 && (
+            <div className="text-sm text-center mt-2">
+              Processing file {processingCount.current} of{" "}
+              {processingCount.total}
+            </div>
+          )}
+        </div>
       )}
 
       <Button
         onClick={handleProcessAndProfileUpdate}
-        disabled={!files.length || !isWorkerInitialized || isProcessing}
+        disabled={files.length === 0 || !isWorkerInitialized || isProcessing}
         className="w-full"
       >
-        {isProcessing ? "Processing..." : "Process Resumes & Update Profiles"}
+        {isProcessing
+          ? "Processing..."
+          : `Process ${files.length} Resume(s) & Update Profile`}
       </Button>
     </div>
   );
