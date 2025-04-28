@@ -252,8 +252,6 @@ export default function AddFile() {
           });
           toast.success("Resume processed and profile created successfully!");
         }
-
-        setCurrentStage("completed");
       }
 
       setCurrentStage("completed");
@@ -294,12 +292,25 @@ export default function AddFile() {
         <Label>Upload Resume (PDF, Max {MAX_FILE_SIZE}MB)</Label>
         <div className="text-sm text-muted-foreground text-center">
           {isDragActive ? (
-            <p>Drop the files here</p>
+            <p>Drop the file here</p>
           ) : (
-            <p>Drag and drop files here, or click to select</p>
+            <p>Drag and drop a file here, or click to select</p>
           )}
         </div>
       </div>
+
+      {files.length > 0 && !isProcessing && currentStage !== "completed" && (
+        <div className="text-sm text-gray-600 space-y-2">
+          <p>Selected files:</p>
+          <ul className="list-disc pl-5">
+            {files.map((file, index) => (
+              <li key={index}>
+                {file.name} ({fileSizes[index]?.toFixed(2) || "?"} MB)
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {currentStage !== "idle" && (
         <FileUploadProgress currentStage={currentStage} error={errorMessage} />
